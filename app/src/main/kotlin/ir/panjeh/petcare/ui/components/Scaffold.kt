@@ -23,7 +23,7 @@ fun topBar(ctx: Context, title: String, onBack: (() -> Unit)?, actions: List<Vie
         col.add(text(ctx, title, TextStyle.Title, maxLines = 1).apply { accessibilityHeading() })
         if (subtitle != null) col.add(text(ctx, subtitle, TextStyle.Caption, Theme.c.textSecondary, maxLines = 1))
         add(col, w = 0, weight = 1f)
-        actions.forEach { add(it, w = WRAP) }
+        actions.forEach { add(it, w = dp(48), h = dp(48)) }
     }
 
 private fun TextView.accessibilityHeading() {

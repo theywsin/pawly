@@ -6,6 +6,10 @@
 -ignorewarnings
 -dontnote **
 
+# کد خود برنامه کامل حفظ می‌شود (کوچک‌سازی فقط روی کتابخانه استاندارد کاتلین اعمال می‌شود).
+# این کار خطر حذف اشتباه کد را از بین می‌برد و امکان اجرای همه تست‌ها روی خروجی نهایی را می‌دهد.
+-keep class ir.panjeh.** { *; }
+
 # اجزای تعریف‌شده در مانیفست
 -keep class ir.panjeh.petcare.PanjehApp { <init>(); }
 -keep class ir.panjeh.petcare.MainActivity { <init>(); }

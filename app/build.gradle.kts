@@ -18,6 +18,7 @@
  */
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.FileOutputStream
 import java.util.Properties
 
 plugins {
@@ -44,6 +45,7 @@ val apksigner = tool("apksigner", "apksigner")
 
 val androidAll35 by configurations.creating { isTransitive = false }
 val androidAll34 by configurations.creating { isTransitive = false }
+val androidAll26 by configurations.creating { isTransitive = false }
 val proguardTool by configurations.creating
 
 val platformJar = layout.buildDirectory.file("android-platform/android.jar")
@@ -151,6 +153,7 @@ tasks.named("compileKotlin") { dependsOn(aaptPackage) }
 dependencies {
     androidAll35("org.robolectric:android-all:15-robolectric-13954326")
     androidAll34("org.robolectric:android-all:14-robolectric-10818077")
+    androidAll26("org.robolectric:android-all:8.0.0_r4-robolectric-r1")
     proguardTool("com.guardsquare:proguard-base:7.7.0")
 
     compileOnly(files(platformJar).builtBy(prepareAndroidPlatform))
@@ -199,6 +202,12 @@ tasks.test {
 // ------------------------------------------------------------------ بسته‌بندی APK
 val stdlibJars = configurations.runtimeClasspath
 
+fun javaBaseLibrary(): String {
+    val home = File(System.getProperty("java.home"))
+    val jmod = home.resolve("jmods/java.base.jmod")
+    return if (jmod.exists()) "${jmod.path}(!**.jar;!module-info.class)" else "${home.resolve("lib/rt.jar").path}"
+}
+
 fun registerVariant(variant: String, shrink: Boolean) {
     val cap = variant.replaceFirstChar { it.uppercase() }
     val work = layout.buildDirectory.dir("intermediates/$variant")
@@ -223,6 +232,8 @@ fun registerVariant(variant: String, shrink: Boolean) {
                 injars + listOf(
                     "-outjars", out.get().asFile.path,
                     "-libraryjars", platformJar.get().asFile.path,
+                    // android-all کلاس‌های پایه جاوا را ندارد؛ از JDK برای تکمیل سلسله‌مراتب کلاس‌ها استفاده می‌شود
+                    "-libraryjars", javaBaseLibrary(),
                     "-printmapping", mapping.get().asFile.path,
                     "@" + file("proguard-rules.pro").path,
                 ),
@@ -303,6 +314,7 @@ fun registerVariant(variant: String, shrink: Boolean) {
                 "--v1-signing-enabled", "true",
                 "--v2-signing-enabled", "true",
                 "--v3-signing-enabled", "true",
+                "--v4-signing-enabled", "false",
                 "--out", outFile.get().asFile.path,
                 aligned.get().asFile.path,
             )
@@ -351,3 +363,96 @@ fun signingConfig(variant: String): Properties {
 
 registerVariant("debug", shrink = false)
 registerVariant("release", shrink = true)
+
+/**
+ * بررسی سازگاری با حداقل نسخه اندروید (API 26):
+ * همه ارجاع‌های کد برنامه به فریم‌ورک، در برابر کلاس‌های واقعی اندروید ۸٫۰ بررسی می‌شوند.
+ * هر متد/کلاسی که در API 26 وجود نداشته باشد و بدون بررسی نسخه فراخوانی شده باشد گزارش می‌شود.
+ * (جایگزین بخشی از Android Lint که در این محیط در دسترس نیست.)
+ */
+tasks.register<JavaExec>("checkMinSdkApi") {
+    group = "verification"
+    dependsOn("classes")
+    classpath = proguardTool
+    mainClass.set("proguard.ProGuard")
+    val report = layout.buildDirectory.file("reports/min-sdk-api.txt")
+    outputs.file(report)
+    isIgnoreExitValue = true
+    doFirst {
+        val classes = sourceSets.main.get().output.classesDirs.files.filter { it.exists() }
+        args(
+            classes.flatMap { listOf("-injars", it.path) } + listOf(
+                "-libraryjars", androidAll26.singleFile.path + "(!META-INF/**)",
+                "-libraryjars", javaBaseLibrary(),
+                "-libraryjars", stdlibJars.get().files.joinToString(File.pathSeparator),
+                "-outjars", layout.buildDirectory.file("tmp/api-check.jar").get().asFile.path,
+                "-forceprocessing", "-dontoptimize", "-dontobfuscate", "-dontpreverify", "-dontnote", "**",
+                "-keep", "class ir.panjeh.** { *; }",
+            ),
+        )
+        standardOutput = FileOutputStream(report.get().asFile.apply { parentFile.mkdirs() })
+        errorOutput = standardOutput
+    }
+    doLast {
+        val text = report.get().asFile.readText()
+        val problems = text.lines().filter { it.startsWith("Warning: ir.panjeh") }
+        // ارجاع‌هایی که با بررسی Build.VERSION.SDK_INT محافظت شده‌اند (فهرست زیر) مجازند
+        val guarded = listOf(
+            "OnBackInvokedCallback", "OnBackInvokedDispatcher", "getOnBackInvokedDispatcher",
+            "canScheduleExactAlarms", "setDecorFitsSystemWindows", "WindowInsets\$Type", "getInsets", "Insets",
+            "setNavigationBarContrastEnforced", "setAccessibilityHeading", "getLongVersionCode",
+            "setOutlineSpotShadowColor", "setOutlineAmbientShadowColor", "ACTION_PICK_IMAGES",
+        )
+        val unguarded = problems.filter { p -> guarded.none { Regex(it).containsMatchIn(p) } }
+        logger.lifecycle("ارجاع‌های جدیدتر از API $minSdk: ${problems.size} (محافظت‌شده با بررسی نسخه: ${problems.size - unguarded.size})")
+        problems.forEach { logger.lifecycle("  " + it.removePrefix("Warning: ")) }
+        check(unguarded.isEmpty()) { "ارجاع محافظت‌نشده به API جدیدتر از minSdk:\n" + unguarded.joinToString("\n") }
+    }
+}
+
+/**
+ * اجرای همه تست‌ها روی خروجی ProGuard (همان قوانین نسخه انتشار).
+ * کلاس‌های تست نیز به ورودی ProGuard اضافه می‌شوند تا کتابخانه کاتلین بر اساس نیاز مشترک
+ * برنامه و تست کوچک شود؛ بدین ترتیب درستی کوچک‌سازی و قوانین keep روی همان پیکربندی بررسی می‌شود.
+ */
+val proguardReleaseForTest = tasks.register<JavaExec>("proguardReleaseForTest") {
+    group = "verification"
+    dependsOn("classes", "testClasses")
+    val out = layout.buildDirectory.file("intermediates/release-test/shrunk-with-tests.jar")
+    outputs.file(out)
+    classpath = proguardTool
+    mainClass.set("proguard.ProGuard")
+    doFirst {
+        val testRuntime = sourceSets.test.get().runtimeClasspath.files
+        val stdlib = stdlibJars.get().files
+        val mainOut = sourceSets.main.get().output.classesDirs.files
+        val testOut = sourceSets.test.get().output.classesDirs.files
+        val injars = (mainOut + testOut).filter { it.exists() }.map { it.path } + stdlib.map { "${it.path}(!META-INF/**)" }
+        val libs = testRuntime.filter { it.exists() && it !in stdlib && it !in mainOut && it !in testOut && it.isFile && it != platformJar.get().asFile }
+        args(
+            injars.flatMap { listOf("-injars", it) } + listOf(
+                "-outjars", out.get().asFile.path,
+                "-libraryjars", platformJar.get().asFile.path,
+                "-libraryjars", javaBaseLibrary(),
+            ) + libs.flatMap { listOf("-libraryjars", it.path + "(!META-INF/versions/**,!module-info.class)") } + listOf(
+                "-forceprocessing",
+                "-keep", "class androidx.test.** { *; }",
+                "-keepattributes", "*Annotation*,Signature,InnerClasses,EnclosingMethod",
+                "@" + file("proguard-rules.pro").path,
+            ),
+        )
+    }
+}
+
+tasks.register<Test>("testRelease") {
+    group = "verification"
+    dependsOn(proguardReleaseForTest)
+    val shrunk = layout.buildDirectory.file("intermediates/release-test/shrunk-with-tests.jar")
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = files(shrunk) + files(sourceSets.test.get().output.resourcesDir) +
+        (sourceSets.test.get().runtimeClasspath - sourceSets.main.get().output - sourceSets.test.get().output - stdlibJars.get())
+    systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
+    maxHeapSize = "3g"
+    exclude("**/ScreenshotTest*", "**/StoreAssetsTest*")
+    testLogging { events("passed", "failed"); exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
+}

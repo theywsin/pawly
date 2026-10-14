@@ -83,8 +83,8 @@ class HomeScreen(host: Host, route: Route) : Screen(host, route) {
             visibility = View.GONE
         }
         bell.addView(bellDot, FrameLayout.LayoutParams(ctx.dp(10), ctx.dp(10), Gravity.TOP or Gravity.END).apply { setMargins(0, ctx.dp(10), ctx.dp(10), 0) })
-        header.add(bell, w = WRAP)
-        header.add(iconButton(ctx, R.drawable.ic_settings, "تنظیمات", filled = true) { host.switchTab(Tab.SETTINGS) }, w = WRAP, start = 8)
+        header.add(bell, w = ctx.dp(48), h = ctx.dp(48))
+        header.add(iconButton(ctx, R.drawable.ic_settings, "تنظیمات", filled = true) { host.switchTab(Tab.SETTINGS) }, w = ctx.dp(48), h = ctx.dp(48), start = 8)
         root.add(header)
 
         body = vertical(ctx).apply { setPaddingRelative(dp(Dimens.screenPadding), dp(8), dp(Dimens.screenPadding), dp(28)) }
@@ -288,10 +288,10 @@ class HomeScreen(host: Host, route: Route) : Screen(host, route) {
         col.add(text(ctx, p.name, TextStyle.Headline, onHero, maxLines = 1))
         val kind = listOfNotNull(p.speciesLabel, p.breed?.takeIf { it.isNotBlank() }).joinToString(" · ")
         col.add(text(ctx, kind, TextStyle.BodySmall, withAlpha(onHero, 0.8f), maxLines = 1), top = 2)
-        val pills = horizontal(ctx)
+        val pills = ir.panjeh.petcare.ui.components.FlowLayout(ctx)
         val age = p.birthDate?.let { Fa.age(it) } ?: "سن نامشخص"
-        pills.add(heroPill(R.drawable.ic_calendar, age), w = WRAP, end = 6)
-        pills.add(heroPill(R.drawable.ic_weight, weight?.let { Fa.weight(it.grams) } ?: "وزن؟"), w = WRAP)
+        pills.addView(heroPill(R.drawable.ic_calendar, age))
+        pills.addView(heroPill(R.drawable.ic_weight, weight?.let { Fa.weight(it.grams) } ?: "وزن ثبت نشده"))
         col.add(pills, top = 12)
         val open = horizontal(ctx).apply {
             setPaddingRelative(0, dp(12), 0, dp(2))

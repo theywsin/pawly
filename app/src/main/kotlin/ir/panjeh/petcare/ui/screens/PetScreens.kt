@@ -425,7 +425,7 @@ class PetEditScreen(host: Host, route: Route) : Screen(host, route) {
             repo.transaction {
                 val id = repo.savePet(pet)
                 if (grams != null && grams > 0) {
-                    repo.saveWeight(WeightEntry(petId = id, grams = grams, measuredAt = ir.panjeh.petcare.core.Fa.millisOf(LocalDate.now(), LocalTime.now())))
+                    repo.saveWeight(WeightEntry(petId = id, grams = grams, measuredAt = ir.panjeh.petcare.core.Fa.millisOf(LocalDate.now(), LocalTime.now().withSecond(0).withNano(0))))
                 }
                 if (editId == 0L) Graph.prefs.activePetId = id
             }

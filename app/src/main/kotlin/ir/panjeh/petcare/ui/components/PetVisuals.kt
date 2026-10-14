@@ -63,6 +63,18 @@ class PetAvatar(ctx: Context, private val sizeDp: Int, private val radiusDp: Int
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
     }
 
+    private val clip = Path()
+
+    override fun draw(canvas: Canvas) {
+        val r = radiusDp?.let { dp(it).toFloat() } ?: (min(width, height) / 2f)
+        clip.reset()
+        clip.addRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), r, r, Path.Direction.CW)
+        canvas.save()
+        canvas.clipPath(clip)
+        super.draw(canvas)
+        canvas.restore()
+    }
+
     fun bind(pet: Pet?) {
         val my = ++token
         val species = pet?.species ?: Species.OTHER
@@ -201,7 +213,4 @@ class WeightChart(ctx: Context) : View(ctx) {
             canvas.drawText(Fa.dayMonth(Fa.dateOfMillis(points.last().measuredAt)), left, height - dp(6f), label)
         }
     }
-
-    @Suppress("unused")
-    private val rect = RectF()
 }

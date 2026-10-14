@@ -101,6 +101,8 @@ fun iconButton(ctx: Context, res: Int, description: String, tint: Int = Theme.c.
         background = ripple(ctx, bg, 24)
         addView(iconView(ctx, res, tint, 22), FrameLayout.LayoutParams(ctx.dp(22), ctx.dp(22), Gravity.CENTER))
         layoutParams = LinearLayout.LayoutParams(ctx.dp(Dimens.touch), ctx.dp(Dimens.touch))
+        minimumWidth = ctx.dp(Dimens.touch)
+        minimumHeight = ctx.dp(Dimens.touch)
         isClickable = true
         isFocusable = true
         setOnClickListener { onClick() }

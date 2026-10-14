@@ -175,7 +175,7 @@ object JalaliDatePicker {
         val nav = horizontal(ctx)
         val monthTitle = text(ctx, "", TextStyle.TitleSmall, center = true)
         lateinit var render: () -> Unit
-        nav.add(iconButton(ctx, R.drawable.ic_back, "ماه قبل") { month = month.plusMonths(-1); render() })
+        nav.add(iconButton(ctx, R.drawable.ic_back, "ماه قبل") { month = month.plusMonths(-1); render() }, w = ctx.dp(48), h = ctx.dp(48))
         nav.add(monthTitle, w = 0, weight = 1f)
         monthTitle.setPaddingRelative(0, ctx.dp(10), 0, ctx.dp(10))
         monthTitle.contentDescription = "انتخاب سال"
@@ -190,7 +190,7 @@ object JalaliDatePicker {
                 }
             })
         }
-        nav.add(iconButton(ctx, R.drawable.ic_chevron, "ماه بعد") { month = month.plusMonths(1); render() })
+        nav.add(iconButton(ctx, R.drawable.ic_chevron, "ماه بعد") { month = month.plusMonths(1); render() }, w = ctx.dp(48), h = ctx.dp(48))
         body.add(nav)
 
         val week = horizontal(ctx)
