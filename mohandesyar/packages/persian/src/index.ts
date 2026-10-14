@@ -44,11 +44,12 @@ export function formatDate(value: string | number | Date, opts: DateFormatOption
   if (Number.isNaN(d.getTime())) return '';
   const locale = `fa-IR-u-ca-persian${opts.digits === 'latn' ? '-nu-latn' : ''}`;
   const style = opts.style ?? 'medium';
-  return new Intl.DateTimeFormat(locale, {
-    timeZone: opts.timeZone ?? 'Asia/Tehran',
-    ...(style === 'short' ? { year: 'numeric', month: '2-digit', day: '2-digit' } : { dateStyle: style }),
-    ...(opts.withTime ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : {}),
-  }).format(d);
+  // dateStyle cannot be combined with individual hour/minute fields; use timeStyle in that case.
+  const options: Intl.DateTimeFormatOptions =
+    style === 'short'
+      ? { year: 'numeric', month: '2-digit', day: '2-digit', ...(opts.withTime ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : {}) }
+      : { dateStyle: style, ...(opts.withTime ? { timeStyle: 'short', hourCycle: 'h23' } : {}) };
+  return new Intl.DateTimeFormat(locale, { timeZone: opts.timeZone ?? 'Asia/Tehran', ...options }).format(d);
 }
 
 /** Jalali year/month/day of an instant in a time zone. */

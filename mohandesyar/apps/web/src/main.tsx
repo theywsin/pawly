@@ -12,6 +12,7 @@ import { ApiError } from '@mohandesyar/module-sdk/web';
 import { applyTheme, useUi } from './lib/ui-store.js';
 import { AppSession, ConsoleSession } from './lib/session.js';
 import { Home, NotFound } from './areas/public/Home.js';
+import { RouteError } from './areas/public/RouteError.js';
 import { Login } from './areas/auth/Login.js';
 import { Signup } from './areas/auth/Signup.js';
 import { AppShell } from './areas/app/AppShell.js';
@@ -45,6 +46,9 @@ const queryClient = new QueryClient({
 });
 
 const router = createBrowserRouter([
+  {
+    errorElement: <RouteError />,
+    children: [
   { path: '/', element: <Home /> },
   { path: '/auth/login', element: <Login /> },
   { path: '/auth/signup', element: <Signup /> },
@@ -87,6 +91,8 @@ const router = createBrowserRouter([
     ],
   },
   { path: '*', element: <NotFound /> },
+    ],
+  },
 ]);
 
 createRoot(document.getElementById('root')!).render(

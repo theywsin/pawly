@@ -227,9 +227,10 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
   // SPA (built web app): static files plus index.html fallback for client-side routes.
   const webDist = s.config.WEB_DIST_DIR;
   if (webDist && existsSync(webDist)) {
-    fastify.setNotFoundHandler(async (req: FastifyRequest, reply: FastifyReply) => {
+    // Catch-all GET (Nest owns the 404 handler); API routes are more specific and take precedence.
+    fastify.get('/*', async (req: FastifyRequest, reply: FastifyReply) => {
       const path = decodeURIComponent(req.url.split('?')[0] ?? '/');
-      if (path.startsWith('/api/') || req.method !== 'GET') return reply.code(404).send({ code: 'NOT_FOUND', message: 'مسیر یافت نشد' });
+      if (path.startsWith('/api/')) return reply.code(404).send({ code: 'NOT_FOUND', message: 'مسیر یافت نشد' });
       const candidate = normalize(join(webDist, path));
       if (candidate.startsWith(webDist) && existsSync(candidate) && (await stat(candidate)).isFile()) {
         const immutable = path.startsWith('/assets/') || path.startsWith('/shared/');

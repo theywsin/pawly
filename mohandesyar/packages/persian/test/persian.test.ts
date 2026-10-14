@@ -13,6 +13,9 @@ describe('persian', () => {
     expect(formatDate('2026-10-14T12:00:00Z', { style: 'short', digits: 'latn' })).toBe('1405/07/22');
     expect(formatDate('2026-03-21T12:00:00Z')).toContain('فروردین');
     expect(formatDate('invalid')).toBe('');
+    // 12:00 UTC = 15:30 Tehran
+    expect(formatDate('2026-10-14T12:00:00Z', { withTime: true, digits: 'latn' })).toMatch(/1405.*15:30/);
+    expect(formatDate('2026-10-14T12:00:00Z', { withTime: true, style: 'short', digits: 'latn' })).toMatch(/1405\/07\/22.*15:30/);
   });
 
   it('formats numbers and money', () => {

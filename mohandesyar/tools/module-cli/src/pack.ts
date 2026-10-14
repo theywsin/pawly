@@ -96,7 +96,7 @@ export async function packModule(moduleDir: string, outDir: string, opts: { log?
       const input = join(stage, `..`, `${m.id}-${process.pid}-tw-input.css`);
       await writeFile(
         input,
-        [`@import '${join(tw, 'utilities.css')}' source('${join(src, 'frontend/src')}');`, `@reference '${theme}';`, existsSync(extra) ? `@import '${extra}';` : ''].join('\n'),
+        [`@reference '${join(tw, 'theme.css')}';`, `@reference '${theme}';`, `@import '${join(tw, 'utilities.css')}' source('${join(src, 'frontend/src')}');`, existsSync(extra) ? `@import '${extra}';` : ''].join('\n'),
       );
       log('frontend: tailwind');
       const bin = join(dirname(req.resolve('@tailwindcss/cli/package.json')), 'dist/index.mjs');

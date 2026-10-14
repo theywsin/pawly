@@ -223,9 +223,11 @@ export function ModuleInstall() {
           {result.op && (
             <Card>
               <CardHeader title="گزارش عملیات" />
-              <ol className="space-y-1 p-5 font-mono text-xs" data-testid="operation-log">
+              <ol className="space-y-1 p-5 text-sm leading-7" data-testid="operation-log">
                 {result.op.log.map((l, i) => (
-                  <li key={i}>{l.line}</li>
+                  <li key={i} dir="auto">
+                    {l.line}
+                  </li>
                 ))}
               </ol>
             </Card>
