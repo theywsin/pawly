@@ -1,4 +1,4 @@
-import { registerHooks } from 'node:module';
+import { createRequire, registerHooks } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { isSharedBackendSpecifier } from '@mohandesyar/module-sdk/server';
 
@@ -33,5 +33,14 @@ export function installModuleResolveHooks(storeDir: string): void {
   });
 }
 
-/** Native dynamic import (bypasses test-runner transforms so the hooks above apply). */
-export const nativeImport = new Function('u', 'return import(u)') as (url: string) => Promise<Record<string, unknown>>;
+const nativeRequire = createRequire(import.meta.url);
+
+/**
+ * Loads a module bundle through Node's native `require(esm)` (Node ≥ 22.12). Unlike a dynamic
+ * `import()` this works the same under the production runtime and under test runners that sandbox
+ * imports, and it is covered by the synchronous resolve hooks above. Module bundles therefore must
+ * not use top-level await.
+ */
+export function nativeLoad(file: string): Record<string, unknown> {
+  return nativeRequire(file) as Record<string, unknown>;
+}

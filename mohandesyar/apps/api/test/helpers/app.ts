@@ -126,3 +126,11 @@ export class TestApp {
     return { token: confirm.body.accessToken, otp: () => totp(secret) };
   }
 }
+
+/** Minimal multipart/form-data body with one file field. */
+export function multipart(file: Buffer, filename: string, field = 'file'): { payload: Buffer; headers: Record<string, string> } {
+  const boundary = `----mohandesyar${Date.now()}`;
+  const head = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${field}"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`);
+  const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
+  return { payload: Buffer.concat([head, file, tail]), headers: { 'content-type': `multipart/form-data; boundary=${boundary}` } };
+}

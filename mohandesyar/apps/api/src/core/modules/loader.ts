@@ -1,9 +1,8 @@
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { parseManifest, type ModuleManifest } from '@mohandesyar/module-sdk';
 import type { ModuleDefinition } from '@mohandesyar/module-sdk/server';
 import { verifyInstalledDirectory } from '@mohandesyar/module-package';
-import { installModuleResolveHooks, nativeImport } from './hooks.js';
+import { installModuleResolveHooks, nativeLoad } from './hooks.js';
 
 export interface LoadedModule {
   id: string;
@@ -30,7 +29,7 @@ export async function loadModuleFromStore(storeDir: string, id: string, version:
   if (!parsed.ok) throw new Error(`invalid manifest: ${parsed.errors.join('; ')}`);
   const manifest = parsed.manifest;
   if (manifest.id !== id || manifest.version !== version) throw new Error(`store path does not match manifest (${manifest.id}@${manifest.version})`);
-  const mod = await nativeImport(pathToFileURL(join(dir, manifest.backend.entry)).href);
+  const mod = nativeLoad(join(dir, manifest.backend.entry));
   const definition = (mod.default ?? mod.module) as ModuleDefinition | undefined;
   if (!definition || typeof definition !== 'object') throw new Error('backend entry must default-export defineModule({...})');
   const declaredId = (definition.manifest as { id?: string } | undefined)?.id;

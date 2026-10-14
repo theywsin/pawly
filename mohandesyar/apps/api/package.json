@@ -36,6 +36,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@mohandesyar/module-cli": "workspace:*",
     "@types/pg": "^8.23.1",
     "@types/semver": "^7.8.0"
   }

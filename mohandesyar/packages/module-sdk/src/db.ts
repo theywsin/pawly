@@ -25,8 +25,10 @@ export function companyScopedColumns() {
   };
 }
 
-const tenantMatch = sql`tenant_id = current_setting('app.tenant_id', true)::uuid`;
-const companyMatch = sql`company_id = ANY (current_setting('app.company_ids', true)::uuid[])`;
+// core_current_tenant()/core_current_companies() normalise unset settings: after a pooled
+// transaction ends, current_setting(..., true) returns '' rather than NULL, which a raw cast rejects.
+const tenantMatch = sql`tenant_id = core_current_tenant()`;
+const companyMatch = sql`company_id = ANY (core_current_companies())`;
 
 /** Policies for a company-scoped table (pass to the third argument of `pgTable(...).enableRLS()`). */
 export function companyScopedPolicies() {
@@ -49,11 +51,11 @@ export function rlsSql(table: string, opts: { company: boolean }): string {
   const lines = [
     `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;`,
     `ALTER TABLE ${table} FORCE ROW LEVEL SECURITY;`,
-    `CREATE POLICY tenant_isolation ON ${table} AS RESTRICTIVE FOR ALL USING (tenant_id = current_setting('app.tenant_id', true)::uuid) WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);`,
+    `CREATE POLICY tenant_isolation ON ${table} AS RESTRICTIVE FOR ALL USING (tenant_id = core_current_tenant()) WITH CHECK (tenant_id = core_current_tenant());`,
   ];
   lines.push(
     opts.company
-      ? `CREATE POLICY company_scope ON ${table} AS PERMISSIVE FOR ALL USING (company_id = ANY (current_setting('app.company_ids', true)::uuid[])) WITH CHECK (company_id = ANY (current_setting('app.company_ids', true)::uuid[]));`
+      ? `CREATE POLICY company_scope ON ${table} AS PERMISSIVE FOR ALL USING (company_id = ANY (core_current_companies())) WITH CHECK (company_id = ANY (core_current_companies()));`
       : `CREATE POLICY tenant_rows ON ${table} AS PERMISSIVE FOR ALL USING (true) WITH CHECK (true);`,
   );
   return lines.join('\n');
