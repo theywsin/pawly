@@ -13,6 +13,11 @@ export default tseslint.config(
     },
   },
   {
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: { module: 'writable', require: 'readonly' } },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
     files: ['tools/**', 'infra/**', 'e2e/**', '**/scripts/**', '**/*.config.*'],
     rules: { 'no-console': 'off' },
   },

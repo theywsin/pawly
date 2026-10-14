@@ -15,10 +15,10 @@
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "services:up": "bash infra/scripts/local-services.sh start",
     "services:down": "bash infra/scripts/local-services.sh stop",
-    "module:keygen": "node tools/module-cli/dist/cli.mjs keygen",
-    "module:pack": "node tools/module-cli/dist/cli.mjs pack",
-    "module:sign": "node tools/module-cli/dist/cli.mjs sign",
-    "module:verify": "node tools/module-cli/dist/cli.mjs verify"
+    "module:keygen": "node tools/module-cli/dist/cli.js keygen",
+    "module:pack": "node tools/module-cli/dist/cli.js pack",
+    "module:sign": "node tools/module-cli/dist/cli.js sign",
+    "module:verify": "node tools/module-cli/dist/cli.js verify"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
