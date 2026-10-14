@@ -5,7 +5,7 @@
  *   create-admin  creates a platform admin (password from ADMIN_PASSWORD; TOTP enrolment at first login)
  */
 import 'reflect-metadata';
-import cluster from 'node:cluster';
+import cluster, { type Worker } from 'node:cluster';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -44,7 +44,7 @@ async function serveWorker(): Promise<void> {
   process.on('message', (m: { type?: string }) => m?.type === 'shutdown' && void shutdown());
 }
 
-function forkWorker(): Promise<import('node:cluster').Worker> {
+function forkWorker(): Promise<Worker> {
   return new Promise((resolve, reject) => {
     const w = cluster.fork();
     const timer = setTimeout(() => reject(new Error('worker did not become ready in 60s')), 60_000);
@@ -68,7 +68,7 @@ function forkWorker(): Promise<import('node:cluster').Worker> {
  */
 async function servePrimary(): Promise<void> {
   const config = loadConfig();
-  let workers: import('node:cluster').Worker[] = [];
+  let workers: Worker[] = [];
   for (let i = 0; i < config.API_WORKERS; i++) workers.push(await forkWorker());
   logger.info({ workers: workers.length }, 'api started');
   let reloading: Promise<void> | null = null;
