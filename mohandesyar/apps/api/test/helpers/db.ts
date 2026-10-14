@@ -35,7 +35,9 @@ export async function createTestDatabase(opts: { migrate?: boolean } = {}): Prom
     await admin.query(`DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mohandesyar_owner') THEN CREATE ROLE mohandesyar_owner LOGIN PASSWORD '${OWNER_PW}'; END IF;
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mohandesyar_app') THEN CREATE ROLE mohandesyar_app LOGIN NOBYPASSRLS PASSWORD '${APP_PW}'; END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mohandesyar_definer') THEN CREATE ROLE mohandesyar_definer NOLOGIN BYPASSRLS; END IF;
     END $$`);
+    await admin.query('GRANT mohandesyar_definer TO mohandesyar_owner');
     await admin.query(`CREATE DATABASE ${name} OWNER mohandesyar_owner`);
   } finally {
     await admin.end();
@@ -45,7 +47,8 @@ export async function createTestDatabase(opts: { migrate?: boolean } = {}): Prom
   try {
     await dbAdmin.query(`REVOKE ALL ON SCHEMA public FROM PUBLIC;
       ALTER SCHEMA public OWNER TO mohandesyar_owner;
-      GRANT USAGE ON SCHEMA public TO mohandesyar_app;
+      GRANT USAGE ON SCHEMA public TO mohandesyar_app, mohandesyar_definer;
+      GRANT CREATE ON SCHEMA public TO mohandesyar_definer;
       CREATE EXTENSION IF NOT EXISTS pg_trgm;
       CREATE EXTENSION IF NOT EXISTS ltree;`);
   } finally {

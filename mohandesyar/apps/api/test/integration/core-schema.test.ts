@@ -1,4 +1,4 @@
-import pg from 'pg';
+import type pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase, pgMessage, type TestDatabase } from '../helpers/db.js';
 import { Database } from '../../src/infra/db.js';

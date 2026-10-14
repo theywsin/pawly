@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+/** Env booleans: z.coerce.boolean() would turn the string "false" into true. */
+const envBool = (def: boolean) =>
+  z.enum(['true', 'false', '1', '0', '']).default(def ? 'true' : 'false').transform((v) => v === 'true' || v === '1');
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().default(3000),
@@ -12,17 +16,18 @@ const schema = z.object({
   S3_BUCKET: z.string().default('mohandesyar'),
   S3_ACCESS_KEY: z.string().default(''),
   S3_SECRET_KEY: z.string().default(''),
-  S3_FORCE_PATH_STYLE: z.coerce.boolean().default(true),
+  S3_FORCE_PATH_STYLE: envBool(true),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   APP_ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/, 'APP_ENCRYPTION_KEY must be 32 bytes hex'),
   MODULE_STORE_DIR: z.string().default('/var/lib/mohandesyar/modules'),
   MODULE_UPLOAD_DIR: z.string().default('/var/lib/mohandesyar/uploads'),
+  MODULE_BACKUP_DIR: z.string().default('/var/lib/mohandesyar/module-backups'),
   /** Comma separated paths of PEM public keys trusted on first boot (added to core_trusted_keys). */
   MODULE_TRUSTED_KEYS: z.string().default(''),
   PREINSTALLED_MODULES_DIR: z.string().optional(),
   WEB_DIST_DIR: z.string().optional(),
   API_WORKERS: z.coerce.number().int().min(1).default(1),
-  COOKIE_SECURE: z.coerce.boolean().default(true),
+  COOKIE_SECURE: envBool(true),
   PUBLIC_ORIGIN: z.string().default('http://localhost:3000'),
 });
 
