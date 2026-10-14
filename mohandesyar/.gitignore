@@ -9,3 +9,4 @@ playwright-report/
 coverage/
 *.mypkg
 !modules/**/fixtures/*.mypkg
+apps/web/public/shared/

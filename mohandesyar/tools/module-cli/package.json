@@ -20,7 +20,10 @@
   "dependencies": {
     "@mohandesyar/module-package": "workspace:*",
     "@mohandesyar/module-sdk": "workspace:*",
-    "esbuild": "0.28.2"
+    "@mohandesyar/ui": "workspace:*",
+    "@tailwindcss/cli": "4.3.3",
+    "esbuild": "0.28.2",
+    "tailwindcss": "4.3.3"
   },
   "devDependencies": {
     "@nestjs/common": "12.1.3",

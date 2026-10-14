@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, writeFile, rm, symlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -15,8 +15,9 @@ export async function buildHello(opts: { fixture?: string; key?: KeyPairPem; sig
     recursive: true,
     filter: (p) => !/\/(node_modules|dist|fixtures|tests)(\/|$)/.test(p.slice(HELLO_DIR.length)),
   });
-  // node_modules is needed for type-free bundling of local imports only; shared deps stay external.
-  if (!opts.withFrontend) await rm(join(src, 'frontend/src'), { recursive: true, force: true });
+  // Module-private dependencies (e.g. icons) are bundled from the module's own node_modules.
+  await symlink(join(HELLO_DIR, 'node_modules'), join(src, 'node_modules'));
+  if (opts.withFrontend === false) await rm(join(src, 'frontend/src'), { recursive: true, force: true });
   if (opts.fixture) {
     const fx = join(HELLO_DIR, 'fixtures', opts.fixture);
     const patchFile = join(fx, 'manifest.patch.json');
@@ -26,7 +27,7 @@ export async function buildHello(opts: { fixture?: string; key?: KeyPairPem; sig
     }
     await cp(fx, src, { recursive: true, filter: (p) => !p.endsWith('manifest.patch.json') });
   }
-  if (!opts.withFrontend) {
+  if (opts.withFrontend === false) {
     const m = JSON.parse(await readFile(join(src, 'module.manifest.json'), 'utf8'));
     await writeFile(join(src, 'module.manifest.json'), JSON.stringify({ ...m, frontend: { styles: [] }, routes: [] }, null, 2));
   }

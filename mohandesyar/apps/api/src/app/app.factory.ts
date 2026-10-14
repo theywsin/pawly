@@ -152,14 +152,24 @@ const MIME: Record<string, string> = {
   '.webmanifest': 'application/manifest+json',
 };
 
-const SECURITY_HEADERS: Record<string, string> = {
-  'x-content-type-options': 'nosniff',
-  'referrer-policy': 'same-origin',
-  'x-frame-options': 'DENY',
-  'permissions-policy': 'camera=(), microphone=(), geolocation=()',
-  'content-security-policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
-};
+function securityHeaders(scriptHashes: string[]): Record<string, string> {
+  const scripts = ["'self'", ...scriptHashes.map((h) => `'sha256-${h}'`)].join(' ');
+  return {
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'same-origin',
+    'x-frame-options': 'DENY',
+    'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+    'content-security-policy': `default-src 'self'; script-src ${scripts}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'`,
+  };
+}
+
+/** The SPA's inline import map is allowed by hash, so CSP keeps `script-src 'self'` without 'unsafe-inline'. */
+async function inlineScriptHashes(webDist: string | undefined): Promise<string[]> {
+  if (!webDist || !existsSync(join(webDist, 'index.html'))) return [];
+  const html = await readFile(join(webDist, 'index.html'), 'utf8');
+  const { createHash } = await import('node:crypto');
+  return [...html.matchAll(/<script type="importmap">([\s\S]*?)<\/script>/g)].map((m) => createHash('sha256').update(m[1]!).digest('base64'));
+}
 
 async function sendFile(reply: FastifyReply, file: string, cache: string) {
   reply.type(MIME[extname(file)] ?? 'application/octet-stream');
@@ -198,8 +208,9 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
   await fastify.register(fastifyCookie as never);
   await fastify.register(fastifyMultipart as never, { limits: { fileSize: 50 * 1024 * 1024, files: 1 } });
 
+  const headers = securityHeaders(await inlineScriptHashes(s.config.WEB_DIST_DIR));
   fastify.addHook('onSend', async (_req: FastifyRequest, reply: FastifyReply) => {
-    for (const [k, v] of Object.entries(SECURITY_HEADERS)) reply.header(k, v);
+    for (const [k, v] of Object.entries(headers)) reply.header(k, v);
   });
 
   // Module frontend assets: only the active version of an installed module is served (immutable, versioned path).

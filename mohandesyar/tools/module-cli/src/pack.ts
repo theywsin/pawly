@@ -1,8 +1,9 @@
 import { cp, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { build } from 'esbuild';
 import { parseManifest, SHARED_WEB_DEPENDENCIES } from '@mohandesyar/module-sdk';
 import { isSharedBackendSpecifier } from '@mohandesyar/module-sdk/server';
@@ -12,7 +13,7 @@ import { lintMigration, packDirectory } from '@mohandesyar/module-package';
  * Builds a module source directory into an unsigned `.mypkg`:
  *   backend/src/index.ts  → backend/index.mjs  (esbuild, shared deps external)
  *   frontend/src/index.tsx → frontend/*.js     (esbuild ESM + code splitting, shared deps external)
- *   frontend/src/module.css → frontend/module.css (Tailwind, utilities only) — optional
+ *   frontend/module.css                          (Tailwind utilities used by the module; optional extra rules in frontend/src/module.css)
  *   migrations/*.sql (+ generated meta.json), seed/, docs/
  */
 
@@ -86,12 +87,22 @@ export async function packModule(moduleDir: string, outDir: string, opts: { log?
         external: [...SHARED_WEB_DEPENDENCIES],
         loader: { '.svg': 'text' },
       });
-      const css = join(src, 'frontend/src/module.css');
-      if (existsSync(css)) {
-        log('frontend: tailwind');
-        const r = spawnSync('npx', ['--no-install', '@tailwindcss/cli', '-i', css, '-o', join(stage, 'frontend/module.css'), '--minify'], { cwd: src, encoding: 'utf8' });
-        if (r.status !== 0) throw new Error(`tailwind failed: ${r.stderr}`);
-      }
+      // Utility CSS for exactly the classes this module uses (no preflight; theme tokens come from the host).
+      if (!m.frontend.styles.includes('frontend/module.css')) throw new Error('manifest.frontend.styles باید "frontend/module.css" را شامل شود');
+      const req = createRequire(import.meta.url);
+      const tw = dirname(req.resolve('tailwindcss/package.json'));
+      const theme = req.resolve('@mohandesyar/ui/theme.css');
+      const extra = join(src, 'frontend/src/module.css');
+      const input = join(stage, `..`, `${m.id}-${process.pid}-tw-input.css`);
+      await writeFile(
+        input,
+        [`@import '${join(tw, 'utilities.css')}' source('${join(src, 'frontend/src')}');`, `@reference '${theme}';`, existsSync(extra) ? `@import '${extra}';` : ''].join('\n'),
+      );
+      log('frontend: tailwind');
+      const bin = join(dirname(req.resolve('@tailwindcss/cli/package.json')), 'dist/index.mjs');
+      const r = spawnSync(process.execPath, [bin, '-i', input, '-o', join(stage, 'frontend/module.css'), '--minify'], { encoding: 'utf8' });
+      await rm(input, { force: true });
+      if (r.status !== 0) throw new Error(`tailwind failed: ${r.stderr}`);
     }
 
     const migSrc = join(src, 'migrations');
