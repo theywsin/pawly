@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+.local
+.git
+**/.turbo
+apps/web/public/shared
+test-results
+playwright-report

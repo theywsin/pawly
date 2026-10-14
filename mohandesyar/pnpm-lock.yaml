@@ -190,9 +190,15 @@ importers:
       vite:
         specifier: 8.3.4
         version: 8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
+      vitest:
+        specifier: 5.0.4
+        version: 5.0.4(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
   modules/hello-module:
     devDependencies:
+      '@mohandesyar/module-package':
+        specifier: workspace:*
+        version: link:../../packages/module-package
       '@mohandesyar/module-sdk':
         specifier: workspace:*
         version: link:../../packages/module-sdk

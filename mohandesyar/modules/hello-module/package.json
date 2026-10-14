@@ -9,6 +9,7 @@
     "test:unit": "vitest run"
   },
   "devDependencies": {
+    "@mohandesyar/module-package": "workspace:*",
     "@mohandesyar/module-sdk": "workspace:*",
     "@mohandesyar/ui": "workspace:*",
     "@nestjs/common": "12.1.3",

@@ -1,0 +1,90 @@
+# Reference self-hosted deployment (docs/10 §4). Copy .env.example to .env and fill every secret.
+# Object storage: any S3-compatible service (Garage, SeaweedFS, Ceph RGW, MinIO, …) via S3_*.
+# The optional "garage" profile runs Garage on the same host.
+name: mohandesyar
+
+x-app: &app
+  image: ${MOHANDESYAR_IMAGE:-mohandesyar:latest}
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://mohandesyar_app:${APP_DB_PASSWORD}@postgres:5432/mohandesyar
+    DATABASE_MIGRATOR_URL: postgres://mohandesyar_owner:${OWNER_DB_PASSWORD}@postgres:5432/mohandesyar
+    REDIS_URL: redis://redis:6379/0
+  volumes:
+    - modules:/var/lib/mohandesyar
+    - ./keys:/keys:ro
+  networks: [internal]
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      retries: 20
+    networks: [internal]
+    restart: unless-stopped
+
+  db-init:
+    image: postgres:16-alpine
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ../db/init-roles.sql:/init-roles.sql:ro
+    command: >
+      psql -h postgres -U postgres -v ON_ERROR_STOP=1 -v owner_pw=${OWNER_DB_PASSWORD} -v app_pw=${APP_DB_PASSWORD}
+      -v db_name=mohandesyar -f /init-roles.sql
+    networks: [internal]
+    restart: 'no'
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    networks: [internal]
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ['migrate']
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+    restart: 'no'
+
+  api:
+    <<: *app
+    command: ['serve']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    ports:
+      - '${HTTP_BIND:-127.0.0.1:3000}:3000'
+    networks: [internal, edge]
+    restart: unless-stopped
+
+  garage:
+    profiles: [garage]
+    image: dxflrs/garage:v1.0.1
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage:/var/lib/garage
+    networks: [internal]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  modules:
+  garage:
+
+networks:
+  internal:
+    internal: true
+  edge: {}
