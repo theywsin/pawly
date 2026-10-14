@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+.env
+.local/
+test-results/
+playwright-report/
+coverage/
+*.mypkg
+!modules/**/fixtures/*.mypkg
