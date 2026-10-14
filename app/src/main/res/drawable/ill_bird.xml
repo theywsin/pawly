@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- تصویرسازی پرنده (اختصاصی برنامه) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path
+        android:pathData="M12.5,29 l-6,4.5 l7.2,0.6 z"
+        android:fillColor="#FF4E8FB8" />
+    <path
+        android:pathData="M12,26 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0"
+        android:fillColor="#FF7EB8DB" />
+    <path
+        android:pathData="M18.5,31 a7.5,6.2 0 1,0 15,0 a7.5,6.2 0 1,0 -15,0"
+        android:fillColor="#FFD5EAF6" />
+    <group android:rotation="-20" android:pivotX="19" android:pivotY="27">
+    <path
+        android:pathData="M13,27.5 a6,4.2 0 1,0 12,0 a6,4.2 0 1,0 -12,0"
+        android:fillColor="#FF5A9BC5" />
+    </group>
+    <path
+        android:pathData="M34.8,21.2 l5.4,2.3 l-5.4,2.3 z"
+        android:fillColor="#FFF0A04B" />
+    <path
+        android:pathData="M27.2,20.5 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0"
+        android:fillColor="#FF2E2622" />
+    <path
+        android:pathData="M29.05,19.9 a0.55,0.55 0 1,0 1.1,0 a0.55,0.55 0 1,0 -1.1,0"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M22,13.6 q1,-3.4 4,-3.6 q-1.4,1.6 -0.8,3.6" />
+    <path
+        android:pathData="M22.5,14.3 q0.6,-3.6 3.8,-4.4 q-1.2,2 -0.4,4.2 z"
+        android:fillColor="#FF5A9BC5" />
+    <path
+        android:pathData="M22,37.5 v3 M26,37.5 v3 M20.6,40.5 h3 M24.6,40.5 h3"
+        android:strokeColor="#FFF0A04B" android:strokeWidth="1.2" android:strokeLineCap="round" />
+</vector>

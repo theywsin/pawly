@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Panjeh.Base" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="android:colorPrimary">@color/brand_primary</item>
+        <item name="android:colorPrimaryDark">@color/window_bg</item>
+        <item name="android:colorAccent">@color/brand_primary</item>
+        <item name="android:colorControlActivated">@color/brand_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:windowBackground">@color/window_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:alertDialogTheme">@style/Theme.Panjeh.Dialog</item>
+        <item name="android:datePickerDialogTheme">@style/Theme.Panjeh.Dialog</item>
+        <item name="android:timePickerDialogTheme">@style/Theme.Panjeh.Dialog</item>
+    </style>
+
+    <style name="Theme.Panjeh" parent="Theme.Panjeh.Base" />
+
+    <!-- صفحه شروع (پیش از اندروید ۱۲) -->
+    <style name="Theme.Panjeh.Launch" parent="Theme.Panjeh">
+        <item name="android:windowBackground">@drawable/splash</item>
+    </style>
+
+    <style name="Theme.Panjeh.Dialog" parent="android:Theme.Material.Light.Dialog.Alert">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="android:colorAccent">@color/brand_primary</item>
+        <item name="android:colorPrimary">@color/brand_primary</item>
+    </style>
+</resources>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- تصویرسازی سگ (اختصاصی برنامه) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <group android:rotation="22" android:pivotX="13" android:pivotY="22">
+    <path
+        android:pathData="M8.2,23 a4.8,8.4 0 1,0 9.6,0 a4.8,8.4 0 1,0 -9.6,0"
+        android:fillColor="#FF8B5E3C" />
+    </group>
+    <group android:rotation="-22" android:pivotX="35" android:pivotY="22">
+    <path
+        android:pathData="M30.2,23 a4.8,8.4 0 1,0 9.6,0 a4.8,8.4 0 1,0 -9.6,0"
+        android:fillColor="#FF8B5E3C" />
+    </group>
+    <path
+        android:pathData="M11.5,26 a12.5,12.5 0 1,0 25,0 a12.5,12.5 0 1,0 -25,0"
+        android:fillColor="#FFD9A066" />
+    <path
+        android:pathData="M16.5,32 a7.5,5.6 0 1,0 15,0 a7.5,5.6 0 1,0 -15,0"
+        android:fillColor="#FFF6E0BE" />
+    <path
+        android:pathData="M17.3,23.5 a1.7,1.9 0 1,0 3.4,0 a1.7,1.9 0 1,0 -3.4,0"
+        android:fillColor="#FF2E2622" />
+    <path
+        android:pathData="M27.3,23.5 a1.7,1.9 0 1,0 3.4,0 a1.7,1.9 0 1,0 -3.4,0"
+        android:fillColor="#FF2E2622" />
+    <path
+        android:pathData="M19,23 a0.5,0.5 0 1,0 1,0 a0.5,0.5 0 1,0 -1,0"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M29,23 a0.5,0.5 0 1,0 1,0 a0.5,0.5 0 1,0 -1,0"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M21.3,29.2 a2.7,1.9 0 1,0 5.4,0 a2.7,1.9 0 1,0 -5.4,0"
+        android:fillColor="#FF2E2622" />
+    <path
+        android:pathData="M21.6,33 Q24,35 26.4,33"
+        android:strokeColor="#FF2E2622" android:strokeWidth="1.1" android:strokeLineCap="round" />
+    <path
+        android:pathData="M22.5,35.2 a1.5,1.2 0 1,0 3,0 a1.5,1.2 0 1,0 -3,0"
+        android:fillColor="#FFE97B7B" />
+</vector>

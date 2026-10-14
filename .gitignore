@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+# کلیدهای امضا هرگز وارد مخزن نشوند
+keystore.properties
+*.jks
+*.keystore

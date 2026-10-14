@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- رنگ‌های مورد نیاز سیستم (پنجره، اعلان، صفحه شروع). رنگ‌های رابط کاربری در ui/theme/Theme.kt تعریف شده‌اند. -->
+<resources>
+    <color name="brand_primary">#3E9B6E</color>
+    <color name="brand_secondary">#1F5A44</color>
+    <color name="window_bg">#FAF7F0</color>
+    <color name="text_primary">#1E2320</color>
+    <color name="text_secondary">#666D68</color>
+    <color name="surface">#FFFFFF</color>
+</resources>
