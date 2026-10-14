@@ -122,7 +122,7 @@ projects-1.2.0.mypkg   (tar.gz)
 هنگام بوت:
 1. هسته متصل به DB می‌شود، `core_modules` را می‌خواند: ماژول‌هایی با `state ∈ {installed, enabled}` و `active_version`.
 2. ترتیب topological بر اساس وابستگی‌های اجباری.
-3. برای هر ماژول: بررسی مجدد checksum فایل‌های Store (تشخیص دستکاری روی دیسک)، سپس `await import(file://…/backend/index.mjs)`.
+3. برای هر ماژول: بررسی مجدد checksum فایل‌های Store (تشخیص دستکاری روی دیسک — شامل فایل اضافه)، سپس بارگذاری `backend/index.mjs` با `require(esm)` بومی و hookهای حل وابستگی (ADR-14).
 4. ماژول یک تابع `defineModule()` از SDK export می‌کند که یک **NestJS DynamicModule** برمی‌گرداند:
 
 ```ts
@@ -156,8 +156,8 @@ export default defineModule({
 | حذف نصب | **بله** (برای تخلیه کد از حافظه) | graceful reload |
 
 ### Graceful reload
-- **حالت چندنمونه‌ای (توصیه‌شده تولید، ≥۲ نمونه API):** هماهنگ‌کننده (در Worker) پیام `reload` را روی Redis منتشر می‌کند؛ هر نمونه به نوبت (با قفل توزیع‌شده) health را `draining` می‌کند، درخواست‌های جاری را تمام می‌کند (timeout ۳۰ث)، و با کد خروج ۷۵ خارج می‌شود؛ Docker/K8s با `restart: always` آن را بالا می‌آورد. بدون قطعی.
-- **حالت تک‌نمونه:** همان، با قطعی چندثانیه‌ای؛ SPA با بنر «سامانه در حال به‌روزرسانی» و تلاش مجدد خودکار درخواست‌ها (idempotent) مدیریت می‌کند.
+- **پیاده‌سازی فاز ۱ (node:cluster):** فرایند اصلی (primary) هیچ وضعیت برنامه‌ای ندارد و workerها را fork می‌کند. پس از هر نصب/ارتقا/بازگشت/حذف، پیام `reload` روی Redis منتشر می‌شود؛ primary هر container workerها را **یکی‌یکی** جایگزین می‌کند: worker جدید بالا می‌آید و ready می‌شود، سپس worker قدیم درخواست‌های جاری را تمام و خارج می‌شود (timeout ۳۰ث). حتی با یک worker قطعی ندارد. با چند container، هر primary مستقلاً همین کار را انجام می‌دهد.
+- در Kubernetes می‌توان همین را با rollout و readiness probe انجام داد (فاز ۶).
 - پنل ادمین وضعیت هر نمونه (`instanceId`, نسخه ماژول بارگذاری‌شده، زمان بوت) را از `core_module_runtime_status` نشان می‌دهد تا معلوم شود reload کامل شده است.
 
 ### چرا بارگذاری داغ (hot) واقعی نه؟
@@ -165,13 +165,13 @@ NestJS مسیرها را هنگام `init` روی Fastify ثبت می‌کند �
 
 ## ۶. بارگذاری فرانت‌اند
 
-- SPA میزبان با `build.rollupOptions.external` برای کتابخانه‌های مشترک ساخته می‌شود و آن‌ها از `/shared/<lib>-<hash>.js` (build جدا در `apps/web/shared-vendor`) از طریق `<script type="importmap">` بارگذاری می‌شوند. بنابراین میزبان و ماژول‌ها **یک نمونه** React/Router/Query دارند.
+- SPA میزبان با `build.rollupOptions.external` برای کتابخانه‌های مشترک ساخته می‌شود و آن‌ها از `/shared/<lib>-<hash>.js` (build جدا با `apps/web/scripts/build-shared.mjs`: یک build با code splitting و یک نمونه React) از طریق `<script type="importmap">` بارگذاری می‌شوند. بنابراین میزبان و ماژول‌ها **یک نمونه** React/Router/Query دارند. import map درون‌خطی با hash در CSP مجاز می‌شود (`script-src 'self' 'sha256-…'`، بدون `unsafe-inline`).
 - پس از ورود، SPA `GET /api/core/me/modules` را می‌گیرد: فهرست ماژول‌های مؤثر Tenant/کاربر با `{ id, version, frontendEntry, integrity, menu, routes, widgets }` (فیلترشده با مجوز کاربر).
 - مسیرها به‌صورت lazy در data router ثبت می‌شوند:
   `lazy: () => import(/* @vite-ignore */ '/modules-assets/projects/1.2.0/frontend/routes.js')`.
 - فایل‌های فرانت ماژول از Store با هدر `Cache-Control: immutable` (مسیر نسخه‌دار) سرو می‌شوند. هش SRI در پاسخ API هست و پیش از import با `fetch`+`crypto.subtle` بررسی نمی‌شود (هزینه بالا)؛ اعتماد بر مبنای same-origin و تأیید امضا در سرور است.
 - خطای بارگذاری یک ماژول → ErrorBoundary همان مسیر/ویجت؛ بقیه SPA سالم می‌ماند.
-- **محیط توسعه:** ماژول‌های رسمی در dev مستقیماً از سورس با alias Vite لود می‌شوند (HMR)؛ مسیر production (import map + بسته) در CI با یک تست E2E روی build واقعی پوشش داده می‌شود.
+- **محیط توسعه (فاز ۱):** SPA همیشه با `vite build` (حالت `--watch` در توسعه) ساخته و توسط API سرو می‌شود تا مسیر import map دقیقاً همان تولید باشد؛ HMR برای ماژول‌ها در فاز ۱ پیاده نشده است. مسیر production با E2E روی build واقعی پوشش داده می‌شود.
 - **تغییر نسخه کتابخانه مشترک:** major React/Router در هسته = نسخه جدید `coreVersionRange` و نیاز به build مجدد ماژول‌ها؛ در manifest ماژول `sharedDeps` ثبت و در نصب مقایسه می‌شود.
 
 ## ۷. مهاجرت‌ها

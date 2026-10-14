@@ -40,7 +40,8 @@ SELECT set_config('app.user_id',     $3, true);
 | `mohandesyar_owner` | مالک schema و جداول؛ فقط اجرای مهاجرت | هرگز توسط اپ زمان اجرا استفاده نمی‌شود |
 | `mohandesyar_migrator` | runner مهاجرت (عضو owner) | فقط در فرایند مهاجرت/نصب ماژول (Worker با اتصال جدا) |
 | `mohandesyar_app` | API و Worker | `NOBYPASSRLS`، غیرمالک، فقط DML روی جداول مجاز؛ INSERT/SELECT فقط روی Audit |
-| `mohandesyar_platform` | عملیات پلتفرم روی جداول سطح پلتفرم (tenants, plans, modules) | بدون دسترسی به جداول ماژول‌ها؛ برای پنل ادمین |
+| `mohandesyar_definer` | مالک توابع SECURITY DEFINER بین‌Tenantی (ADR-13) | `NOLOGIN`، `BYPASSRLS`؛ فقط owner عضو آن است؛ EXECUTE فقط برای app |
+| ~~`mohandesyar_platform`~~ | (فاز ۱ ساخته نشد) پنل پلتفرم با نقش app روی جداول پلتفرمی کار می‌کند؛ جداول Tenant با RLS برای آن بسته‌اند چون زمینه Tenant تنظیم نمی‌شود | — |
 | `mohandesyar_backup` | pg_dump | فقط‌خواندنی، `BYPASSRLS` (تنها نقش با این ویژگی؛ فقط در کانتینر backup) |
 
 ## ۴. سیاست‌های RLS
@@ -65,6 +66,7 @@ CREATE POLICY company_scope ON projects_projects
 ```
 
 - جدول سازمانی **بدون** `company_id` (سطح Tenant) به‌جای `company_scope` یک policy مجاز `tenant_rows` با `USING (true)` می‌گیرد؛ چون PostgreSQL بدون حداقل یک policy مجاز (PERMISSIVE) هیچ ردیفی برنمی‌گرداند، و policy محدودکننده Tenant همچنان اعمال می‌شود.
+- **نکته پیاده‌سازی:** policyها از `core_current_tenant()` و `core_current_companies()` استفاده می‌کنند. روی اتصال pool شده پس از پایان تراکنش، `current_setting(..., true)` مقدار `''` (نه NULL) برمی‌گرداند و cast مستقیم به uuid خطا می‌دهد؛ این توابع `''` را به NULL/آرایه خالی تبدیل می‌کنند (fail-closed بدون خطا).
 - `current_setting(..., true)` اگر تنظیم نشده باشد NULL برمی‌گرداند → مقایسه NULL → **هیچ ردیفی** (fail-closed). یعنی فراموش کردن تنظیم زمینه منجر به نشت نمی‌شود بلکه به نتیجه خالی/خطای INSERT.
 - برای کارایی: همه ایندکس‌های جداول سازمانی با `tenant_id` (و در صورت نیاز `company_id`) شروع می‌شوند.
 - SDK برای ماژول‌ها helper `tenantTable()` در Drizzle دارد که ستون‌ها و `pgPolicy`ها را خودکار اضافه می‌کند؛ بررسی پس از مهاجرت (سند ۰۳ §۷) وجود آن را تضمین می‌کند.

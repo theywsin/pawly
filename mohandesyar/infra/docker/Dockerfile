@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # One image for the API (cluster primary + workers), the migrate job and the built SPA it serves.
 FROM node:22-bookworm-slim AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=1

@@ -4,9 +4,9 @@
 
 ## وضعیت پروژه
 
-- **فاز فعلی: ۰ (طراحی) — تکمیل‌شده، منتظر تأیید کارفرما برای شروع فاز ۱.**
-- هنوز هیچ کد برنامه‌ای وجود ندارد. پیش از تأیید صریح، کد ننویس.
-- اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`. سؤال‌های باز: `docs/open-questions.md`.
+- فاز ۰ (طراحی) تأیید شد. **فاز ۱ (هسته و سیستم ماژول) تکمیل‌شده، منتظر تأیید برای شروع فاز ۲.**
+- گزارش فاز ۱: [`docs/phase-1-report.md`](docs/phase-1-report.md). اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
 
@@ -36,23 +36,30 @@
 | تست | Vitest (واحد/یکپارچه با DB واقعی)، Playwright (E2E)، dependency-cruiser (مرزها) |
 | **حذف‌شده** | هرگونه قابلیت هوش مصنوعی یا placeholder آن |
 
-## دستورها (برنامه‌ریزی‌شده — از فاز ۱ فعال می‌شوند)
+## دستورها
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm dev                     # compose (pg, redis, minio) + api + web
-pnpm lint                    # eslint + dependency-cruiser (مرز ماژول‌ها)
-pnpm typecheck
-pnpm test:unit
-pnpm test:integration        # نیازمند Docker (Postgres/Redis/MinIO واقعی)
-pnpm test:e2e                # Playwright
-pnpm build
-pnpm module:keygen | module:pack <dir> | module:sign <pkg> --key <file> | module:verify <pkg> --pub <file>
-pnpm db:migrate              # مهاجرت هسته + ماژول‌های پیش‌نصب
-pnpm ci:local                # همه موارد بالا به ترتیب CI
-```
+pnpm services:up                      # PostgreSQL :54329، Redis :63799، S3 (moto) :39000 — محلی
+# ساخت کتابخانه‌ها (پیش‌نیاز typecheck/test بسته‌های وابسته)
+pnpm --filter @mohandesyar/module-sdk build && pnpm --filter @mohandesyar/persian build \
+  && pnpm --filter @mohandesyar/module-package build && pnpm --filter @mohandesyar/module-cli build
+pnpm lint                             # eslint + dependency-cruiser (مرز ماژول‌ها)
+pnpm -r --if-present typecheck
+pnpm -r --if-present test:unit
+pnpm --filter @mohandesyar/api test:integration   # PostgreSQL/Redis/S3 واقعی؛ هر فایل دیتابیس تازه می‌سازد
+pnpm --filter @mohandesyar/web build && pnpm --filter @mohandesyar/api build
+PW_CHROMIUM=/opt/pw-browsers/chromium pnpm test:e2e   # Playwright روی کلاستر واقعی (e2e/start-server.sh)
 
-این بخش را هنگام افزودن هر اسکریپت واقعی به‌روز کن و دستورهای ناموجود را حذف یا علامت‌گذاری کن.
+# اجرای سرور (env نمونه: infra/compose/.env.example)
+node apps/api/dist/main.js migrate            # مهاجرت هسته + کلیدهای مورد اعتماد + بسته‌های پیش‌نصب
+ADMIN_PASSWORD=... node apps/api/dist/main.js create-admin --email a@b --name 'نام'
+node apps/api/dist/main.js serve              # primary + workers؛ SPA از WEB_DIST_DIR
+
+# ماژول‌ها
+pnpm module:keygen --out <dir> | pnpm module:pack <moduleDir> --out <dir>
+pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <public.pem>
+```
 
 ## قواعد کاری (غیرقابل مذاکره)
 
@@ -78,4 +85,8 @@ pnpm ci:local                # همه موارد بالا به ترتیب CI
 - UI: فقط ویژگی‌های منطقی Tailwind (`ms-`/`me-`/`start-`/`end-`)؛ همه متن‌ها از کلید i18n؛ هر صفحه از `<PageState>` برای حالت‌های بارگذاری/خطا/خالی/بدون دسترسی/آفلاین/در حال انجام استفاده کند؛ عملیات مخرب با `ConfirmDialog`.
 - لاگ بدون داده حساس (رمز، توکن، کدملی، حقوق، شماره حساب).
 - مهاجرت‌ها SQL خام بازبینی‌شده؛ بدون `CREATE INDEX CONCURRENTLY` در مهاجرت ماژول؛ الگوی expand/contract.
+- policyهای RLS با `core_current_tenant()` / `core_current_companies()` (نه cast خام `current_setting`).
+- بسته بک‌اند ماژول با `require(esm)` بارگذاری می‌شود: top-level await ممنوع؛ تزریق Nest فقط با `@Inject(Token)` صریح (بدون emitDecoratorMetadata).
+- سرویس‌های هسته کلاس‌های ساده در `apps/api/src/app/services.ts` هستند و با `@Inject(Services)` به کنترلرها می‌رسند.
+- مقادیر timestamp از Drizzle/pg به‌صورت رشته برمی‌گردند؛ قبل از مقایسه `new Date(...)` کنید.
 - تست‌های یکپارچه با PostgreSQL واقعی؛ mock دیتابیس ممنوع.
