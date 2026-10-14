@@ -75,12 +75,27 @@ export interface BaseModuleContext {
   settings<T extends Record<string, unknown> = Record<string, unknown>>(): Promise<T>;
 }
 
+export interface StartWorkflowInput {
+  /** Workflow definition key (defined per tenant through the core, e.g. by the module's seed). */
+  key: string;
+  entityType: string;
+  entityId: string;
+  title: string;
+  /** Amount in rial, used for step thresholds and approval limits. */
+  amount?: number | null;
+}
+
 export interface ModuleRequestContext extends BaseModuleContext {
   readonly userId: string;
   readonly companyId: string;
   readonly companyIds: readonly string[];
   /** Whether the user holds `permission` for the active company (optionally at least `scope`). */
   can(permission: string, scope?: PermissionScope): boolean;
+  /**
+   * Starts an approval workflow for one of the module's entities. The outcome arrives as the
+   * `core.workflow.completed` event (declare it in manifest.events.consumes).
+   */
+  startWorkflow(input: StartWorkflowInput, tx?: Db): Promise<{ instanceId: string; state: string }>;
 }
 
 export interface ModuleEventContext extends BaseModuleContext {

@@ -71,9 +71,9 @@ export class Services {
       async (tenantId, moduleId) => (await this.registry.effectiveFor(tenantId)).some((m) => m.id === moduleId),
       (err, ctx) => logger.error({ err, ...ctx }, 'event dispatch failed'),
     );
-    this.contexts = new ModuleContextFactory(this.db, this.registry, this.events, this.audit, this.notifications, this.settings);
     this.tasks = new TaskService(this.db, this.audit, this.notifications);
     this.workflow = new WorkflowService(this.db, this.audit, this.notifications, this.events);
+    this.contexts = new ModuleContextFactory(this.db, this.registry, this.events, this.audit, this.notifications, this.settings, this.workflow);
     this.files = new FileService(this.db, this.audit, config);
     this.lifecycle = new ModuleLifecycleService(this.db, this.registry, this.rbac, this.audit, this.contexts, {
       storeDir: config.MODULE_STORE_DIR,
