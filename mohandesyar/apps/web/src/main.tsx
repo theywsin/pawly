@@ -1,5 +1,6 @@
+import './zod-config';
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@fontsource/vazirmatn/arabic-400.css';
@@ -12,8 +13,6 @@ import { ApiError } from '@mohandesyar/module-sdk/web';
 import { applyTheme, useUi } from './lib/ui-store.js';
 import { publicRoutes } from './areas/public/routes.js';
 import { RouteError } from './areas/public/RouteError.js';
-import { Login } from './areas/auth/Login.js';
-import { Signup } from './areas/auth/Signup.js';
 
 applyTheme(useUi.getState().theme);
 
@@ -37,19 +36,24 @@ const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       ...publicRoutes,
-      { path: '/auth/login', element: <Login /> },
-      { path: '/auth/signup', element: <Signup /> },
+      { path: '/auth/login', lazy: async () => ({ Component: (await import('./areas/auth/Login.js')).Login }) },
+      { path: '/auth/signup', lazy: async () => ({ Component: (await import('./areas/auth/Signup.js')).Signup }) },
       { path: '/app/*', lazy: lazyArea(() => import('./areas/app/area.js')) },
       { path: '/console/*', lazy: lazyArea(() => import('./areas/console/area.js')) },
     ],
   },
 ]);
 
-createRoot(document.getElementById('root')!).render(
+const app = (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 );
 
+// Prerendered public pages are hydrated (no repaint of the static HTML); the SPA shell renders from scratch.
+const container = document.getElementById('root')!;
+// Prerendered pages are already painted: hydrate after the first frame so it never delays first paint.
+if (container.firstElementChild) requestAnimationFrame(() => setTimeout(() => hydrateRoot(container, app), 0));
+else createRoot(container).render(app);

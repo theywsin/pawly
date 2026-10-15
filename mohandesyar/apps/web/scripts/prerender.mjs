@@ -10,11 +10,16 @@ const dist = join(root, 'dist');
 const { render, PRERENDER, fullTitle, SITE_NAME } = await import(pathToFileURL(join(root, 'dist-ssr/entry-prerender.js')).href);
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const template = await readFile(join(dist, 'index.html'), 'utf8');
+const rawTemplate = await readFile(join(dist, 'index.html'), 'utf8');
+// Public pages inline the (small) stylesheet so first paint does not wait on another request.
+const cssLink = rawTemplate.match(/<link rel="stylesheet"[^>]*href="(\/assets\/[^"]+\.css)"[^>]*>/);
+const inlined = cssLink ? rawTemplate.replace(cssLink[0], `<style>${await readFile(join(dist, cssLink[1]), 'utf8')}</style>`) : rawTemplate;
+// Prerendered HTML is already visible; do not let JS preloads compete with first paint.
+const template = inlined.replace(/\s*<link rel="modulepreload"[^>]*>/g, '');
 if (!template.includes('<div id="root"></div>')) throw new Error('unexpected index.html template');
 
 // SPA shell for /app, /console, /auth: never indexed.
-await writeFile(join(dist, 'app-shell.html'), template.replace('<title>', '<meta name="robots" content="noindex" />\n    <title>'));
+await writeFile(join(dist, 'app-shell.html'), rawTemplate.replace('<title>', '<meta name="robots" content="noindex" />\n    <title>'));
 
 const jsonLd = {
   '@context': 'https://schema.org',

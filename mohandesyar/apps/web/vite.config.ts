@@ -12,7 +12,11 @@ function importMap(): Plugin {
     name: 'mohandesyar-import-map',
     transformIndexHtml(html) {
       const map = readFileSync(join(import.meta.dirname, 'public/shared/importmap.json'), 'utf8');
-      return html.replace('<!--importmap-->', `<script type="importmap">${map}</script>`);
+      // Preload the shared runtime so it downloads in parallel with the app entry instead of after it.
+      const preloads = Object.values(JSON.parse(map).imports as Record<string, string>)
+        .map((url) => `<link rel="modulepreload" href="${url}" />`)
+        .join('\n    ');
+      return html.replace('<!--importmap-->', `<script type="importmap">${map}</script>\n    ${preloads}`);
     },
   };
 }

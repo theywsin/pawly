@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 import { Menu, Moon, Sun, X } from 'lucide-react';
 import { cn, Ltr } from '@mohandesyar/ui';
@@ -31,6 +31,10 @@ export function CtaLink({ to, children, variant = 'primary', className }: { to: 
 export function PublicLayout() {
   const [open, setOpen] = useState(false);
   const { theme, setTheme } = useUi();
+  // The stored theme is only known in the browser; render the neutral icon until mounted so hydration matches.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const dark = mounted && theme === 'dark';
   const site = useSite();
   const year = toPersianDigits(jalaliParts(Date.now()).year);
   const link = ({ isActive }: { isActive: boolean }) => cn('rounded-md px-3 py-2 text-[0.9375rem] hover:bg-surface-2', isActive && 'font-semibold text-primary');
@@ -52,8 +56,8 @@ export function PublicLayout() {
             ))}
           </nav>
           <div className="ms-auto flex items-center gap-2">
-            <button className="rounded-md p-2 text-muted hover:bg-surface-2" aria-label="تغییر حالت روشن/تیره" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-              {theme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
+            <button className="rounded-md p-2 text-muted hover:bg-surface-2" aria-label="تغییر حالت روشن/تیره" onClick={() => setTheme(dark ? 'light' : 'dark')}>
+              {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
             </button>
             <Link to="/auth/login" className="hidden rounded-md px-3 py-2 text-[0.9375rem] hover:bg-surface-2 sm:inline-block">
               ورود

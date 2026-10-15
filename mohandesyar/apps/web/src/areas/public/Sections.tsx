@@ -144,9 +144,9 @@ export function Plans({ compact }: { compact?: boolean }) {
   if (q.isPending) {
     return (
       <div className="grid gap-4 md:grid-cols-3" aria-busy="true" aria-label="در حال بارگذاری پلن‌ها">
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64" />
+        <Skeleton className="h-44 md:h-64" />
+        <Skeleton className="hidden h-64 md:block" />
+        <Skeleton className="hidden h-64 md:block" />
       </div>
     );
   }

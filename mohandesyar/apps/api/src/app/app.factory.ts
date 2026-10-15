@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
+import { gzipSync } from 'node:zlib';
 import { extname, join, normalize, sep } from 'node:path';
 import { Catch, Controller, Get, HttpException, Inject, Module, SetMetadata, type ArgumentsHost, type DynamicModule, type ExceptionFilter, type Type } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, NestFactory, RouterModule, type Routes } from '@nestjs/core';
@@ -175,6 +176,14 @@ async function inlineScriptHashes(webDist: string | undefined): Promise<string[]
 async function sendFile(reply: FastifyReply, file: string, cache: string) {
   reply.type(MIME[extname(file)] ?? 'application/octet-stream');
   reply.header('cache-control', cache);
+  reply.header('vary', 'accept-encoding');
+  const accept = String(reply.request.headers['accept-encoding'] ?? '');
+  for (const [enc, ext] of [['br', '.br'], ['gzip', '.gz']] as const) {
+    if (accept.includes(enc) && existsSync(file + ext)) {
+      reply.header('content-encoding', enc);
+      return reply.send(await readFile(file + ext));
+    }
+  }
   return reply.send(await readFile(file));
 }
 
@@ -233,7 +242,13 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
     const sendHtml = async (reply: FastifyReply, file: string) => {
       reply.type(MIME['.html']!);
       reply.header('cache-control', 'no-cache');
-      return reply.send((await readFile(file, 'utf8')).replaceAll('%%ORIGIN%%', origin));
+      reply.header('vary', 'accept-encoding');
+      const body = (await readFile(file, 'utf8')).replaceAll('%%ORIGIN%%', origin);
+      if (String(reply.request.headers['accept-encoding'] ?? '').includes('gzip')) {
+        reply.header('content-encoding', 'gzip');
+        return reply.send(gzipSync(body));
+      }
+      return reply.send(body);
     };
     const manifestFile = join(webDist, 'prerender-manifest.json');
     const pages: { path: string; priority: number }[] = existsSync(manifestFile) ? JSON.parse(await readFile(manifestFile, 'utf8')) : [];
