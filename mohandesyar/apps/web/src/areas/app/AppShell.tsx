@@ -195,7 +195,7 @@ export function AppShell() {
             <Badge tone="warning">فقط مشاهده</Badge> اشتراک سازمان منقضی یا حساب تعلیق شده است؛ مشاهده و خروجی ممکن است ولی ثبت اطلاعات جدید نه.
           </div>
         )}
-        <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+        <main id="main" className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:px-6">
           <Outlet />
         </main>
       </div>

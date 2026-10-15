@@ -4,8 +4,8 @@
 
 ## وضعیت پروژه
 
-- فاز ۰ تا ۲ تأیید شدند. **فاز ۳ (ماژول‌های قراردادها، پروژه‌ها، CRM، جلسات و داشبورد) تکمیل‌شده، منتظر تأیید برای شروع فاز ۴.**
-- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- فاز ۰ تا ۳ تأیید شدند. **فاز ۴ (خروجی Excel/CSV/PDF، تقویم کاری، ایمیل SMTP، ماژول‌های استخدام، پرونده کارکنان و KPI) تکمیل‌شده، منتظر تأیید برای شروع فاز ۵.**
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
@@ -97,3 +97,10 @@ pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <pub
 - تاریخ بدون زمان: `date` و ISO؛ در UI `DateInput`/`DayText`؛ ساعت: `zonedToUtc`/`utcToZoned` از `@mohandesyar/persian`؛ مبلغ: `MoneyInput`/`Money` و `bigint` در محاسبات.
 - تست یکپارچه ماژول: `buildModule(id, key)` و `t.installModules(...)`؛ کارهای زمان‌بندی با `t.services.scheduler.tick(now)`.
 - IP کاربر از `X-Forwarded-For` فقط برای peerهای `TRUST_PROXY` خوانده می‌شود.
+- خروجی جدول‌ها با `ExportMenu` از `@mohandesyar/ui` (Excel/CSV در مرورگر از داده‌ای که کاربر مجاز دیده؛ PDF با چاپ مرورگر و قواعد `@media print`).
+- روز کاری: `ctx.workCalendar()` + `isWorkingDay`/`workingDaysBetween` از `@mohandesyar/persian` (جمعه و تعطیلات رسمی ثابت خودکار؛ تعطیلات قمری را سازمان در «تقویم کاری» وارد می‌کند).
+- فایل متعلق به ماژول: فرانت با `host.upload(file, { module })` بارگذاری، بک‌اند با `ctx.files.claim/url/remove`؛ مسیر عمومی دانلود هسته این فایل‌ها را نمی‌دهد.
+- اعلان‌ها خودکار ایمیل هم می‌شوند (صف `core_email_queue` در همان تراکنش؛ `SMTP_URL`)؛ ماژول فقط `ctx.notify` را صدا می‌زند.
+- گردش تأیید: `ctx.ensureWorkflow` در `seedTenant`، `ctx.startWorkflow`/`ctx.cancelWorkflow`، نتیجه از رویداد `core.workflow.completed`.
+- شاخص‌ها: Providerهای اعلام‌شده در manifest از `ctx.kpi.providers()/evaluate()` در دسترس‌اند؛ فرمول KPI فقط با پارسر `modules/kpi/backend/src/formula.ts` (هرگز eval).
+- داده شخصی (رزومه، پرونده، حقوق): مشاهده و دانلود در Audit ثبت شود؛ فیلد سن/جنسیت/قومیت/مذهب/سلامت در مدل داده نباشد؛ هیچ انتقال یا پرداخت خودکار.
