@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'qrcode';
-import { Alert, Badge, Button, Card, CardHeader, ConfirmDialog, DateText, Field, Input, Ltr, PageHeader, PageState, Select, Table, Td, Th, toast } from '@mohandesyar/ui';
+import { Alert, Badge, Button, Card, CardHeader, Checkbox, ConfirmDialog, DateText, Field, Input, Ltr, PageHeader, PageState, Select, Table, Td, Th, toast } from '@mohandesyar/ui';
 import { appApi, setToken } from '../../lib/api.js';
 import { errorMessage } from '../../lib/errors.js';
 import { useAppSession } from '../../lib/session.js';
@@ -169,6 +169,13 @@ export function Profile() {
                 </tbody>
               </Table>
             </PageState>
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="اعلان‌ها" description="اعلان‌های درون‌برنامه همیشه نمایش داده می‌شوند." />
+          <div className="p-5">
+            <Checkbox label="نسخه ایمیلی اعلان‌ها را برایم بفرست (اگر سرور ایمیل سامانه تنظیم شده باشد)" checked={me.user.emailNotifications !== false}
+              onChange={(e) => appApi('/api/core/profile/email-notifications', { method: 'PUT', body: { enabled: e.target.checked } }).then(() => (toast('ذخیره شد'), qc.invalidateQueries({ queryKey: ['me'] })))} />
           </div>
         </Card>
         <Card>

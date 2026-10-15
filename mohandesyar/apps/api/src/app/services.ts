@@ -18,6 +18,7 @@ import { TaskService } from '../core/tasks/task.service.js';
 import { WorkflowService } from '../core/workflow/workflow.service.js';
 import { FileService } from '../core/files/file.service.js';
 import { ModuleScheduler } from '../core/modules/scheduler.js';
+import { Mailer } from '../core/notifications/mailer.js';
 import { logger } from '../infra/logger.js';
 import { SiteService } from '../platform/site.service.js';
 
@@ -53,6 +54,7 @@ export class Services {
   readonly files: FileService;
   readonly site: SiteService;
   readonly scheduler: ModuleScheduler;
+  readonly mailer: Mailer;
 
   constructor(
     readonly config: Config,
@@ -68,7 +70,8 @@ export class Services {
     this.auth = new AuthService(this.db, this.redis, this.jwt, this.audit, config.APP_ENCRYPTION_KEY);
     this.entitlement = new EntitlementService(this.db);
     this.registry = new ModuleRegistry(this.db, this.entitlement);
-    this.notifications = new NotificationService(this.db, this.redis);
+    this.mailer = new Mailer(this.db, config.SMTP_URL, config.MAIL_FROM, (err, ctx) => logger.warn({ err, ...ctx }, 'email delivery failed'));
+    this.notifications = new NotificationService(this.db, this.redis, [], this.mailer.enabled ? { origin: config.PUBLIC_ORIGIN } : null);
     this.settings = new SettingsService(this.db);
     this.events = new EventBus(
       this.db,

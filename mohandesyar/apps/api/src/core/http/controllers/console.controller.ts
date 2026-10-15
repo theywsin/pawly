@@ -269,8 +269,25 @@ export class ConsoleController {
       bootedAt: this.s.bootedAt,
       runtime: runtime.rows,
       outbox: outbox.rows,
+      email: { enabled: this.s.mailer.enabled, queue: await this.s.mailer.stats() },
       loadErrors: Object.fromEntries(this.s.registry.loadErrors),
     };
+  }
+
+  /** Sends a test message through the configured SMTP server, reporting the server's error if any. */
+  @Console('super_admin', 'tech_admin')
+  @Post('system/test-email')
+  @HttpCode(200)
+  async testEmail(@Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    const b = parse(z.object({ to: z.email('ایمیل معتبر نیست') }), body);
+    if (!this.s.mailer.enabled) throw badRequest('SMTP_NOT_CONFIGURED', 'سرور ایمیل (SMTP_URL) تنظیم نشده است');
+    try {
+      await this.s.mailer.sendNow(b.to, 'ایمیل آزمایشی مهندیکس', 'این پیام برای آزمایش تنظیمات ایمیل سامانه ارسال شده است.');
+    } catch (err) {
+      throw badRequest('SMTP_FAILED', `ارسال ناموفق بود: ${(err as Error).message}`);
+    }
+    await this.s.audit.append({ tenantId: null, actorType: 'admin', actorId: a.adminId, action: 'system.test_email', after: { to: b.to } });
+    return { ok: true };
   }
 
   // ---------------------------------------------------------------- tenant approval, signup policy

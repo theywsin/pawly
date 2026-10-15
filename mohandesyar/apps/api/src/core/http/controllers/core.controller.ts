@@ -150,6 +150,14 @@ export class CoreController {
     return directoryOf(this.s.db, id.tenantId);
   }
 
+  /** Turn email copies of one's own notifications on or off. */
+  @Put('profile/email-notifications')
+  async emailNotifications(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    const b = parse(z.object({ enabled: z.boolean() }), body);
+    await this.s.db.app.execute(sql`UPDATE core_users SET email_notifications = ${b.enabled} WHERE id = ${id.userId}`);
+    return { ok: true };
+  }
+
   // ---------------------------------------------------------------- work calendar
 
   @Get('calendar')

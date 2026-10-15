@@ -26,6 +26,8 @@ export class NotificationService {
     private readonly db: Database,
     private readonly redis: Redis,
     private readonly channels: NotificationChannel[] = [],
+    /** When set, each notification is also queued as an email (same transaction) for users who did not opt out. */
+    private readonly email: { origin: string } | null = null,
   ) {}
 
   /**
@@ -41,6 +43,12 @@ export class NotificationService {
         ids.push(id);
         await t.execute(sql`INSERT INTO core_notifications (id, tenant_id, user_id, type, module_id, title, body, link)
           VALUES (${id}, ${input.tenantId}, ${userId}, ${input.type}, ${input.moduleId ?? null}, ${input.title}, ${input.body ?? null}, ${input.link ?? null})`);
+      }
+      if (this.email) {
+        const text = [input.body, input.link ? `${this.email.origin.replace(/\/$/, '')}${input.link}` : null].filter(Boolean).join('\n\n') || input.title;
+        await t.execute(sql`INSERT INTO core_email_queue (id, tenant_id, to_email, subject, body)
+          SELECT gen_random_uuid(), ${input.tenantId}, u.email, ${input.title}, ${text} FROM core_users u
+           WHERE u.id = ANY(${`{${[...new Set(input.userIds)].join(',')}}`}::uuid[]) AND u.email_notifications AND u.email <> ''`);
       }
     };
     if (tx) await write(tx);

@@ -29,6 +29,7 @@
     "fastify": "5.12.5",
     "ioredis": "6.0.0",
     "jose": "6.2.12",
+    "nodemailer": "10.0.14",
     "pg": "8.23.1",
     "pino": "10.4.0",
     "reflect-metadata": "0.2.2",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@mohandesyar/module-cli": "workspace:*",
+    "@types/nodemailer": "8.0.2",
     "@types/pg": "^8.23.1",
     "@types/semver": "^7.8.0"
   }

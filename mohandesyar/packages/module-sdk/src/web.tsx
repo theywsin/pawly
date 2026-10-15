@@ -25,7 +25,7 @@ export interface MeModule {
 }
 
 export interface MeData {
-  user: { id: string; email: string; fullName: string; totpEnabled: boolean };
+  user: { id: string; email: string; fullName: string; totpEnabled: boolean; emailNotifications?: boolean };
   tenant: { id: string; slug: string; name: string; status: string; timezone: string; number_style: 'fa' | 'latn'; onboarding_completed_at?: string | null };
   company: { id: string; ids: string[] };
   companies: { id: string; name: string }[];

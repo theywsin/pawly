@@ -311,8 +311,8 @@ export class AuthService {
     return row && row.status === 'active' ? { id: row.id, email: row.email, fullName: row.full_name, roles: row.roles ?? [] } : null;
   }
 
-  async userProfile(id: string): Promise<{ id: string; email: string; fullName: string; totpEnabled: boolean } | null> {
+  async userProfile(id: string): Promise<{ id: string; email: string; fullName: string; totpEnabled: boolean; emailNotifications: boolean } | null> {
     const row = await this.loadById('user', id);
-    return row ? { id: row.id, email: row.email, fullName: row.full_name, totpEnabled: row.totp_enabled } : null;
+    return row ? { id: row.id, email: row.email, fullName: row.full_name, totpEnabled: row.totp_enabled, emailNotifications: (row as { email_notifications?: boolean }).email_notifications !== false } : null;
   }
 }
