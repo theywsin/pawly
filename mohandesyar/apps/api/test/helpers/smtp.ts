@@ -38,11 +38,19 @@ export async function smtpSink(): Promise<{ port: number; mails: ReceivedMail[];
         buf = buf.slice(nl + 2);
         const cmd = line.slice(0, 4).toUpperCase();
         if (cmd === 'EHLO' || cmd === 'HELO') sock.write('250-sink\r\n250 8BITMIME\r\n');
-        else if (cmd === 'MAIL') (cur.from = line), sock.write('250 ok\r\n');
-        else if (cmd === 'RCPT') (cur.to.push(line.replace(/^RCPT TO:\s*<?([^>]*)>?.*$/i, '$1')), sock.write('250 ok\r\n'));
-        else if (cmd === 'DATA') (inData = true), sock.write('354 go\r\n');
-        else if (cmd === 'QUIT') (sock.write('221 bye\r\n'), sock.end());
-        else sock.write('250 ok\r\n');
+        else if (cmd === 'MAIL') {
+          cur.from = line;
+          sock.write('250 ok\r\n');
+        } else if (cmd === 'RCPT') {
+          cur.to.push(line.replace(/^RCPT TO:\s*<?([^>]*)>?.*$/i, '$1'));
+          sock.write('250 ok\r\n');
+        } else if (cmd === 'DATA') {
+          inData = true;
+          sock.write('354 go\r\n');
+        } else if (cmd === 'QUIT') {
+          sock.write('221 bye\r\n');
+          sock.end();
+        } else sock.write('250 ok\r\n');
       }
     });
   });
