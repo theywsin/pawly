@@ -32,3 +32,16 @@ async function build(name, fixture, sign) {
 await build('hello-module-1.0.0.mypkg', null, true);
 await build('hello-module-unsigned.mypkg', null, false);
 await build('hello-module-bad-migration.mypkg', 'bad-migration', true);
+
+// Business modules, signed with the release key and installed at migrate time (PREINSTALLED_MODULES_DIR).
+await mkdir(join(out, 'preinstalled'), { recursive: true });
+for (const id of (process.env.PREINSTALL ?? 'contracts').split(',').filter(Boolean)) {
+  const dir = resolve(import.meta.dirname, '../modules', id);
+  const work = await mkdtemp(join(tmpdir(), `e2e-${id}-`));
+  const src = join(work, 'src');
+  await cp(dir, src, { recursive: true, filter: (p) => !/\/(node_modules|dist|tests)(\/|$)/.test(p.slice(dir.length)) });
+  await symlink(join(dir, 'node_modules'), join(src, 'node_modules'));
+  const pkg = await packModule(src, join(work, 'out'));
+  await signPackage(pkg, key.privateKeyPem);
+  await rename(pkg, join(out, 'preinstalled', pkg.split('/').pop()));
+}
