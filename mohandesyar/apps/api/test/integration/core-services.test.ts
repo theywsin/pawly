@@ -92,6 +92,20 @@ describe('workflow engine', () => {
     expect((await t.req('POST', `/api/core/approvals/${w.instanceId}/decide`, { token: users.ceo1!.token, body: { decision: 'reject', comment: 'خارج از اختیار' } })).body.state).toBe('rejected');
   });
 
+  it('lists definitions and enforces the approval limit set for a role', async () => {
+    const defs = (await t.req('GET', '/api/core/workflows', { token: owner.token })).body;
+    expect(defs.map((d: { key: string }) => d.key)).toContain('payments.approval');
+    expect((await t.req('GET', '/api/core/workflows', { token: users.requester!.token })).status).toBe(403);
+    expect((await t.req('PUT', '/api/core/roles/ceo/approval-limit', { token: users.requester!.token, body: { limit: '1' } })).status).toBe(403);
+    expect((await t.req('PUT', '/api/core/roles/ceo/approval-limit', { token: owner.token, body: { limit: '10000000' } })).status).toBe(200);
+    expect((await t.req('GET', '/api/core/roles', { token: owner.token })).body.find((r: { key: string }) => r.key === 'ceo').approval_limit).toBe('10000000');
+    const s = await scopeOf(users.requester!.token);
+    const w = await t.services.workflow.start(s, { moduleId: 'core', key: 'payments.approval', entityType: 'payment', entityId: 'p-lim', title: 'پرداخت بزرگ', amount: 50_000_000 });
+    expect((await t.req('POST', `/api/core/approvals/${w.instanceId}/decide`, { token: users.ceo1!.token, body: { decision: 'approve' } })).body.code).toBe('OVER_APPROVAL_LIMIT');
+    await t.req('PUT', '/api/core/roles/ceo/approval-limit', { token: owner.token, body: { limit: null } });
+    expect((await t.req('POST', `/api/core/approvals/${w.instanceId}/decide`, { token: users.ceo1!.token, body: { decision: 'approve' } })).body.state).toBe('approved');
+  });
+
   it('keeps workflows tenant-isolated', async () => {
     const other = await t.signup('svc-other');
     expect((await t.req('GET', '/api/core/approvals', { token: other.token })).body).toEqual([]);

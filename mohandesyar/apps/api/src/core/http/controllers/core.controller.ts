@@ -235,6 +235,15 @@ export class CoreController {
     return this.s.rbac.listRoles(id.tenantId);
   }
 
+  @Put('roles/:key/approval-limit')
+  @RequirePermission('core.role.manage')
+  async approvalLimit(@CurrentIdentity() id: Identity, @Param('key') key: string, @Body() body: unknown) {
+    const b = parse(z.object({ limit: z.string().regex(/^\d{1,20}$/, 'مبلغ معتبر نیست').nullable() }), body);
+    if (!(await this.s.rbac.setApprovalLimit(id.tenantId, key, b.limit))) throw notFound();
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'role.approval_limit', entityType: 'role', entityId: key, after: b });
+    return { ok: true };
+  }
+
   // ---------------------------------------------------------------- modules (tenant view)
 
   @Get('modules')
@@ -381,6 +390,12 @@ export class CoreController {
   async decide(@CurrentIdentity() id: Identity, @Param('instanceId') instanceId: string, @Body() body: unknown) {
     const b = parse(z.object({ decision: z.enum(['approve', 'reject']), comment: z.string().max(2000).optional() }), body);
     return this.s.workflow.decide(scope(id), parse(z.uuid(), instanceId), b.decision, b.comment);
+  }
+
+  @Get('workflows')
+  @RequirePermission('core.workflow.manage_definitions')
+  workflows(@CurrentIdentity() id: Identity) {
+    return this.s.workflow.definitions(id.tenantId);
   }
 
   @Put('workflows/:key')

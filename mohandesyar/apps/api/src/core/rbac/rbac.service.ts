@@ -77,10 +77,18 @@ export class RbacService {
 
   async listRoles(tenantId: string) {
     return this.db.tx({ tenantId }, async (tx) => {
-      const r = await tx.execute(sql`SELECT r.id, r.key, r.name, r.is_system, r.module_id,
+      const r = await tx.execute(sql`SELECT r.id, r.key, r.name, r.is_system, r.module_id, r.approval_limit::text,
           coalesce(json_agg(json_build_object('permission', p.permission, 'scope', p.scope)) FILTER (WHERE p.permission IS NOT NULL), '[]') AS grants
         FROM core_roles r LEFT JOIN core_role_permissions p ON p.role_id = r.id GROUP BY r.id ORDER BY r.is_system DESC, r.name`);
       return r.rows;
+    });
+  }
+
+  /** Highest amount (rial) a role may approve in workflows with amounts; null = no limit. */
+  async setApprovalLimit(tenantId: string, key: string, limit: string | null): Promise<boolean> {
+    return this.db.tx({ tenantId }, async (tx) => {
+      const r = await tx.execute(sql`UPDATE core_roles SET approval_limit = ${limit} WHERE key = ${key} RETURNING id`);
+      return r.rows.length > 0;
     });
   }
 }

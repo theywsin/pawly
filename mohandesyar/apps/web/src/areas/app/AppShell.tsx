@@ -113,6 +113,11 @@ export function AppShell() {
       <NavLink to="/app/settings/calendar" className={link}>
         <CalendarDays className="size-5" /> تقویم کاری
       </NavLink>
+      {can('core.role.view') && (
+        <NavLink to="/app/settings/approvals" className={link}>
+          <ClipboardCheck className="size-5" /> گردش‌های تأیید
+        </NavLink>
+      )}
       {can('core.audit.view') && (
         <NavLink to="/app/settings/audit" className={link}>
           <ScrollText className="size-5" /> گزارش رویدادها

@@ -167,6 +167,14 @@ export class WorkflowService {
     }
   }
 
+  /** Active definitions of the tenant (one row per key, latest version). */
+  async definitions(tenantId: string) {
+    return this.db.tx({ tenantId }, async (tx) => {
+      const r = await tx.execute(sql`SELECT key, module_id, version, definition, created_at FROM core_workflow_defs WHERE active ORDER BY module_id, key`);
+      return r.rows;
+    });
+  }
+
   /** Pending steps the user can decide now (their approval inbox). */
   async inbox(s: Scope) {
     return this.db.tx({ tenantId: s.tenantId, companyIds: s.companyIds }, async (tx) => {
