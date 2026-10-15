@@ -58,6 +58,13 @@ export interface NotificationInput {
   link?: string;
 }
 
+/** An active member of the tenant, for pickers and for showing names (no other personal data). */
+export interface DirectoryUser {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
 export interface ModuleServices {
   /** Returns another module's registered public service, or undefined if it is not active for this tenant. */
   get<T>(name: string, range: string): T | undefined;
@@ -73,6 +80,8 @@ export interface BaseModuleContext {
   audit(entry: AuditEntry, tx?: Db): Promise<void>;
   notify(input: NotificationInput): Promise<void>;
   settings<T extends Record<string, unknown> = Record<string, unknown>>(): Promise<T>;
+  /** Active members of the tenant; with `ids`, only those (unknown or inactive ids are left out). */
+  directory(ids?: readonly string[]): Promise<DirectoryUser[]>;
 }
 
 export interface StartWorkflowInput {
@@ -142,6 +151,15 @@ export interface SearchProvider {
   (ctx: ModuleRequestContext, query: string, limit: number): Promise<SearchHit[]>;
 }
 
+/**
+ * Periodic job, run by the core once per period for every tenant where the module is active
+ * (cluster-wide: exactly one worker runs each period). Keep it idempotent.
+ */
+export interface ScheduledJob {
+  everyMinutes: number;
+  run(ctx: ModuleEventContext): Promise<void>;
+}
+
 export interface ModuleDefinition {
   manifest: ModuleManifest | Record<string, unknown>;
   controllers?: Type[];
@@ -154,6 +172,7 @@ export interface ModuleDefinition {
   searchProviders?: Record<string, SearchProvider>;
   /** Idempotent per-tenant seed, run when the module is enabled for a tenant. */
   seedTenant?: (ctx: ModuleEventContext) => Promise<void>;
+  schedules?: Record<string, ScheduledJob>;
 }
 
 /** Identity helper giving module authors type checking for their definition. */

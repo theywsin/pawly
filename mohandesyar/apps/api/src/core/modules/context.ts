@@ -1,6 +1,6 @@
 import type { PermissionScope } from '@mohandesyar/module-sdk';
 import { satisfiesRange } from '@mohandesyar/module-sdk';
-import type { AuditEntry, BaseModuleContext, Db, ModuleEventContext, ModuleRequestContext, NotificationInput } from '@mohandesyar/module-sdk/server';
+import type { AuditEntry, BaseModuleContext, Db, DirectoryUser, ModuleEventContext, ModuleRequestContext, NotificationInput } from '@mohandesyar/module-sdk/server';
 import type { Database } from '../../infra/db.js';
 import type { AuditService } from '../audit/audit.service.js';
 import type { EventBus } from '../events/event-bus.js';
@@ -10,6 +10,18 @@ import type { SettingsService } from '../settings/settings.service.js';
 import type { WorkflowService } from '../workflow/workflow.service.js';
 import type { LoadedModule } from './loader.js';
 import type { ModuleRegistry } from './registry.js';
+
+/** Active members of a tenant (id, name, email) — the only user data modules can read. */
+export async function directoryOf(db: Database, tenantId: string, ids?: readonly string[]): Promise<DirectoryUser[]> {
+  if (ids && ids.length === 0) return [];
+  const { sql } = await import('drizzle-orm');
+  return db.tx({ tenantId }, async (tx) => {
+    const filter = ids ? sql`AND u.id = ANY(${`{${ids.filter((i) => /^[0-9a-f-]{36}$/i.test(i)).join(',')}}`}::uuid[])` : sql``;
+    const r = await tx.execute(sql`SELECT u.id, u.full_name AS "fullName", u.email FROM core_memberships m JOIN core_users u ON u.id = m.user_id
+      WHERE m.status = 'active' ${filter} ORDER BY u.full_name`);
+    return r.rows as unknown as DirectoryUser[];
+  });
+}
 
 export interface RequestIdentity {
   tenantId: string;
@@ -73,6 +85,7 @@ export class ModuleContextFactory {
       async settings<T extends Record<string, unknown>>() {
         return (await settings.getModuleSettings(tenantId, module.manifest)) as T;
       },
+      directory: (ids) => directoryOf(db, tenantId, ids),
     };
     return self;
   }
@@ -102,6 +115,7 @@ export class ModuleContextFactory {
       async settings<T extends Record<string, unknown>>() {
         return (await settings.getModuleSettings(tenantId, module.manifest)) as T;
       },
+      directory: (ids) => directoryOf(this.db, tenantId, ids),
     };
   }
 

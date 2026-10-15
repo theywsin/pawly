@@ -24,6 +24,7 @@ async function serveWorker(): Promise<void> {
   const services = new Services(config);
   const app = await createApp(services);
   services.events.start();
+  services.scheduler.start();
   await app.listen(config.PORT, config.HOST);
   logger.info({ pid: process.pid, modules: [...services.registry.loaded.keys()], loadErrors: Object.fromEntries(services.registry.loadErrors) }, 'worker ready');
   process.send?.({ type: 'ready' });
@@ -34,6 +35,7 @@ async function serveWorker(): Promise<void> {
     logger.info({ pid: process.pid }, 'worker draining');
     const timer = setTimeout(() => process.exit(0), 30_000);
     timer.unref();
+    await services.scheduler.stop().catch(() => undefined);
     await app.close().catch(() => undefined);
     // This instance stops reporting; remove its rows so the console shows only live instances.
     await services.db.app.execute(sql`DELETE FROM core_module_runtime_status WHERE instance_id = ${services.instanceId}`).catch(() => undefined);

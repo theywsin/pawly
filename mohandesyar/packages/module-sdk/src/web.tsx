@@ -119,3 +119,17 @@ export function useWidgetData<T>(moduleId: string, widgetKey: string) {
 
 /** Shape of a module frontend bundle: named exports referenced by the manifest. */
 export type ModuleWidget = ComponentType<WidgetProps>;
+
+export interface DirectoryUser {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+/** Active members of the organisation (id, name, email) for user pickers and name display. */
+export function useDirectory() {
+  const { request, me } = useHost();
+  const q = useQuery({ queryKey: ['core', 'directory', me.tenant.id], queryFn: () => request<DirectoryUser[]>('/api/core/directory'), staleTime: 60_000 });
+  const byId = useMemo(() => new Map((q.data ?? []).map((u) => [u.id, u])), [q.data]);
+  return { users: q.data ?? [], isPending: q.isPending, name: (id: string | null | undefined) => (id ? (byId.get(id)?.fullName ?? '—') : '—') };
+}

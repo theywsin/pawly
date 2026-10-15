@@ -10,6 +10,7 @@ import { taskInput, taskUpdate } from '../../tasks/task.service.js';
 import { toLatinDigits } from '@mohandesyar/persian';
 import { channelName } from '../../notifications/notification.service.js';
 import type { RequestMeta } from '../../auth/auth.service.js';
+import { directoryOf } from '../../modules/context.js';
 
 /** Permissions defined by the core itself (modules register theirs from their manifests). */
 export const CORE_PERMISSIONS = [
@@ -140,6 +141,12 @@ export class CoreController {
   async completeOnboarding(@CurrentIdentity() id: Identity) {
     await this.s.tenancy.completeOnboarding(id.tenantId, id.userId);
     return { ok: true };
+  }
+
+  /** Names of active members, for pickers in any module (every member may see colleagues' names). */
+  @Get('directory')
+  directory(@CurrentIdentity() id: Identity) {
+    return directoryOf(this.s.db, id.tenantId);
   }
 
   @Get('members')

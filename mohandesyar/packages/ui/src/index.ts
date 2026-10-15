@@ -7,3 +7,4 @@ export { PageState, type QueryLike } from './page-state.js';
 export { Dialog, ConfirmDialog } from './dialog.js';
 export { toast, Toaster } from './toast.js';
 export { DateText, Num, Ltr } from './format.js';
+export { DateInput, MoneyInput, Money, DayText, ProgressBar, Tabs, Stat, DescriptionList, type TabItem } from './inputs.js';

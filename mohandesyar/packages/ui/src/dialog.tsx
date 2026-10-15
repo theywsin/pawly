@@ -4,12 +4,12 @@ import { X } from 'lucide-react';
 import { Button } from './button.js';
 import { Input } from './form.js';
 
-export function Dialog({ open, onOpenChange, title, description, children, footer }: { open: boolean; onOpenChange: (o: boolean) => void; title: ReactNode; description?: ReactNode; children?: ReactNode; footer?: ReactNode }) {
+export function Dialog({ open, onOpenChange, title, description, children, footer, size = 'md' }: { open: boolean; onOpenChange: (o: boolean) => void; title: ReactNode; description?: ReactNode; children?: ReactNode; footer?: ReactNode; size?: 'md' | 'lg' }) {
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
         <D.Overlay className="fixed inset-0 z-40 bg-black/40" />
-        <D.Content dir="rtl" className="fixed start-1/2 top-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] -translate-y-1/2 translate-x-1/2 rounded-lg border border-border bg-surface p-6 shadow-lg focus:outline-none">
+        <D.Content dir="rtl" className={`fixed start-1/2 top-1/2 z-50 max-h-[90dvh] overflow-y-auto ${size === 'lg' ? 'w-[min(48rem,calc(100vw-2rem))]' : 'w-[min(32rem,calc(100vw-2rem))]'} -translate-y-1/2 translate-x-1/2 rounded-lg border border-border bg-surface p-6 shadow-lg focus:outline-none`}>
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <D.Title className="text-lg font-bold">{title}</D.Title>

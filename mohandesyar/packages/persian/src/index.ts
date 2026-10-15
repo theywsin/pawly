@@ -113,3 +113,4 @@ export function normalizePhone(input: string): string | null {
   const d = toLatinDigits(input).replace(/[\s\-()]/g, '');
   return /^\+?\d{7,15}$/.test(d) ? d : null;
 }
+export * from './jalali.js';
