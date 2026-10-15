@@ -1,6 +1,6 @@
 import type { PermissionScope } from '@mohandesyar/module-sdk';
 import { satisfiesRange } from '@mohandesyar/module-sdk';
-import type { AuditEntry, BaseModuleContext, Db, DirectoryUser, ModuleEventContext, ModuleRequestContext, NotificationInput, WorkflowDefinitionInput } from '@mohandesyar/module-sdk/server';
+import type { AuditEntry, BaseModuleContext, KpiProviderInfo, KpiRegistry, Db, DirectoryUser, ModuleEventContext, ModuleRequestContext, NotificationInput, WorkflowDefinitionInput } from '@mohandesyar/module-sdk/server';
 import type { Database } from '../../infra/db.js';
 import type { AuditService } from '../audit/audit.service.js';
 import type { EventBus } from '../events/event-bus.js';
@@ -10,7 +10,7 @@ import type { SettingsService } from '../settings/settings.service.js';
 import type { FileService } from '../files/file.service.js';
 import type { WorkflowService } from '../workflow/workflow.service.js';
 import type { LoadedModule } from './loader.js';
-import type { ModuleRegistry } from './registry.js';
+import type { EffectiveModule, ModuleRegistry } from './registry.js';
 
 /** Active members of a tenant (id, name, email) — the only user data modules can read. */
 export async function directoryOf(db: Database, tenantId: string, ids?: readonly string[]): Promise<DirectoryUser[]> {
@@ -108,6 +108,7 @@ export class ModuleContextFactory {
       workCalendar: () => workCalendarOf(db, tenantId),
       ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, db, tenantId, moduleId, key, definition),
       files: { remove: (fileId) => this.files.remove({ tenantId, companyIds, userId }, moduleId, fileId) },
+      kpi: this.kpiRegistry(effective, tenantId, companyIds, active, tenantDb),
     };
     return self;
   }
@@ -141,6 +142,24 @@ export class ModuleContextFactory {
       workCalendar: () => workCalendarOf(this.db, tenantId),
       ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, this.db, tenantId, module.id, key, definition),
       files: { remove: (fileId) => this.files.remove({ tenantId, companyIds, userId: null }, module.id, fileId) },
+      kpi: { providers: () => [], evaluate: async () => null }, // no transitive provider calls from inside a public service
+    };
+  }
+
+  private kpiRegistry(effective: EffectiveModule[], tenantId: string, companyIds: readonly string[], active: Set<string>, tenantDb: BaseModuleContext['db']): KpiRegistry {
+    const providers = (): KpiProviderInfo[] =>
+      effective.flatMap((m) => m.manifest.kpiProviders.map((p) => ({ key: p.key, moduleId: m.id, title: p.title.fa, unit: p.unit })));
+    return {
+      providers,
+      evaluate: async (key, params) => {
+        if (!companyIds.includes(params.companyId)) return null;
+        const owner = effective.find((m) => m.manifest.kpiProviders.some((p) => p.key === key));
+        const loaded = owner && this.registry.loaded.get(owner.id);
+        const fn = loaded?.definition.kpiProviders?.[key];
+        if (!loaded || !fn) return null;
+        const v = await fn(this.eventContextSync(loaded, tenantId, companyIds, active, tenantDb), params);
+        return v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v);
+      },
     };
   }
 

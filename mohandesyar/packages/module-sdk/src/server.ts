@@ -94,6 +94,21 @@ export interface BaseModuleContext {
   directory(ids?: readonly string[]): Promise<DirectoryUser[]>;
   /** Files this module owns (uploaded for it through the host). */
   readonly files: ModuleFileStore;
+  /** KPI providers declared by the tenant's active modules (docs/03: provider registry). */
+  readonly kpi: KpiRegistry;
+}
+
+export interface KpiProviderInfo {
+  key: string;
+  moduleId: string;
+  title: string;
+  unit: string;
+}
+
+export interface KpiRegistry {
+  providers(): KpiProviderInfo[];
+  /** Runs an active module's provider within the caller's tenant and companies; null when unavailable. */
+  evaluate(key: string, params: { companyId: string; from: string; to: string; dimensions?: Record<string, string> }): Promise<number | null>;
 }
 
 export interface ModuleFileStore {
