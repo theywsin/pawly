@@ -41,6 +41,9 @@ async function signup(browser: Browser, t: { name: string; email: string }): Pro
   await page.getByLabel(/^رمز عبور/).fill('Passw0rd-strong');
   await page.getByLabel('تکرار رمز عبور').fill('Passw0rd-strong');
   await page.getByRole('button', { name: 'ساخت فضای کاری' }).click();
+  // A new organisation lands on the first-run wizard (phase 2); skipping it opens the dashboard.
+  await expect(page).toHaveURL(/\/app\/onboarding$/);
+  await page.getByRole('button', { name: 'فعلاً رد شو' }).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.getByRole('heading', { name: 'داشبورد' })).toBeVisible();
   return page;

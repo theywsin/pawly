@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -257,9 +257,9 @@ export function Onboarding() {
         )}
       </Card>
       <p className="mt-4 text-sm">
-        <Link to="/app" onClick={() => finish.mutate()} className="text-muted underline">
+        <button type="button" onClick={() => finish.mutate()} disabled={finish.isPending} className="text-muted underline">
           فعلاً رد شو
-        </Link>
+        </button>
       </p>
     </main>
   );

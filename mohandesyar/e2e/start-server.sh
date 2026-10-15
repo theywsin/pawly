@@ -27,6 +27,7 @@ MODULE_STORE_DIR=$E2E/store
 MODULE_UPLOAD_DIR=$E2E/uploads
 MODULE_BACKUP_DIR=$E2E/backups
 MODULE_TRUSTED_KEYS=$E2E/keys/release.pub.pem
+PUBLIC_ORIGIN=http://127.0.0.1:3200
 WEB_DIST_DIR=$ROOT/apps/web/dist
 COOKIE_SECURE=false
 API_WORKERS=2
@@ -35,4 +36,5 @@ ENV
 set -a; . "$E2E/env"; set +a
 node "$ROOT/apps/api/dist/main.js" migrate >/dev/null
 ADMIN_PASSWORD='Admin-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email tech@platform.test --name 'مدیر فنی' >/dev/null
+ADMIN_PASSWORD='Sales-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email sales@platform.test --name 'مدیر فروش' >/dev/null
 exec node "$ROOT/apps/api/dist/main.js" serve

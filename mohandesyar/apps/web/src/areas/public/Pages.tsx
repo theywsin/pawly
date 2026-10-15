@@ -23,7 +23,7 @@ export const PAGE_META = {
 export function PricingPage() {
   usePageMeta(PAGE_META.pricing);
   return (
-    <Section title="پلن‌ها و قیمت‌ها" lead="قیمت‌ها توسط مدیر سامانه تعیین و به‌روز می‌شوند. برای استقرار اختصاصی یا قرارداد سازمانی درخواست دمو ثبت کنید.">
+    <Section page title="پلن‌ها و قیمت‌ها" lead="قیمت‌ها توسط مدیر سامانه تعیین و به‌روز می‌شوند. برای استقرار اختصاصی یا قرارداد سازمانی درخواست دمو ثبت کنید.">
       <Plans />
     </Section>
   );
@@ -32,7 +32,7 @@ export function PricingPage() {
 export function ModulesPage() {
   usePageMeta(PAGE_META.modules);
   return (
-    <Section title="ماژول‌ها" lead="هر سازمان فقط ماژول‌های مورد نیاز خود را فعال می‌کند. ماژول‌های «در دست توسعه» هنوز روی این سامانه نصب نشده‌اند.">
+    <Section page title="ماژول‌ها" lead="هر سازمان فقط ماژول‌های مورد نیاز خود را فعال می‌کند. ماژول‌های «در دست توسعه» هنوز روی این سامانه نصب نشده‌اند.">
       <ModuleGrid />
     </Section>
   );
@@ -44,7 +44,7 @@ export function ModuleDetailPage() {
   usePageMeta(m ? { title: m.name, description: m.tagline } : { title: 'صفحه یافت نشد', description: '' });
   if (!m) return <NotFound />;
   return (
-    <Section title={m.name} lead={m.tagline}>
+    <Section page title={m.name} lead={m.tagline}>
       <div className="mb-6">
         <AvailabilityBadge id={m.id} />
       </div>
@@ -85,7 +85,7 @@ export function ContentPage({ pageKey }: { pageKey: 'about' | 'terms' | 'privacy
   usePageMeta(PAGE_META[pageKey]);
   const q = usePage(pageKey);
   return (
-    <Section title={q.data?.title ?? PAGE_META[pageKey].title}>
+    <Section page title={q.data?.title ?? PAGE_META[pageKey].title}>
       {q.isPending ? (
         <div className="space-y-3" aria-busy="true">
           <Skeleton className="h-5 w-full" />
@@ -113,7 +113,7 @@ export function ContactPage() {
   const site = useSite();
   const c = site.data?.contact;
   return (
-    <Section title="تماس با ما" lead="پرسش یا پیشنهاد خود را بفرستید.">
+    <Section page title="تماس با ما" lead="پرسش یا پیشنهاد خود را بفرستید.">
       <div className="grid gap-8 lg:grid-cols-[1fr_18rem]">
         <LeadForm kind="contact" />
         {c && (
@@ -132,7 +132,7 @@ export function ContactPage() {
 export function DemoPage() {
   usePageMeta(PAGE_META.demo);
   return (
-    <Section title="درخواست دمو" lead="اطلاعات تماس و نیازهای سازمان خود را بنویسید تا برای نمایش سامانه هماهنگ کنیم.">
+    <Section page title="درخواست دمو" lead="اطلاعات تماس و نیازهای سازمان خود را بنویسید تا برای نمایش سامانه هماهنگ کنیم.">
       <LeadForm kind="demo" />
     </Section>
   );

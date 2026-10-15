@@ -182,7 +182,7 @@ export function NotFound() {
   return (
     <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-4 px-4 text-center">
       <p className="text-5xl font-extrabold text-muted">۴۰۴</p>
-      <p>صفحه‌ای با این نشانی وجود ندارد.</p>
+      <h1 className="text-xl font-bold">صفحه‌ای با این نشانی وجود ندارد.</h1>
       <Link to="/" className="text-primary underline">
         بازگشت به صفحه اصلی
       </Link>

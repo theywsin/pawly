@@ -6,13 +6,15 @@ import { MenuIcon } from '../../lib/icons.js';
 import { MODULES } from './catalog.js';
 import { useAvailability, usePlans, type PublicPlan } from './data.js';
 
-export function Section({ id, title, lead, children, tone = 'plain' }: { id?: string; title: string; lead?: string; children: React.ReactNode; tone?: 'plain' | 'muted' }) {
+/** A landing section; `page` marks the main section of an inner page, whose title is the page's only h1. */
+export function Section({ id, title, lead, children, tone = 'plain', page }: { id?: string; title: string; lead?: string; children: React.ReactNode; tone?: 'plain' | 'muted'; page?: boolean }) {
+  const Heading = page ? 'h1' : 'h2';
   return (
     <section id={id} aria-labelledby={id ? `${id}-title` : undefined} className={cn('py-16 sm:py-20', tone === 'muted' && 'bg-surface-2/60')}>
       <div className="mx-auto max-w-6xl px-4">
-        <h2 id={id ? `${id}-title` : undefined} className="text-2xl font-extrabold sm:text-3xl">
+        <Heading id={id ? `${id}-title` : undefined} className="text-2xl font-extrabold sm:text-3xl">
           {title}
-        </h2>
+        </Heading>
         {lead && <p className="mt-3 max-w-3xl leading-8 text-muted">{lead}</p>}
         <div className="mt-10">{children}</div>
       </div>
