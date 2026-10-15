@@ -134,6 +134,8 @@ export interface ModuleRequestContext extends BaseModuleContext {
    * `core.workflow.completed` event (declare it in manifest.events.consumes).
    */
   startWorkflow(input: StartWorkflowInput, tx?: Db): Promise<{ instanceId: string; state: string }>;
+  /** Withdraws a pending approval this module started; false when it was already decided. */
+  cancelWorkflow(instanceId: string, tx?: Db): Promise<boolean>;
   readonly files: ModuleFiles;
 }
 

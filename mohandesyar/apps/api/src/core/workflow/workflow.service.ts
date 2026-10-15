@@ -144,6 +144,21 @@ export class WorkflowService {
     });
   }
 
+  /**
+   * Withdraws a pending instance owned by `moduleId` (e.g. a leave request withdrawn by the employee).
+   * No completion event is published: the module that cancels already knows. Returns false if not pending.
+   */
+  async cancel(s: Scope, moduleId: string, instanceId: string, txIn?: Db): Promise<boolean> {
+    const run = async (tx: Db) => {
+      const r = await tx.execute(sql`UPDATE core_workflow_instances SET state = 'canceled', finished_at = now()
+        WHERE id = ${instanceId} AND module_id = ${moduleId} AND state = 'pending' RETURNING entity_type, entity_id`);
+      const row = r.rows[0] as { entity_type: string; entity_id: string } | undefined;
+      if (row) await this.audit.append({ tenantId: s.tenantId, actorType: 'user', actorId: s.userId, action: 'workflow.canceled', moduleId, entityType: row.entity_type, entityId: row.entity_id, after: { instanceId } }, tx);
+      return !!row;
+    };
+    return txIn ? run(txIn) : this.db.tx({ tenantId: s.tenantId, companyIds: s.companyIds, userId: s.userId }, run);
+  }
+
   private async complete(tx: Db, s: Scope, instanceId: string, input: Omit<StartInput, 'amount'>, state: 'approved' | 'rejected', startedBy?: string): Promise<void> {
     await tx.execute(sql`UPDATE core_workflow_instances SET state = ${state}, finished_at = now() WHERE id = ${instanceId}`);
     await this.events.publish(tx, { tenantId: s.tenantId, companyId: s.companyId, moduleId: 'core', type: WORKFLOW_COMPLETED, payload: { instanceId, state, moduleId: input.moduleId, entityType: input.entityType, entityId: input.entityId } });

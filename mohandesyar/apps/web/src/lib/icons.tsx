@@ -1,5 +1,5 @@
 import {
-  Bell, Briefcase, Building2, CalendarDays, CheckSquare, ClipboardCheck, FileSignature, FileText, Handshake, FolderKanban, Gauge, HardHat, LayoutDashboard,
+  Bell, Briefcase, Building2, CalendarDays, CheckSquare, ClipboardCheck, FileSignature, FileText, Handshake, FolderKanban, Gauge, HardHat, IdCard, LayoutDashboard,
   ListChecks, NotebookPen, Package, Puzzle, Receipt, ScrollText, Search, Settings, ShieldCheck, Users, Wallet, type LucideIcon,
 } from 'lucide-react';
 
@@ -9,7 +9,7 @@ import {
  */
 const ICONS: Record<string, LucideIcon> = {
   bell: Bell, briefcase: Briefcase, 'building-2': Building2, 'calendar-days': CalendarDays, 'check-square': CheckSquare,
-  'clipboard-check': ClipboardCheck, 'file-signature': FileSignature, 'file-text': FileText, handshake: Handshake, 'folder-kanban': FolderKanban, gauge: Gauge, 'hard-hat': HardHat,
+  'clipboard-check': ClipboardCheck, 'file-signature': FileSignature, 'file-text': FileText, handshake: Handshake, 'folder-kanban': FolderKanban, gauge: Gauge, 'hard-hat': HardHat, 'id-card': IdCard,
   'layout-dashboard': LayoutDashboard, 'list-checks': ListChecks, 'notebook-pen': NotebookPen, package: Package, puzzle: Puzzle,
   receipt: Receipt, 'scroll-text': ScrollText, search: Search, settings: Settings, 'shield-check': ShieldCheck, users: Users, wallet: Wallet,
 };

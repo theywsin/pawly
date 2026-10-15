@@ -154,6 +154,8 @@ export class ModuleContextFactory {
       can: (permission: string, scope?: PermissionScope) => id.permissions.can(permission, scope),
       startWorkflow: (input, tx) =>
         this.workflow.start({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId }, { moduleId: module.id, ...input }, tx as never),
+      cancelWorkflow: (instanceId, tx) =>
+        this.workflow.cancel({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId }, module.id, instanceId, tx as never),
       files: {
         remove: base.files.remove,
         claim: (fileId, entity, tx) => {
