@@ -648,6 +648,23 @@ export function publicService(ctx: ModuleEventContext) {
     },
     get: async (id: string) =>
       (await ctx.db.transaction((tx) => one<{ id: string; code: string; title: string; status: string }>(tx, sql`SELECT id, code, title, status FROM projects_projects WHERE id = ${id} AND deleted_at IS NULL`))) ?? null,
+    /** Since 1.1: projects the user manages or belongs to (for "project" permission scope in other modules). */
+    memberOf: (userId: string) =>
+      ctx.db.transaction(async (tx) =>
+        (await rows<{ id: string }>(tx, sql`SELECT p.id FROM projects_projects p WHERE p.deleted_at IS NULL
+          AND (p.manager_id = ${userId} OR EXISTS (SELECT 1 FROM projects_members m WHERE m.project_id = p.id AND m.user_id = ${userId}))`)).map((r) => r.id),
+      ),
+    /** Since 1.1: planned and actual physical progress (percent) on working days, e.g. for earned value. */
+    progress: async (id: string, today: string) => {
+      const cal = await calendarOf(ctx);
+      return ctx.db.transaction(async (tx) => {
+        const p = await one<ProjectRow>(tx, sql`SELECT ${PROJECT_COLUMNS} FROM projects_projects p WHERE p.id = ${id} AND p.deleted_at IS NULL`);
+        if (!p) return null;
+        await ensureSchedule(tx, p, cal);
+        const pr = await progressOf(tx, ctx, p, today, cal);
+        return { planned: pr.planned, actual: pr.actual };
+      });
+    },
   };
 }
 

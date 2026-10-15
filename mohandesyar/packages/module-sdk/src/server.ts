@@ -146,7 +146,8 @@ export interface ModuleRequestContext extends BaseModuleContext {
   can(permission: string, scope?: PermissionScope): boolean;
   /**
    * Starts an approval workflow for one of the module's entities. The outcome arrives as the
-   * `core.workflow.completed` event (declare it in manifest.events.consumes).
+   * `core.workflow.completed` event (declare it in manifest.events.consumes) with payload
+   * `{ instanceId, state, moduleId, entityType, entityId, deciders }` (deciders: user ids who decided).
    */
   startWorkflow(input: StartWorkflowInput, tx?: Db): Promise<{ instanceId: string; state: string }>;
   /** Withdraws a pending approval this module started; false when it was already decided. */

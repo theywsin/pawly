@@ -1,0 +1,72 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "finance",
+  "name": { "fa": "مالی و کنترل بودجه", "en": "Finance" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "حساب‌ها و تنخواه، دریافت و پرداخت، انتقال بین حساب‌ها (هرگز درآمد/هزینه نیست)، درخواست پرداخت با درخواست، تأیید و اجرای جدا، مطالبات و بدهی‌ها، چک، بودجه پروژه نسخه‌دار، تعهدات، برآورد تکمیل (EAC)، پیش‌بینی جریان نقدی و مغایرت‌گیری بانکی. سیستم مدیریتی-کنترلی است و جایگزین نرم‌افزار حسابداری رسمی نیست.",
+    "en": "Accounts, payments with segregation of duties, budgets, EAC, cash flow and reconciliation."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "projects": "^1.2.0", "contracts": "^1.0.0", "procurement": "^1.0.0" },
+  "provides": { "services": [{ "name": "finance.ledger", "version": "1.0.0" }] },
+  "permissions": [
+    { "key": "finance.account.manage", "fa": "حساب‌ها، طرف‌حساب‌ها، سرفصل‌ها و مراکز هزینه", "scopes": ["company"] },
+    { "key": "finance.transaction.view", "fa": "مشاهده حساب‌ها، تراکنش‌ها و مانده‌ها", "scopes": ["company"] },
+    { "key": "finance.transaction.record", "fa": "ثبت دریافت و انتقال بین حساب‌ها", "scopes": ["company"] },
+    { "key": "finance.transaction.void", "fa": "ابطال تراکنش با سند معکوس", "scopes": ["company"] },
+    { "key": "finance.payment.request", "fa": "درخواست پرداخت (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "finance.payment.execute", "fa": "اجرای پرداخت تأییدشده", "scopes": ["company"] },
+    { "key": "finance.obligation.manage", "fa": "مطالبات، بدهی‌ها و چک‌ها", "scopes": ["company"] },
+    { "key": "finance.budget.view", "fa": "مشاهده بودجه، هزینه و برآورد تکمیل پروژه (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "finance.budget.manage", "fa": "تهیه نسخه بودجه، تعهدات، برآورد و روش EAC", "scopes": ["company"] },
+    { "key": "finance.budget.approve", "fa": "تصویب نسخه بودجه", "scopes": ["company"] },
+    { "key": "finance.reconcile", "fa": "مغایرت‌گیری بانکی", "scopes": ["company"] },
+    { "key": "finance.report.view", "fa": "گزارش‌های مالی و جریان نقدی", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "finance_manager", "name": { "fa": "مدیر مالی" }, "grants": ["finance.account.manage", "finance.transaction.view", "finance.transaction.record", "finance.transaction.void", "finance.payment.request", "finance.obligation.manage", "finance.budget.view", "finance.budget.manage", "finance.budget.approve", "finance.reconcile", "finance.report.view"] },
+    { "key": "treasurer", "name": { "fa": "مسئول خزانه" }, "grants": ["finance.transaction.view", "finance.payment.execute", "finance.obligation.manage", "finance.reconcile"] },
+    { "key": "payment_requester", "name": { "fa": "درخواست‌کننده پرداخت" }, "grants": ["finance.payment.request@project", "finance.budget.view@project"] }
+  ],
+  "menu": [
+    { "key": "finance", "label": { "fa": "مالی" }, "icon": "wallet", "path": "/app/finance", "permission": "finance.payment.request", "order": 40 }
+  ],
+  "routes": [{ "path": "/app/finance/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "finance.cash", "title": { "fa": "موجودی نقد" }, "entry": "frontend/index.js", "export": "CashWidget", "permission": "finance.transaction.view", "sizes": ["md"] },
+    { "key": "finance.due", "title": { "fa": "مطالبات و بدهی‌های سررسید" }, "entry": "frontend/index.js", "export": "DueWidget", "permission": "finance.obligation.manage", "sizes": ["md"] },
+    { "key": "finance.payments", "title": { "fa": "درخواست‌های پرداخت" }, "entry": "frontend/index.js", "export": "PaymentsWidget", "permission": "finance.payment.request", "sizes": ["md"] }
+  ],
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "dueAlertDays": { "type": "integer", "title": "یادآوری سررسید مطالبات، بدهی‌ها و چک‌ها (روز قبل)", "default": 3, "minimum": 0, "maximum": 60 }
+      }
+    }
+  },
+  "events": {
+    "publishes": [{ "type": "finance.payment.executed", "version": 1 }],
+    "consumes": [
+      { "type": "core.workflow.completed", "version": 1 },
+      { "type": "procurement.order.approved", "version": 1 },
+      { "type": "procurement.invoice.approved", "version": 1 }
+    ]
+  },
+  "kpiProviders": [
+    { "key": "finance.cash_balance", "title": { "fa": "موجودی نقد پایان دوره" }, "unit": "rial" },
+    { "key": "finance.income", "title": { "fa": "درآمد دوره (بدون انتقال)" }, "unit": "rial" },
+    { "key": "finance.expense", "title": { "fa": "هزینه دوره (بدون انتقال)" }, "unit": "rial" },
+    { "key": "finance.overdue_receivables", "title": { "fa": "مطالبات سررسیدگذشته پایان دوره" }, "unit": "rial" }
+  ],
+  "searchProviders": [{ "key": "finance.counterparties", "title": { "fa": "طرف‌حساب‌ها" }, "permission": "finance.transaction.view" }],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "finance_",
+  "entitlement": { "key": "mod.finance", "plans": [] }
+}

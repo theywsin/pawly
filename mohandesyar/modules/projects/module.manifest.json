@@ -3,7 +3,7 @@
   "manifestVersion": 1,
   "id": "projects",
   "name": { "fa": "پروژه‌ها", "en": "Projects" },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": {
     "fa": "مدیریت پروژه‌های مهندسی و عمرانی: مشخصات و تیم، ساختار شکست کار، وابستگی فعالیت‌ها و مسیر بحرانی، نمودار گانت، پیشرفت برنامه‌ای و واقعی (فیزیکی، زمانی و مالی)، تأخیرها و موانع، ریسک‌ها، گزارش روزانه، درخواست تغییر با گردش تأیید، مراحل و تحویل موقت/قطعی.",
     "en": "Engineering and construction project management."
@@ -12,7 +12,7 @@
   "coreVersionRange": "^1.0.0",
   "apiVersion": 1,
   "optionalDependencies": { "contracts": "^1.0.0", "crm": "^1.0.0" },
-  "provides": { "services": [{ "name": "projects.projects", "version": "1.0.0" }] },
+  "provides": { "services": [{ "name": "projects.projects", "version": "1.1.0" }] },
   "permissions": [
     { "key": "projects.project.view", "fa": "مشاهده پروژه‌ها", "scopes": ["company", "project"] },
     { "key": "projects.project.create", "fa": "تعریف پروژه", "scopes": ["company"] },

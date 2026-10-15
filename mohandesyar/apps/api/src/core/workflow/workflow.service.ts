@@ -161,7 +161,10 @@ export class WorkflowService {
 
   private async complete(tx: Db, s: Scope, instanceId: string, input: Omit<StartInput, 'amount'>, state: 'approved' | 'rejected', startedBy?: string): Promise<void> {
     await tx.execute(sql`UPDATE core_workflow_instances SET state = ${state}, finished_at = now() WHERE id = ${instanceId}`);
-    await this.events.publish(tx, { tenantId: s.tenantId, companyId: s.companyId, moduleId: 'core', type: WORKFLOW_COMPLETED, payload: { instanceId, state, moduleId: input.moduleId, entityType: input.entityType, entityId: input.entityId } });
+    // deciders: everyone who approved or rejected a step (modules use it for separation of duties).
+    const d = await tx.execute(sql`SELECT decided_by FROM core_workflow_steps WHERE instance_id = ${instanceId} AND decided_by IS NOT NULL ORDER BY step_index`);
+    const deciders = (d.rows as { decided_by: string }[]).map((x) => x.decided_by);
+    await this.events.publish(tx, { tenantId: s.tenantId, companyId: s.companyId, moduleId: 'core', type: WORKFLOW_COMPLETED, payload: { instanceId, state, moduleId: input.moduleId, entityType: input.entityType, entityId: input.entityId, deciders } });
     if (startedBy && startedBy !== s.userId) {
       await this.notifications.notify({ tenantId: s.tenantId, userIds: [startedBy], type: 'core.workflow.finished', title: `${state === 'approved' ? 'تأیید شد' : 'رد شد'}: ${input.title}`, link: '/app/approvals' }, tx);
     }
