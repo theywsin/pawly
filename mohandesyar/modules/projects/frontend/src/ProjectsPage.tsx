@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { FolderKanban, Plus } from 'lucide-react';
-import { Badge, Button, EmptyState, Input, PageHeader, PageState, ProgressBar, Select, Table, Td, Th } from '@mohandesyar/ui';
+import { Badge, Button, EmptyState, Input, PageHeader, PageState, ProgressBar, Select, Table, Td, Th, ExportMenu } from '@mohandesyar/ui';
 import { useCan, useDirectory } from '@mohandesyar/module-sdk/web';
 import { pct, STATUS, useApi, type ProjectData, type Progress } from './common.js';
 import { ProjectForm } from './ProjectForm.js';
@@ -26,6 +26,17 @@ export function ProjectsPage() {
           <option value="">همه وضعیت‌ها</option>
           {Object.entries(STATUS).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
         </Select></div>
+      </div>
+      <div className="mb-4 flex justify-end">
+        <ExportMenu filename="projects" title="پروژه‌ها" rows={list.data} columns={[
+          { header: 'کد', value: (p) => p.code },
+          { header: 'عنوان', value: (p) => p.title },
+          { header: 'کارفرما', value: (p) => p.employer_name },
+          { header: 'مدیر پروژه', value: (p) => dir.name(p.manager_id) },
+          { header: 'پیشرفت واقعی (٪)', value: (p) => (p.progress.actual === null ? null : Math.round(p.progress.actual * 10) / 10), kind: 'number' },
+          { header: 'پیشرفت برنامه‌ای (٪)', value: (p) => (p.progress.planned === null ? null : Math.round(p.progress.planned * 10) / 10), kind: 'number' },
+          { header: 'وضعیت', value: (p) => STATUS[p.status]!.label + (p.delayed ? ' — دارای تأخیر' : '') },
+        ]} />
       </div>
       <PageState query={list} isEmpty={list.data?.length === 0}
         empty={<EmptyState icon={<FolderKanban className="size-8" />} title={filtered ? 'پروژه‌ای با این فیلترها یافت نشد' : 'هنوز پروژه‌ای تعریف نشده است'} action={!filtered && canCreate ? <Button onClick={() => setCreating(true)}>تعریف اولین پروژه</Button> : undefined} />}>

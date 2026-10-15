@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { FileSignature, Plus } from 'lucide-react';
-import { Badge, Button, DayText, EmptyState, Input, Money, PageHeader, PageState, Select, Stat, Table, Td, Th } from '@mohandesyar/ui';
+import { Badge, Button, DayText, EmptyState, Input, Money, PageHeader, PageState, Select, Stat, Table, Td, Th, ExportMenu } from '@mohandesyar/ui';
 import { useCan } from '@mohandesyar/module-sdk/web';
+import { isoToJalali } from '@mohandesyar/persian';
 import { DIRECTION, STATUS, useApi } from './common.js';
 import { ContractForm, type ContractData } from './ContractForm.js';
 
@@ -47,6 +48,18 @@ export function ContractsPage() {
           <option value="income">درآمدی</option>
           <option value="expense">هزینه‌ای</option>
         </Select></div>
+      </div>
+      <div className="mb-4 flex justify-end">
+        <ExportMenu filename="contracts" title="قراردادها" rows={list.data} columns={[
+          { header: 'شماره', value: (c) => c.code },
+          { header: 'عنوان', value: (c) => c.title },
+          { header: 'طرف قرارداد', value: (c) => c.counterparty_name },
+          { header: 'جهت', value: (c) => DIRECTION[c.direction] },
+          { header: 'مبلغ جاری (ریال)', value: (c) => c.current_amount, kind: 'number' },
+          { header: 'کارکرد تأییدشده (ریال)', value: (c) => c.approved_gross, kind: 'number' },
+          { header: 'تاریخ پایان', value: (c) => (c.end_on ? (isoToJalali(c.end_on) ?? c.end_on) : '') },
+          { header: 'وضعیت', value: (c) => STATUS[c.status]!.label },
+        ]} />
       </div>
       <PageState
         query={list}

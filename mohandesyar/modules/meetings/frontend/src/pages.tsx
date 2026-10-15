@@ -2,9 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, CalendarDays, Plus } from 'lucide-react';
-import { Alert, Badge, Button, Card, Checkbox, DateInput, DateText, DayText, Dialog, EmptyState, Field, Input, Ltr, PageHeader, PageState, Select, Table, Td, Textarea, Th, toast } from '@mohandesyar/ui';
+import { Alert, Badge, Button, Card, Checkbox, DateInput, DateText, DayText, Dialog, EmptyState, Field, Input, Ltr, PageHeader, PageState, Select, Table, Td, Textarea, Th, toast, ExportMenu } from '@mohandesyar/ui';
 import { ApiError, useCan, useDirectory, useMe, useModule, useModuleApi } from '@mohandesyar/module-sdk/web';
-import { todayIso, utcToZoned } from '@mohandesyar/persian';
+import { isoToJalali, todayIso, utcToZoned } from '@mohandesyar/persian';
 
 const useApi = () => useModuleApi('meetings');
 type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
@@ -351,6 +351,7 @@ function UpdateResolutionDialog({ resolution, onClose }: { resolution: Resolutio
 
 export function ResolutionsPage() {
   const a = useApi();
+  const dirName = useDirectory().name;
   const [status, setStatus] = useState('open');
   const [mine, setMine] = useState(false);
   const [updating, setUpdating] = useState<Resolution | null>(null);
@@ -367,6 +368,17 @@ export function ResolutionsPage() {
           </Select>
         </div>
         <Checkbox label="فقط مصوبات من" checked={mine} onChange={(e) => setMine(e.target.checked)} />
+      </div>
+      <div className="mb-4 flex justify-end">
+        <ExportMenu filename="resolutions" title="مصوبات" rows={q.data} columns={[
+          { header: 'جلسه', value: (r) => r.meeting_title ?? '' },
+          { header: 'شماره', value: (r) => r.number, kind: 'number' },
+          { header: 'مصوبه', value: (r) => r.body },
+          { header: 'مسئول', value: (r) => dirName(r.owner_id) },
+          { header: 'مهلت', value: (r) => (r.due_on ? (isoToJalali(r.due_on) ?? r.due_on) : '') },
+          { header: 'وضعیت', value: (r) => RES_STATUS[r.status]!.label },
+          { header: 'پیگیری', value: (r) => r.follow_up },
+        ]} />
       </div>
       <PageState query={q} isEmpty={q.data?.length === 0} empty={<EmptyState title={status === 'overdue' ? 'مصوبه معوقی وجود ندارد' : 'مصوبه‌ای یافت نشد'} />}>
         {q.data && <Resolutions items={q.data} today={todayIso()} onUpdate={setUpdating} showMeeting />}

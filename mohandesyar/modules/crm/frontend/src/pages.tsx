@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Building2, Handshake, Plus, Target } from 'lucide-react';
-import { Badge, Button, Card, DateInput, DateText, DayText, DescriptionList, EmptyState, Field, Input, Ltr, Money, MoneyInput, PageHeader, PageState, Select, Stat, Table, Td, Textarea, Th, toast } from '@mohandesyar/ui';
+import { Badge, Button, Card, DateInput, DateText, DayText, DescriptionList, EmptyState, Field, Input, Ltr, Money, MoneyInput, PageHeader, PageState, Select, Stat, Table, Td, Textarea, Th, toast, ExportMenu } from '@mohandesyar/ui';
 import { ApiError, useCan, useDirectory } from '@mohandesyar/module-sdk/web';
 import { addDays, todayIso } from '@mohandesyar/persian';
 import { CrmNav, FormDialog, INTERACTION, InteractionDialog, LEAD_STATUS, PROPOSAL_KIND, PROPOSAL_STATUS, SOURCE, useApi, useDate } from './common.js';
@@ -116,6 +116,18 @@ export function LeadsPage() {
             {Object.entries(LEAD_STATUS).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
           </Select>
         </div>
+      </div>
+      <div className="mb-4 flex justify-end">
+        <ExportMenu filename="leads" title="سرنخ‌ها" rows={list.data} columns={[
+          { header: 'عنوان', value: (l) => l.title },
+          { header: 'سازمان', value: (l) => l.organization_name },
+          { header: 'مخاطب', value: (l) => l.contact_name },
+          { header: 'منبع', value: (l) => SOURCE[l.source] },
+          { header: 'بودجه تخمینی (ریال)', value: (l) => l.estimated_budget, kind: 'number' },
+          { header: 'امتیاز', value: (l) => l.score, kind: 'number' },
+          { header: 'مسئول', value: (l) => dir.name(l.owner_id) },
+          { header: 'وضعیت', value: (l) => LEAD_STATUS[l.status]!.label },
+        ]} />
       </div>
       <PageState query={list} isEmpty={list.data?.length === 0} empty={<EmptyState icon={<Target className="size-8" />} title="سرنخی یافت نشد" action={canManage && !status && !q ? <Button onClick={() => setCreating(true)}>ثبت اولین سرنخ</Button> : undefined} />}>
         <Table>
@@ -262,6 +274,16 @@ export function AccountsPage() {
       <PageHeader title="مشتریان" actions={canManage && <Button onClick={() => setCreating(true)}><Plus className="size-4" /> مشتری جدید</Button>} />
       <CrmNav />
       <div className="mb-4 w-full sm:w-64"><Input aria-label="جست‌وجو در مشتریان" placeholder="نام مشتری" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+      <div className="mb-4 flex justify-end">
+        <ExportMenu filename="accounts" title="مشتریان" rows={list.data} columns={[
+          { header: 'نام', value: (x) => x.name },
+          { header: 'نوع', value: (x) => (x.kind === 'company' ? 'شرکت' : 'شخص') },
+          { header: 'حوزه', value: (x) => x.industry },
+          { header: 'شهر', value: (x) => x.city },
+          { header: 'تلفن', value: (x) => x.phone },
+          { header: 'فرصت‌های باز', value: (x) => x.open_opportunities, kind: 'number' },
+        ]} />
+      </div>
       <PageState query={list} isEmpty={list.data?.length === 0} empty={<EmptyState icon={<Building2 className="size-8" />} title={q ? 'مشتری‌ای با این نام یافت نشد' : 'هنوز مشتری‌ای ثبت نشده است'} />}>
         <Table>
           <thead><tr><Th>نام</Th><Th>نوع</Th><Th>حوزه</Th><Th>شهر</Th><Th>تلفن</Th><Th>فرصت‌های باز</Th></tr></thead>

@@ -59,3 +59,14 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Print / "Save as PDF": content only, RTL, embedded font, no navigation or controls. */
+@media print {
+  @page { margin: 12mm; }
+  aside, header, nav, [role='tablist'], button, select, .print\:hidden { display: none !important; }
+  body, main { background: #fff !important; color: #000 !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  a { color: inherit !important; text-decoration: none !important; }
+}
