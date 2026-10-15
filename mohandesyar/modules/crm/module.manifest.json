@@ -1,0 +1,55 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "crm",
+  "name": { "fa": "مشتریان و فروش (CRM)", "en": "CRM" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "CRM مهندسی: مشتریان (شخص/شرکت) و مخاطبان، سابقه ارتباط، سرنخ‌ها با منبع، نیاز، بودجه و امتیاز، قیف فروش با مراحل قابل تنظیم، فرصت‌ها، پیشنهاد فنی و مالی با نسخه‌بندی و اعتبار، یادآوری پیگیری و گزارش فروش.",
+    "en": "Accounts, contacts, leads, pipeline, opportunities, proposals and sales reports."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "projects": "^1.0.0", "contracts": "^1.0.0" },
+  "provides": { "services": [{ "name": "crm.accounts", "version": "1.0.0" }] },
+  "permissions": [
+    { "key": "crm.account.view", "fa": "مشاهده مشتریان و مخاطبان", "scopes": ["company", "own"] },
+    { "key": "crm.account.manage", "fa": "ثبت و ویرایش مشتری، مخاطب و سابقه ارتباط", "scopes": ["company", "own"] },
+    { "key": "crm.pipeline.view", "fa": "مشاهده سرنخ‌ها، فرصت‌ها و پیشنهادها", "scopes": ["company", "own"] },
+    { "key": "crm.pipeline.manage", "fa": "مدیریت سرنخ، فرصت و پیشنهاد", "scopes": ["company", "own"] },
+    { "key": "crm.report.view", "fa": "گزارش‌های فروش", "scopes": ["company"] },
+    { "key": "crm.settings.manage", "fa": "تنظیم مراحل قیف فروش", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "sales_manager", "name": { "fa": "مدیر فروش" }, "grants": ["crm.*"] },
+    { "key": "sales_rep", "name": { "fa": "کارشناس فروش" }, "grants": ["crm.account.view", "crm.account.manage@own", "crm.pipeline.view@own", "crm.pipeline.manage@own"] }
+  ],
+  "menu": [
+    { "key": "crm", "label": { "fa": "فروش و مشتریان" }, "icon": "handshake", "path": "/app/crm", "permission": "crm.pipeline.view", "order": 40 },
+    { "key": "crm-accounts", "label": { "fa": "مشتریان" }, "icon": "building-2", "path": "/app/crm/accounts", "permission": "crm.account.view", "order": 41 }
+  ],
+  "routes": [{ "path": "/app/crm/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "crm.pipeline", "title": { "fa": "قیف فروش" }, "entry": "frontend/index.js", "export": "PipelineWidget", "permission": "crm.pipeline.view", "sizes": ["md"] },
+    { "key": "crm.followups", "title": { "fa": "پیگیری‌های امروز و معوق" }, "entry": "frontend/index.js", "export": "FollowupsWidget", "permission": "crm.pipeline.view", "sizes": ["md"] }
+  ],
+  "events": {
+    "publishes": [
+      { "type": "crm.opportunity.won", "version": 1 },
+      { "type": "crm.lead.converted", "version": 1 }
+    ]
+  },
+  "kpiProviders": [
+    { "key": "crm.won_value", "title": { "fa": "ارزش فرصت‌های برنده" }, "unit": "rial" },
+    { "key": "crm.new_leads", "title": { "fa": "سرنخ‌های جدید" }, "unit": "count" }
+  ],
+  "searchProviders": [
+    { "key": "crm.accounts", "title": { "fa": "مشتریان" }, "permission": "crm.account.view" },
+    { "key": "crm.opportunities", "title": { "fa": "فرصت‌های فروش" }, "permission": "crm.pipeline.view" }
+  ],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "crm_",
+  "entitlement": { "key": "mod.crm", "plans": [] }
+}
