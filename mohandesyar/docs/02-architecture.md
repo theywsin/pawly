@@ -75,7 +75,7 @@ flowchart TB
 mohandesyar/
 ├─ apps/
 │  ├─ web/                      # SPA: Vite + React + React Router (data router)
-│  │  ├─ src/areas/public/      # لندینگ (prerender با vite-react-ssg)
+│  │  ├─ src/areas/public/      # لندینگ (prerender ایستا با اسکریپت داخلی scripts/prerender.mjs)
 │  │  ├─ src/areas/app/         # پنل شرکت
 │  │  ├─ src/areas/admin/       # پنل ادمین پلتفرم
 │  │  ├─ src/module-host/       # بارگذار پویای فرانت ماژول‌ها

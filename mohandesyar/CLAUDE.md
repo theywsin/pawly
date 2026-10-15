@@ -4,8 +4,8 @@
 
 ## وضعیت پروژه
 
-- فاز ۰ (طراحی) تأیید شد. **فاز ۱ (هسته و سیستم ماژول) تکمیل‌شده، منتظر تأیید برای شروع فاز ۲.**
-- گزارش فاز ۱: [`docs/phase-1-report.md`](docs/phase-1-report.md). اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- فاز ۰ و ۱ تأیید شدند. **فاز ۲ (لندینگ، فروش، ثبت‌نام و راه‌اندازی) تکمیل‌شده، منتظر تأیید برای شروع فاز ۳.**
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md). اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
@@ -18,7 +18,7 @@
 |---|---|
 | مخزن | Monorepo: pnpm workspaces + Turborepo؛ lockfile قفل |
 | فرانت | SPA: Vite + React + TypeScript؛ React Router (data router)؛ TanStack Query؛ Zustand فقط برای وضعیت UI؛ React Hook Form + Zod؛ Tailwind (RTL، فقط ویژگی‌های منطقی) + Radix |
-| لندینگ | همان SPA، prerender ایستا در build (vite-react-ssg)؛ بقیه SPA خالص |
+| لندینگ | همان SPA، prerender ایستا در build با اسکریپت داخلی (`renderToString` + StaticRouter، `apps/web/scripts/prerender.mjs`)؛ داده API در مرورگر؛ فایل‌های ایستا پیش‌فشرده (br/gzip)؛ بقیه SPA خالص |
 | بک‌اند | NestJS (Fastify adapter)، Monolith ماژولار، OpenAPI از کد |
 | دیتابیس | PostgreSQL؛ **Drizzle ORM**؛ runner مهاجرت اختصاصی per-module (`core_module_migrations`) |
 | چندمستاجری | DB مشترک، `tenant_id` + `company_id`، RLS با `set_config('app.tenant_id', …, true)` در هر تراکنش، نقش `mohandesyar_app` بدون BYPASSRLS، `FORCE ROW LEVEL SECURITY` |
@@ -49,7 +49,8 @@ pnpm -r --if-present typecheck
 pnpm -r --if-present test:unit
 pnpm --filter @mohandesyar/api test:integration   # PostgreSQL/Redis/S3 واقعی؛ هر فایل دیتابیس تازه می‌سازد
 pnpm --filter @mohandesyar/web build && pnpm --filter @mohandesyar/api build
-PW_CHROMIUM=/opt/pw-browsers/chromium pnpm test:e2e   # Playwright روی کلاستر واقعی (e2e/start-server.sh)
+PW_CHROMIUM=/opt/pw-browsers/chromium pnpm test:e2e   # Playwright روی کلاستر واقعی (e2e/start-server.sh)؛ شامل axe روشن/تیره
+PW_CHROMIUM=/opt/pw-browsers/chromium pnpm test:lighthouse <baseUrl>   # صفحات عمومی موبایل/دسکتاپ؛ زیر ۹۰ = شکست
 
 # اجرای سرور (env نمونه: infra/compose/.env.example)
 node apps/api/dist/main.js migrate            # مهاجرت هسته + کلیدهای مورد اعتماد + بسته‌های پیش‌نصب
@@ -90,3 +91,6 @@ pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <pub
 - سرویس‌های هسته کلاس‌های ساده در `apps/api/src/app/services.ts` هستند و با `@Inject(Services)` به کنترلرها می‌رسند.
 - مقادیر timestamp از Drizzle/pg به‌صورت رشته برمی‌گردند؛ قبل از مقایسه `new Date(...)` کنید.
 - تست‌های یکپارچه با PostgreSQL واقعی؛ mock دیتابیس ممنوع.
+- صفحات عمومی: هر صفحه دقیقاً یک `h1` (`<Section page>`)؛ متن بازاریابی فقط در `areas/public/catalog.ts` و بدون آمار/مشتری/نظر ساختگی؛ ادعای امنیتی فقط برای رفتار تست‌شده؛ مسیر عمومی جدید باید به `PRERENDER` در `routes.tsx` اضافه شود.
+- `zod` در وب با `jitless` پیکربندی شده (CSP بدون eval)؛ `src/zod-config.ts` باید اولین import در `main.tsx` بماند.
+- IP کاربر از `X-Forwarded-For` فقط برای peerهای `TRUST_PROXY` خوانده می‌شود.

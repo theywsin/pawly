@@ -6,7 +6,7 @@
 
 | ناحیه | پیشوند | Layout | Guard | رندر |
 |---|---|---|---|---|
-| عمومی (لندینگ) | `/`، `/pricing`، … | PublicLayout (هدر ثابت، فوتر) | ندارد | **prerender ایستا** در build (vite-react-ssg) + hydrate |
+| عمومی (لندینگ) | `/`، `/pricing`، … | PublicLayout (هدر ثابت، فوتر) | ندارد | **prerender ایستا** در build (اسکریپت داخلی با `renderToString` + StaticRouter) + hydrate |
 | احراز هویت | `/auth/*` | AuthLayout | فقط مهمان | SPA |
 | پنل شرکت | `/app/*` | AppShell (سربرگ، نوار کناری پویا، breadcrumb) | AuthGuard + TenantGuard + ModuleRouteGuard | SPA، lazy per module |
 | پنل ادمین پلتفرم | `/console/*` (مسیر قابل تنظیم) | ConsoleShell | PlatformAuthGuard (ورود جدا + ۲FA اجباری) | SPA، chunk جدا |
@@ -24,7 +24,9 @@
 | `/contact`، `/demo` | فرم | `POST /api/public/leads` |
 | `/sitemap.xml`، `/robots.txt` | تولید در build | |
 
-**ادعاهای امنیتی لندینگ** فقط شامل موارد پیاده‌سازی‌شده و تست‌شده؛ فهرست آن‌ها در `docs/landing-claims.md` با ارجاع به تست مربوط نگهداری می‌شود (چک‌لیست بازبینی پیش از انتشار).
+**پیاده‌سازی فاز ۲:** صفحات عمومی در build به HTML ایستا تبدیل می‌شوند (`apps/web/scripts/prerender.mjs`؛ title، description، canonical، Open Graph، JSON-LD در صفحه اصلی؛ نشانی مطلق با `PUBLIC_ORIGIN` در زمان سرو). داده‌های API (پلن، FAQ، تماس، متن صفحات حقوقی) در HTML ایستا **نیستند** و پس از بارگذاری در مرورگر خوانده می‌شوند؛ تا انتشار از کنسول، حالت خالی صادقانه نمایش داده می‌شود. `sitemap.xml` و `robots.txt` را API از manifest همان build می‌سازد. مسیرهای `/app`، `/console` و `/auth` پوسته SPA با `noindex` می‌گیرند.
+
+**ادعاهای امنیتی لندینگ** فقط شامل موارد پیاده‌سازی‌شده و تست‌شده؛ فهرست آن‌ها در `apps/web/src/areas/public/catalog.ts` (`SECURITY`) نگهداری می‌شود و هر مورد به قابلیت تست‌شده در گزارش فاز ۱ ارجاع دارد.
 
 **تصویر محصول در Hero:** ماکت SVG ساخته‌شده از کامپوننت‌های واقعی `@mohandesyar/ui` با برچسب‌های آشکارا عمومی (مثل «پروژه نمونه»)، نه اسکرین‌شات از داده هیچ مشتری، و بدون اعداد آماری که ادعای واقعی بودن داشته باشند. (فرض ثبت‌شده؛ سؤال باز ۷.)
 
@@ -41,6 +43,7 @@ flowchart LR
 
 - `/auth/login` → اگر ۲FA فعال: `/auth/2fa`؛ اگر چند Tenant: `/auth/select-tenant`.
 - `/auth/forgot`، `/auth/reset/:token`، `/auth/invite/:token`.
+- **پیاده‌سازی فاز ۲:** `/auth/signup` → (حالت «باز») ورود مستقیم و هدایت به `/app/onboarding` (جادوگر ۴ گامی: شرکت ← ترجیحات ← ماژول‌ها ← تیم؛ قابل رد شدن). در حالت «با تأیید» سازمان `pending` ساخته می‌شود و تا تأیید در `/console/tenants` امکان ورود ندارد؛ در حالت «بسته» ثبت‌نام رد و کاربر به درخواست دمو هدایت می‌شود. تأیید ایمیل هنوز ساخته نشده است (نیازمند SMTP).
 - تأیید ایمیل/پیامک وابسته به adapter؛ اگر هیچ adapter پیکربندی نشده باشد، ثبت‌نام عمومی به حالت «درخواست ثبت‌نام» می‌رود که ادمین پلتفرم تأیید می‌کند (فرض؛ سؤال باز ۴).
 
 ## ۴. پنل شرکت `/app`
