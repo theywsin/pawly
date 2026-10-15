@@ -80,8 +80,18 @@ export interface BaseModuleContext {
   audit(entry: AuditEntry, tx?: Db): Promise<void>;
   notify(input: NotificationInput): Promise<void>;
   settings<T extends Record<string, unknown> = Record<string, unknown>>(): Promise<T>;
+  /**
+   * Creates the tenant's approval workflow `key` (must start with the module id) when it does not exist
+   * yet; an existing definition — possibly edited by the organisation — is never overwritten.
+   */
+  ensureWorkflow(key: string, definition: WorkflowDefinitionInput): Promise<void>;
   /** Active members of the tenant; with `ids`, only those (unknown or inactive ids are left out). */
   directory(ids?: readonly string[]): Promise<DirectoryUser[]>;
+}
+
+export interface WorkflowDefinitionInput {
+  title: string;
+  steps: { key: string; label: string; approverRole?: string; approverUserId?: string; minAmount?: number }[];
 }
 
 export interface StartWorkflowInput {

@@ -1,0 +1,62 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "contracts",
+  "name": { "fa": "قراردادها", "en": "Contracts" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "ثبت و پیگیری قراردادهای کارفرمایی، پیمانکاری، مشاوره و خرید: طرفین، مبلغ اولیه و اصلاحی، الحاقیه و تمدید، تضامین، شرایط پرداخت، تعهدات، صورت‌وضعیت با کسورات و گردش تأیید، هشدار سررسید و تاریخچه تغییرات.",
+    "en": "Contracts, amendments, guarantees, payment terms, obligations, progress statements, expiry alerts."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "projects": "^1.0.0", "crm": "^1.0.0" },
+  "provides": { "services": [{ "name": "contracts.contracts", "version": "1.0.0" }] },
+  "permissions": [
+    { "key": "contracts.contract.view", "fa": "مشاهده قراردادها", "scopes": ["company", "own"] },
+    { "key": "contracts.contract.create", "fa": "ثبت قرارداد", "scopes": ["company"] },
+    { "key": "contracts.contract.update", "fa": "ویرایش قرارداد، الحاقیه، تضامین و تعهدات", "scopes": ["company", "own"] },
+    { "key": "contracts.contract.delete", "fa": "حذف قرارداد پیش‌نویس", "scopes": ["company"] },
+    { "key": "contracts.statement.create", "fa": "ثبت و ارسال صورت‌وضعیت برای تأیید", "scopes": ["company", "own"] }
+  ],
+  "defaultRoles": [
+    { "key": "contracts_manager", "name": { "fa": "مسئول قراردادها" }, "grants": ["contracts.*"] },
+    { "key": "contracts_viewer", "name": { "fa": "مشاهده‌گر قراردادها" }, "grants": ["contracts.contract.view"] }
+  ],
+  "menu": [
+    { "key": "contracts", "label": { "fa": "قراردادها" }, "icon": "file-signature", "path": "/app/contracts", "permission": "contracts.contract.view", "order": 30 }
+  ],
+  "routes": [{ "path": "/app/contracts/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "contracts.summary", "title": { "fa": "قراردادهای جاری" }, "entry": "frontend/index.js", "export": "SummaryWidget", "permission": "contracts.contract.view", "sizes": ["md"] },
+    { "key": "contracts.expiring", "title": { "fa": "سررسیدهای نزدیک قرارداد و ضمانت‌نامه" }, "entry": "frontend/index.js", "export": "ExpiringWidget", "permission": "contracts.contract.view", "sizes": ["md"] }
+  ],
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "alertDays": { "type": "integer", "title": "هشدار سررسید (روز قبل از پایان قرارداد یا ضمانت‌نامه)", "default": 30, "minimum": 1, "maximum": 180 },
+        "defaultGoodPerformancePct": { "type": "number", "title": "درصد پیش‌فرض کسر حسن انجام کار", "default": 10, "minimum": 0, "maximum": 100 },
+        "defaultInsurancePct": { "type": "number", "title": "درصد پیش‌فرض کسر بیمه", "default": 5, "minimum": 0, "maximum": 100 },
+        "defaultTaxPct": { "type": "number", "title": "درصد پیش‌فرض کسر مالیات علی‌الحساب", "default": 3, "minimum": 0, "maximum": 100 },
+        "defaultVatPct": { "type": "number", "title": "درصد پیش‌فرض مالیات بر ارزش افزوده", "default": 10, "minimum": 0, "maximum": 100 }
+      }
+    }
+  },
+  "events": {
+    "publishes": [
+      { "type": "contracts.contract.created", "version": 1 },
+      { "type": "contracts.contract.activated", "version": 1 },
+      { "type": "contracts.statement.approved", "version": 1 }
+    ],
+    "consumes": [{ "type": "core.workflow.completed", "version": 1 }]
+  },
+  "kpiProviders": [{ "key": "contracts.signed_value", "title": { "fa": "ارزش قراردادهای امضاشده" }, "unit": "rial" }],
+  "searchProviders": [{ "key": "contracts.contracts", "title": { "fa": "قراردادها" }, "permission": "contracts.contract.view" }],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "contracts_",
+  "entitlement": { "key": "mod.contracts", "plans": [] }
+}

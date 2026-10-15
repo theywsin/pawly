@@ -1,6 +1,6 @@
 import type { PermissionScope } from '@mohandesyar/module-sdk';
 import { satisfiesRange } from '@mohandesyar/module-sdk';
-import type { AuditEntry, BaseModuleContext, Db, DirectoryUser, ModuleEventContext, ModuleRequestContext, NotificationInput } from '@mohandesyar/module-sdk/server';
+import type { AuditEntry, BaseModuleContext, Db, DirectoryUser, ModuleEventContext, ModuleRequestContext, NotificationInput, WorkflowDefinitionInput } from '@mohandesyar/module-sdk/server';
 import type { Database } from '../../infra/db.js';
 import type { AuditService } from '../audit/audit.service.js';
 import type { EventBus } from '../events/event-bus.js';
@@ -21,6 +21,13 @@ export async function directoryOf(db: Database, tenantId: string, ids?: readonly
       WHERE m.status = 'active' ${filter} ORDER BY u.full_name`);
     return r.rows as unknown as DirectoryUser[];
   });
+}
+
+async function ensureWorkflow(workflow: WorkflowService, db: Database, tenantId: string, moduleId: string, key: string, definition: WorkflowDefinitionInput): Promise<void> {
+  if (!key.startsWith(`${moduleId}.`)) throw new Error(`workflow key "${key}" must start with "${moduleId}."`);
+  const { sql } = await import('drizzle-orm');
+  const exists = await db.tx({ tenantId }, (tx) => tx.execute(sql`SELECT 1 FROM core_workflow_defs WHERE key = ${key} LIMIT 1`));
+  if (!exists.rows.length) await workflow.define(tenantId, moduleId, key, definition, null);
 }
 
 export interface RequestIdentity {
@@ -86,6 +93,7 @@ export class ModuleContextFactory {
         return (await settings.getModuleSettings(tenantId, module.manifest)) as T;
       },
       directory: (ids) => directoryOf(db, tenantId, ids),
+      ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, db, tenantId, moduleId, key, definition),
     };
     return self;
   }
@@ -116,6 +124,7 @@ export class ModuleContextFactory {
         return (await settings.getModuleSettings(tenantId, module.manifest)) as T;
       },
       directory: (ids) => directoryOf(this.db, tenantId, ids),
+      ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, this.db, tenantId, module.id, key, definition),
     };
   }
 

@@ -112,6 +112,43 @@ export class TestApp {
     return { token: r.body.accessToken, tenantId: r.body.tenantId, email, password };
   }
 
+  /** Adds a member to the caller's organisation with one role and returns their app token. */
+  async member(ownerToken: string, roleKey: string, name = roleKey): Promise<{ token: string; userId: string }> {
+    const email = `${name}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@example.ir`;
+    const password = 'Passw0rd-strong';
+    const add = await this.req('POST', '/api/core/members', { token: ownerToken, body: { email, fullName: `کاربر ${name}`, initialPassword: password, roleKey } });
+    if (add.status >= 300) throw new Error(`add member failed: ${JSON.stringify(add.body)}`);
+    const login = await this.req('POST', '/api/auth/login', { body: { email, password } });
+    if (!login.body.accessToken) throw new Error(`login failed: ${JSON.stringify(login.body)}`);
+    const me = await this.req('GET', '/api/core/me', { token: login.body.accessToken });
+    return { token: login.body.accessToken, userId: me.body.user.id };
+  }
+
+  /**
+   * Installs signed module packages through the console (trusting `publicKeyPem` first), reloads, and
+   * enables the modules for the given tenants.
+   */
+  async installModules(admin: { token: string; otp: () => string }, publicKeyPem: string, pkgs: string[], tenantIds: string[]): Promise<void> {
+    const { readFile } = await import('node:fs/promises');
+    const keys = await this.req('POST', '/api/console/keys', { token: admin.token, body: { publicKeyPem, label: 'test key', otp: admin.otp() } });
+    if (keys.status !== 201 && keys.status !== 409) throw new Error(`key: ${JSON.stringify(keys.body)}`);
+    const ids: string[] = [];
+    for (const pkg of pkgs) {
+      const { payload, headers } = multipart(await readFile(pkg), 'm.mypkg');
+      const up = await this.req('POST', '/api/console/modules/upload', { token: admin.token, payload, headers });
+      if (!up.body.ok) throw new Error(`upload ${pkg}: ${JSON.stringify(up.body)}`);
+      await this.services.redis.del(...(await this.services.redis.keys('rl:otpcheck:*')), 'none');
+      const inst = await this.req('POST', '/api/console/modules/install', { token: admin.token, body: { uploadId: up.body.uploadId, otp: admin.otp(), enableGlobally: true } });
+      if (inst.status !== 200) throw new Error(`install ${pkg}: ${JSON.stringify(inst.body)}`);
+      ids.push(up.body.manifest?.id ?? inst.body.moduleId);
+      await this.reload();
+    }
+    for (const id of [...this.services.registry.loaded.keys()]) {
+      const r = await this.req('POST', `/api/console/modules/${id}/tenants`, { token: admin.token, body: { tenantIds, enabled: true } });
+      if (!r.body.results?.every((x: { ok: boolean }) => x.ok)) throw new Error(`enable ${id}: ${JSON.stringify(r.body)}`);
+    }
+  }
+
   /** Creates a platform admin with TOTP enrolled and returns a console token. */
   async consoleAdmin(roles: string[] = ['tech_admin', 'super_admin']): Promise<{ token: string; otp: () => string }> {
     const email = `admin-${Date.now()}@platform.ir`;
