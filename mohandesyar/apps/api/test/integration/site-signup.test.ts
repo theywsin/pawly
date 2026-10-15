@@ -110,6 +110,15 @@ describe('demo / contact leads with anti-spam', () => {
     expect(codes.slice(0, 5).every((c) => c === 201)).toBe(true);
     expect(codes[5]).toBe(429);
   });
+
+  it('uses X-Forwarded-For only from a trusted proxy peer (TRUST_PROXY, default loopback/private)', async () => {
+    const from = (ip: string) => t.req('POST', '/api/public/leads', { body: lead({ formToken: oldToken() }), headers: { 'x-forwarded-for': ip } });
+    const codes: number[] = [];
+    for (let i = 0; i < 5; i++) codes.push((await from('203.0.113.1')).status);
+    codes.push((await from('203.0.113.2')).status);
+    expect(codes).toEqual([201, 201, 201, 201, 201, 201]);
+    expect((await from('203.0.113.1')).status).toBe(429);
+  });
 });
 
 describe('signup policy and onboarding', () => {

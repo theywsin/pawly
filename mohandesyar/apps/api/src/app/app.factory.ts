@@ -187,6 +187,10 @@ async function sendFile(reply: FastifyReply, file: string, cache: string) {
   return reply.send(await readFile(file));
 }
 
+function trustProxy(v: string): boolean | string {
+  return v === 'true' ? true : v === 'false' ? false : v;
+}
+
 export interface CreateAppOptions {
   logger?: boolean;
 }
@@ -210,7 +214,7 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
 
   // Module controllers resolve Services through the root provider (global).
   const Root: DynamicModule = { module: AppModule, global: true };
-  const app = await NestFactory.create<NestFastifyApplication>(Root, new FastifyAdapter({ trustProxy: true, bodyLimit: 2 * 1024 * 1024 }), {
+  const app = await NestFactory.create<NestFastifyApplication>(Root, new FastifyAdapter({ trustProxy: trustProxy(s.config.TRUST_PROXY), bodyLimit: 2 * 1024 * 1024 }), {
     logger: opts.logger ? ['error', 'warn'] : false,
   });
   app.setGlobalPrefix('api');

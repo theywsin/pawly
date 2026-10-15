@@ -29,6 +29,11 @@ const schema = z.object({
   API_WORKERS: z.coerce.number().int().min(1).default(1),
   COOKIE_SECURE: envBool(true),
   PUBLIC_ORIGIN: z.string().default('http://localhost:3000'),
+  /**
+   * Which peers may set X-Forwarded-For (client IP for rate limits and lead anti-spam): proxy-addr list
+   * such as `loopback,uniquelocal` or `10.0.0.5`; `true` trusts everyone (only behind a proxy that overwrites it), `false` nobody.
+   */
+  TRUST_PROXY: z.string().default('loopback,uniquelocal'),
 });
 
 export type Config = z.infer<typeof schema>;
