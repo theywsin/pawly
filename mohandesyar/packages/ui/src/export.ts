@@ -12,12 +12,13 @@ export interface ExportColumn<T> {
   kind?: 'text' | 'number';
 }
 
+const BOM = String.fromCharCode(0xfeff);
 const cellText = (v: string | number | null | undefined) => (v === null || v === undefined ? '' : String(v));
 
 export function toCsv<T>(columns: ExportColumn<T>[], rows: T[]): string {
   const esc = (s: string) => (/[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
   const lines = [columns.map((c) => esc(c.header)).join(','), ...rows.map((r) => columns.map((c) => esc(cellText(c.value(r)))).join(','))];
-  return `﻿${lines.join('\r\n')}\r\n`;
+  return `${BOM}${lines.join('\r\n')}\r\n`;
 }
 
 // ---------------------------------------------------------------- minimal zip (STORE)
@@ -88,7 +89,10 @@ export function zipStore(files: { name: string; data: Uint8Array }[]): Uint8Arra
 
 // ---------------------------------------------------------------- xlsx
 
-const xml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+// Characters XML 1.0 forbids (C0 controls except tab, newline, carriage return).
+// eslint-disable-next-line no-control-regex
+const INVALID_XML = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g;
+const xml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(INVALID_XML, '');
 const colName = (i: number) => {
   let s = '';
   for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s;
