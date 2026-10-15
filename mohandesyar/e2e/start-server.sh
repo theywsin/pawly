@@ -9,7 +9,7 @@ rm -rf "$E2E" && mkdir -p "$E2E"
 psql "$ADMIN_URL" -q -c "DROP DATABASE IF EXISTS mohandesyar_e2e WITH (FORCE)" >/dev/null
 psql "$ADMIN_URL" -q -v owner_pw=ownerpw -v app_pw=apppw -v db_name=mohandesyar_e2e -f "$ROOT/infra/db/init-roles.sql" >/dev/null
 redis-cli -p 63799 -n 3 flushdb >/dev/null
-node "$ROOT/e2e/prepare-packages.mjs" "$E2E"
+PREINSTALL=contracts,projects,crm,meetings node "$ROOT/e2e/prepare-packages.mjs" "$E2E"
 cat > "$E2E/env" <<ENV
 NODE_ENV=production
 PORT=3200
@@ -27,6 +27,7 @@ MODULE_STORE_DIR=$E2E/store
 MODULE_UPLOAD_DIR=$E2E/uploads
 MODULE_BACKUP_DIR=$E2E/backups
 MODULE_TRUSTED_KEYS=$E2E/keys/release.pub.pem
+PREINSTALLED_MODULES_DIR=$E2E/preinstalled
 PUBLIC_ORIGIN=http://127.0.0.1:3200
 WEB_DIST_DIR=$ROOT/apps/web/dist
 COOKIE_SECURE=false
@@ -36,5 +37,6 @@ ENV
 set -a; . "$E2E/env"; set +a
 node "$ROOT/apps/api/dist/main.js" migrate >/dev/null
 ADMIN_PASSWORD='Admin-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email tech@platform.test --name 'مدیر فنی' >/dev/null
+ADMIN_PASSWORD='Ops-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email ops@platform.test --name 'مدیر عملیات' >/dev/null
 ADMIN_PASSWORD='Sales-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email sales@platform.test --name 'مدیر فروش' >/dev/null
 exec node "$ROOT/apps/api/dist/main.js" serve

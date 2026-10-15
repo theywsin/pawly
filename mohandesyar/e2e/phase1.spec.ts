@@ -106,7 +106,9 @@ test.describe.serial('phase 1 — module system through the panel', () => {
     await expect(admin.getByText('نصب انجام نشد')).toBeVisible();
     await expect(admin.getByTestId('operation-log')).toContainText('همه تغییرات برگردانده شد');
     await admin.goto('/console/modules');
-    await expect(admin.getByText('هنوز ماژولی نصب نشده است')).toBeVisible();
+    // The business modules are pre-installed (phase 3); hello-module must not appear.
+    await expect(admin.getByRole('link', { name: 'contracts' }).or(admin.getByText('قراردادها')).first()).toBeVisible();
+    await expect(admin.getByText('ماژول نمونه (سلام)')).toHaveCount(0);
   });
 
   test('(b) installs hello-module from the panel', async () => {

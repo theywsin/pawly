@@ -24,13 +24,15 @@ export function SummaryWidget({ moduleId, widgetKey }: WidgetProps) {
         const d = q.data!.data;
         if (!d.active && !d.draft) return <p className="text-sm text-muted">داده کافی وجود ندارد — هنوز قراردادی ثبت نشده است.</p>;
         return (
-          <dl className="grid grid-cols-2 gap-3 text-sm">
+          <div className="space-y-3 text-sm">
+          <dl className="grid grid-cols-2 gap-3">
             <div><dt className="text-muted">جاری</dt><dd className="text-2xl font-bold">{d.active.toLocaleString('fa-IR')}</dd></div>
             <div><dt className="text-muted">پیش‌نویس</dt><dd className="text-2xl font-bold">{d.draft.toLocaleString('fa-IR')}</dd></div>
             <div><dt className="text-muted">درآمدی</dt><dd><Money value={d.income} /></dd></div>
             <div><dt className="text-muted">هزینه‌ای</dt><dd><Money value={d.expense} /></dd></div>
-            <div className="col-span-2"><Link to="/app/contracts" className="text-primary underline">همه قراردادها</Link></div>
           </dl>
+          <Link to="/app/contracts" className="text-primary underline">همه قراردادها</Link>
+          </div>
         );
       }}
     </WidgetState>

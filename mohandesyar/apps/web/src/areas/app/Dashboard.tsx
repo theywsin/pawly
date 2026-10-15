@@ -29,7 +29,8 @@ export function Dashboard() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {widgets.map(({ m, w }) => (
-            <Card key={w.key}>
+            // A widget's preferred size from its manifest: "lg" spans two columns.
+            <Card key={w.key} className={w.sizes.includes('lg') ? 'sm:col-span-2' : undefined}>
               <CardHeader title={w.title.fa} description={m.name.fa} />
               <div className="p-5">
                 <ModuleWidget module={m} widget={w} />
