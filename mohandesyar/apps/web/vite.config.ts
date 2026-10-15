@@ -17,13 +17,16 @@ function importMap(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react(), tailwind(), importMap()],
+  publicDir: isSsrBuild ? false : 'public',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     target: 'es2022',
-    rollupOptions: { external: SHARED },
+    // Browser build: shared runtime comes from the import map. SSR (prerender) build: bundle workspace sources.
+    rollupOptions: { external: isSsrBuild ? [] : SHARED },
     modulePreload: { polyfill: false },
   },
-});
+  ssr: { noExternal: ['@mohandesyar/ui', '@mohandesyar/persian', '@mohandesyar/module-sdk'] },
+}));

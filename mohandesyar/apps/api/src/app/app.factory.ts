@@ -225,22 +225,44 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
     return sendFile(reply, file, 'public, max-age=31536000, immutable');
   });
 
-  // SPA (built web app): static files plus index.html fallback for client-side routes.
+  // SPA (built web app): prerendered public pages, static files, and the SPA shell for client-side routes.
   const webDist = s.config.WEB_DIST_DIR;
   if (webDist && existsSync(webDist)) {
+    const origin = s.config.PUBLIC_ORIGIN.replace(/\/$/, '');
+    const shell = existsSync(join(webDist, 'app-shell.html')) ? join(webDist, 'app-shell.html') : join(webDist, 'index.html');
+    const sendHtml = async (reply: FastifyReply, file: string) => {
+      reply.type(MIME['.html']!);
+      reply.header('cache-control', 'no-cache');
+      return reply.send((await readFile(file, 'utf8')).replaceAll('%%ORIGIN%%', origin));
+    };
+    const manifestFile = join(webDist, 'prerender-manifest.json');
+    const pages: { path: string; priority: number }[] = existsSync(manifestFile) ? JSON.parse(await readFile(manifestFile, 'utf8')) : [];
+
+    fastify.get('/robots.txt', async (_req: FastifyRequest, reply: FastifyReply) => {
+      reply.type(MIME['.txt']!);
+      return reply.send(['User-agent: *', 'Allow: /', 'Disallow: /app', 'Disallow: /console', 'Disallow: /auth', 'Disallow: /api', `Sitemap: ${origin}/sitemap.xml`, ''].join('\n'));
+    });
+    fastify.get('/sitemap.xml', async (_req: FastifyRequest, reply: FastifyReply) => {
+      reply.type(MIME['.xml']!);
+      const urls = pages.map((p) => `  <url><loc>${origin}${p.path}</loc><priority>${p.priority.toFixed(1)}</priority></url>`).join('\n');
+      return reply.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+    });
+
     // Catch-all GET (Nest owns the 404 handler); API routes are more specific and take precedence.
     fastify.get('/*', async (req: FastifyRequest, reply: FastifyReply) => {
       const path = decodeURIComponent(req.url.split('?')[0] ?? '/');
       if (path.startsWith('/api/')) return reply.code(404).send({ code: 'NOT_FOUND', message: 'مسیر یافت نشد' });
       const candidate = normalize(join(webDist, path));
-      if (candidate.startsWith(webDist) && existsSync(candidate) && (await stat(candidate)).isFile()) {
+      if (!candidate.startsWith(webDist)) return reply.code(404).send({ code: 'NOT_FOUND' });
+      if (existsSync(candidate) && (await stat(candidate)).isFile()) {
+        if (candidate.endsWith('.html')) return sendHtml(reply, candidate);
         const immutable = path.startsWith('/assets/') || path.startsWith('/shared/');
         return sendFile(reply, candidate, immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
       }
       // Prerendered public pages (e.g. /pricing → pricing/index.html), else the SPA shell.
-      const pre = join(webDist, path, 'index.html');
-      if (existsSync(pre)) return sendFile(reply, pre, 'no-cache');
-      return sendFile(reply, join(webDist, 'index.html'), 'no-cache');
+      const pre = join(candidate, 'index.html');
+      if (existsSync(pre)) return sendHtml(reply, pre);
+      return sendHtml(reply, shell);
     });
   }
 
