@@ -47,3 +47,14 @@ describe('jalali conversion', () => {
     expect(todayIso('Asia/Tehran', new Date('2024-03-19T21:00:00Z'))).toBe('2024-03-20');
   });
 });
+
+import { utcToZoned, zonedToUtc } from '../src/index.js';
+describe('time zones', () => {
+  it('converts Tehran wall-clock time to UTC and back (with and without the former DST)', () => {
+    expect(zonedToUtc('2025-10-15', '09:30')).toBe('2025-10-15T06:00:00.000Z'); // +03:30 (no DST since 2022)
+    expect(zonedToUtc('2021-07-01', '09:30')).toBe('2021-07-01T05:00:00.000Z'); // +04:30 (DST in 2021)
+    expect(utcToZoned('2025-10-15T06:00:00.000Z')).toEqual({ date: '2025-10-15', time: '09:30' });
+    expect(utcToZoned('2025-10-15T21:00:00.000Z')).toEqual({ date: '2025-10-16', time: '00:30' });
+    expect(zonedToUtc('2025-03-21', '00:15', 'UTC')).toBe('2025-03-21T00:15:00.000Z');
+  });
+});

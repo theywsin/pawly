@@ -124,3 +124,31 @@ export function daysBetween(a: string, b: string): number {
 export function addDays(iso: string, days: number): string {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 }
+
+/** Offset (ms) of `timeZone` from UTC at instant `t`. */
+function zoneOffset(t: number, timeZone: string): number {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
+      .formatToParts(new Date(t))
+      .map((x) => [x.type, x.value]),
+  );
+  return Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute), Number(p.second)) - Math.floor(t / 1000) * 1000;
+}
+
+/** Wall-clock date ("2025-03-21") and time ("14:30") in `timeZone` → UTC ISO timestamp. */
+export function zonedToUtc(dateIso: string, time: string, timeZone = 'Asia/Tehran'): string {
+  const [y, m, d] = dateIso.split('-').map(Number) as [number, number, number];
+  const [hh, mm] = time.split(':').map(Number) as [number, number];
+  const guess = Date.UTC(y, m - 1, d, hh, mm);
+  let t = guess - zoneOffset(guess, timeZone);
+  t = guess - zoneOffset(t, timeZone); // second pass across offset changes
+  return new Date(t).toISOString();
+}
+
+/** UTC timestamp → wall-clock { date: "2025-03-21", time: "14:30" } in `timeZone`. */
+export function utcToZoned(iso: string, timeZone = 'Asia/Tehran'): { date: string; time: string } {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(iso)).map((x) => [x.type, x.value]),
+  );
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+}
