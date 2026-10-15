@@ -4,8 +4,8 @@
 
 ## وضعیت پروژه
 
-- فاز ۰ تا ۳ تأیید شدند. **فاز ۴ (خروجی Excel/CSV/PDF، تقویم کاری، ایمیل SMTP، ماژول‌های استخدام، پرونده کارکنان و KPI) تکمیل‌شده، منتظر تأیید برای شروع فاز ۵.**
-- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- فاز ۰ تا ۴ تأیید شدند. **فاز ۵ (گردش‌های تأیید، ماژول‌های مالی، تدارکات و اسناد، ورود داده از Excel) تکمیل‌شده، منتظر تأیید برای شروع فاز ۶.**
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
@@ -103,4 +103,8 @@ pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <pub
 - اعلان‌ها خودکار ایمیل هم می‌شوند (صف `core_email_queue` در همان تراکنش؛ `SMTP_URL`)؛ ماژول فقط `ctx.notify` را صدا می‌زند.
 - گردش تأیید: `ctx.ensureWorkflow` در `seedTenant`، `ctx.startWorkflow`/`ctx.cancelWorkflow`، نتیجه از رویداد `core.workflow.completed`.
 - شاخص‌ها: Providerهای اعلام‌شده در manifest از `ctx.kpi.providers()/evaluate()` در دسترس‌اند؛ فرمول KPI فقط با پارسر `modules/kpi/backend/src/formula.ts` (هرگز eval).
+- تفکیک وظایف (درخواست/تأیید/اجرا، ثبت/تأیید فاکتور، بارگذار/تأییدکننده نسخه سند) هم در برنامه و هم با قید پایگاه داده یا قاعده هسته (`SELF_APPROVAL`) اجبار شود.
+- ارتباط تدارکات ← مالی فقط با رویداد (`procurement.order.approved`، `procurement.invoice.approved`) و idempotent با `source_ref`.
+- اسناد: قاعده دیدن سند (`visibleSql` در `modules/documents/backend/src/logic.ts`) در فهرست، جزئیات، جست‌وجو و ویجت یکسان است؛ مشاهده/دانلود اسناد محرمانه و سری در جدول append-only و Audit ثبت می‌شود.
+- ورود داده از Excel: `manifest.importTemplates` + `importers` در `defineModule`؛ کلید ستون = نام فیلد Zod؛ در `dryRun` هیچ نوشتنی نیست و اجرای واقعی همه یا هیچ در یک تراکنش.
 - داده شخصی (رزومه، پرونده، حقوق): مشاهده و دانلود در Audit ثبت شود؛ فیلد سن/جنسیت/قومیت/مذهب/سلامت در مدل داده نباشد؛ هیچ انتقال یا پرداخت خودکار.
