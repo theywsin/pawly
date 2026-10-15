@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { LayoutDashboard } from 'lucide-react';
 import { Card, CardHeader, EmptyState, PageHeader } from '@mohandesyar/ui';
 import { useAppSession } from '../../lib/session.js';
@@ -8,6 +8,8 @@ import { ModuleWidget } from '../../module-host/ModuleOutlet.js';
 export function Dashboard() {
   const { me } = useAppSession();
   const widgets = me.modules.flatMap((m) => m.widgets.map((w) => ({ m, w })));
+  // First visit of an administrator: run the onboarding wizard.
+  if (!me.tenant.onboarding_completed_at && me.permissions.includes('core.settings.manage')) return <Navigate to="/app/onboarding" replace />;
   return (
     <>
       <PageHeader title="داشبورد" description={`${me.user.fullName}، خوش آمدید.`} />

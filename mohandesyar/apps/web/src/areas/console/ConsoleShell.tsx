@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Activity, Building2, KeyRound, LogOut, Puzzle, ScrollText } from 'lucide-react';
+import { Activity, Building2, CreditCard, FileText, Inbox, KeyRound, LogOut, Puzzle, ScrollText } from 'lucide-react';
 import { cn, Toaster } from '@mohandesyar/ui';
 import { consoleApi, setToken } from '../../lib/api.js';
 import { useAdmin } from '../../lib/session.js';
@@ -31,6 +31,19 @@ export function ConsoleShell() {
             <NavLink to="/console/tenants" className={link}>
               <Building2 className="size-4" /> مشتریان
             </NavLink>
+            <NavLink to="/console/leads" className={link}>
+              <Inbox className="size-4" /> درخواست‌ها
+            </NavLink>
+            {(admin.roles.includes('super_admin') || admin.roles.includes('sales_admin')) && (
+              <>
+                <NavLink to="/console/plans" className={link}>
+                  <CreditCard className="size-4" /> پلن‌ها
+                </NavLink>
+                <NavLink to="/console/content" className={link}>
+                  <FileText className="size-4" /> محتوای سایت
+                </NavLink>
+              </>
+            )}
             {admin.roles.includes('tech_admin') && (
               <NavLink to="/console/keys" className={link}>
                 <KeyRound className="size-4" /> کلیدهای امضا

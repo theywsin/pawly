@@ -23,18 +23,30 @@ type Form = z.infer<typeof schema>;
 export function Signup() {
   const nav = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const form = useForm<Form>({ resolver: zodResolver(schema) });
   const e = form.formState.errors;
   const submit = form.handleSubmit(async ({ confirm: _c, ...values }) => {
     setError(null);
     try {
-      const r = await appApi<{ accessToken: string }>('/api/auth/signup', { method: 'POST', body: values });
-      setToken('app', r.accessToken);
+      const r = await appApi<{ accessToken?: string; pendingApproval?: boolean }>('/api/auth/signup', { method: 'POST', body: values });
+      if (r.pendingApproval) return setPending(true);
+      setToken('app', r.accessToken!);
       nav('/app', { replace: true });
     } catch (err) {
       setError(applyServerErrors(err, form.setError));
     }
   });
+  if (pending) {
+    return (
+      <AuthLayout title="درخواست ثبت شد">
+        <Alert tone="success">فضای کاری شما ساخته شد و پس از تأیید مدیر سامانه فعال می‌شود. پس از تأیید با همین ایمیل و رمز وارد شوید.</Alert>
+        <Link className="mt-4 inline-block text-primary underline" to="/">
+          بازگشت به صفحه اصلی
+        </Link>
+      </AuthLayout>
+    );
+  }
   return (
     <AuthLayout
       title="ثبت‌نام سازمان"

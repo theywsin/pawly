@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, CardHeader, DateText, Field, Input, Ltr, Num, PageHeader, PageState, Table, Td, Textarea, Th, toast } from '@mohandesyar/ui';
+import { Alert, Badge, Button, Card, CardHeader, DateText, Field, Input, Ltr, Num, PageHeader, PageState, Select, Table, Td, Textarea, Th, toast } from '@mohandesyar/ui';
 import { consoleApi } from '../../lib/api.js';
 import { errorMessage } from '../../lib/errors.js';
 
@@ -94,9 +94,44 @@ interface Tenant {
   modules: string[];
 }
 
+function SignupMode() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['signup-mode'], queryFn: () => consoleApi<{ mode: string }>('/api/console/settings/signup') });
+  const set = useMutation({
+    mutationFn: (mode: string) => consoleApi('/api/console/settings/signup', { method: 'PUT', body: { mode } }),
+    onSuccess: () => {
+      toast('سیاست ثبت‌نام ذخیره شد');
+      void qc.invalidateQueries({ queryKey: ['signup-mode'] });
+    },
+    onError: (e) => toast(errorMessage(e), 'danger'),
+  });
+  return (
+    <Card className="mb-6">
+      <CardHeader title="سیاست ثبت‌نام" description="باز: ثبت‌نام و ورود فوری. با تأیید: سازمان تا تأیید شما غیرفعال می‌ماند. بسته: فقط از طریق درخواست دمو." />
+      <div className="p-5">
+        <Field label="حالت" className="max-w-xs">
+          <Select value={q.data?.mode ?? 'open'} disabled={!q.data || set.isPending} onChange={(e) => set.mutate(e.target.value)}>
+            <option value="open">باز</option>
+            <option value="approval">با تأیید مدیر</option>
+            <option value="closed">بسته</option>
+          </Select>
+        </Field>
+      </div>
+    </Card>
+  );
+}
+
 export function Tenants() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['tenants'], queryFn: () => consoleApi<Tenant[]>('/api/console/tenants') });
+  const approve = useMutation({
+    mutationFn: (id: string) => consoleApi(`/api/console/tenants/${id}/approve`, { method: 'POST' }),
+    onSuccess: () => {
+      toast('سازمان تأیید شد');
+      void qc.invalidateQueries({ queryKey: ['tenants'] });
+    },
+    onError: (e) => toast(errorMessage(e), 'danger'),
+  });
   const status = useMutation({
     mutationFn: ({ id, s }: { id: string; s: 'active' | 'suspended' }) => consoleApi(`/api/console/tenants/${id}/status`, { method: 'POST', body: { status: s } }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['tenants'] }),
@@ -105,6 +140,7 @@ export function Tenants() {
   return (
     <>
       <PageHeader title="مشتریان (سازمان‌ها)" description="فقط آمار مصرف دیده می‌شود؛ داده‌های سازمان‌ها برای مدیر پلتفرم قابل مشاهده نیست." />
+      <SignupMode />
       <PageState query={q} isEmpty={q.data?.length === 0}>
         <Table>
           <thead>
@@ -137,11 +173,19 @@ export function Tenants() {
                 <Td>
                   <Ltr className="text-xs">{t.modules.join(', ') || '—'}</Ltr>
                 </Td>
-                <Td>{t.status === 'suspended' ? <Badge tone="warning">تعلیق</Badge> : <Badge tone="success">{t.status === 'trial' ? 'آزمایشی' : 'فعال'}</Badge>}</Td>
                 <Td>
-                  <Button size="sm" variant="secondary" loading={status.isPending} onClick={() => status.mutate({ id: t.id, s: t.status === 'suspended' ? 'active' : 'suspended' })}>
-                    {t.status === 'suspended' ? 'فعال‌سازی' : 'تعلیق'}
-                  </Button>
+                  {t.status === 'pending' ? <Badge tone="info">در انتظار تأیید</Badge> : t.status === 'suspended' ? <Badge tone="warning">تعلیق</Badge> : <Badge tone="success">{t.status === 'trial' ? 'آزمایشی' : 'فعال'}</Badge>}
+                </Td>
+                <Td>
+                  {t.status === 'pending' ? (
+                    <Button size="sm" loading={approve.isPending} onClick={() => approve.mutate(t.id)} aria-label={`تأیید ${t.name}`}>
+                      تأیید
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="secondary" loading={status.isPending} onClick={() => status.mutate({ id: t.id, s: t.status === 'suspended' ? 'active' : 'suspended' })}>
+                      {t.status === 'suspended' ? 'فعال‌سازی' : 'تعلیق'}
+                    </Button>
+                  )}
                 </Td>
               </tr>
             ))}

@@ -1,0 +1,35 @@
+import { Route, Routes } from 'react-router';
+import { AppSession } from '../../lib/session.js';
+import { AppShell } from './AppShell.js';
+import { Dashboard } from './Dashboard.js';
+import { Tasks } from './Tasks.js';
+import { Approvals } from './Approvals.js';
+import { Notifications } from './Notifications.js';
+import { Search } from './Search.js';
+import { Profile } from './Profile.js';
+import { Members } from './settings/Members.js';
+import { Modules } from './settings/Modules.js';
+import { Audit } from './settings/Audit.js';
+import { Onboarding } from './Onboarding.js';
+import { ModuleOutlet } from '../../module-host/ModuleOutlet.js';
+
+/** Company app area (lazy chunk). */
+export const element = (
+  <AppSession>
+    <Routes>
+      <Route path="onboarding" element={<Onboarding />} />
+      <Route element={<AppShell />}>
+        <Route index element={<Dashboard />} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="approvals" element={<Approvals />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="search" element={<Search />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="settings/members" element={<Members />} />
+        <Route path="settings/modules" element={<Modules />} />
+        <Route path="settings/audit" element={<Audit />} />
+        <Route path="*" element={<ModuleOutlet />} />
+      </Route>
+    </Routes>
+  </AppSession>
+);
