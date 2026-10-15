@@ -95,3 +95,21 @@ export function isValidNationalId(code: string): boolean {
   const sum = [...c.slice(0, 9)].reduce((s, d, i) => s + Number(d) * (10 - i), 0) % 11;
   return sum < 2 ? check === sum : check === 11 - sum;
 }
+
+/**
+ * Normalises an Iranian mobile number to 09XXXXXXXXX (accepts Persian/Arabic digits, +98, 0098, spaces
+ * and dashes). Returns null when the input is not a valid Iranian mobile number.
+ */
+export function normalizeIranMobile(input: string): string | null {
+  const d = toLatinDigits(input).replace(/[\s\-()]/g, '');
+  const m = /^(?:\+98|0098|98|0)?(9\d{9})$/.exec(d);
+  return m ? `0${m[1]}` : null;
+}
+
+/** Loose international phone check (landlines, foreign numbers): 7–15 digits after normalisation. */
+export function normalizePhone(input: string): string | null {
+  const mobile = normalizeIranMobile(input);
+  if (mobile) return mobile;
+  const d = toLatinDigits(input).replace(/[\s\-()]/g, '');
+  return /^\+?\d{7,15}$/.test(d) ? d : null;
+}

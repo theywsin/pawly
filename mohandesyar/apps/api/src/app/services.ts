@@ -18,6 +18,7 @@ import { TaskService } from '../core/tasks/task.service.js';
 import { WorkflowService } from '../core/workflow/workflow.service.js';
 import { FileService } from '../core/files/file.service.js';
 import { logger } from '../infra/logger.js';
+import { SiteService } from '../platform/site.service.js';
 
 export const RELOAD_CHANNEL = 'mohandesyar:reload';
 export const MODULE_STATE_CHANNEL = 'mohandesyar:module-state';
@@ -49,6 +50,7 @@ export class Services {
   readonly tasks: TaskService;
   readonly workflow: WorkflowService;
   readonly files: FileService;
+  readonly site: SiteService;
 
   constructor(
     readonly config: Config,
@@ -75,6 +77,7 @@ export class Services {
     this.workflow = new WorkflowService(this.db, this.audit, this.notifications, this.events);
     this.contexts = new ModuleContextFactory(this.db, this.registry, this.events, this.audit, this.notifications, this.settings, this.workflow);
     this.files = new FileService(this.db, this.audit, config);
+    this.site = new SiteService(this.db, this.redis, this.audit, config.JWT_SECRET);
     this.lifecycle = new ModuleLifecycleService(this.db, this.registry, this.rbac, this.audit, this.contexts, {
       storeDir: config.MODULE_STORE_DIR,
       uploadDir: config.MODULE_UPLOAD_DIR,

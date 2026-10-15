@@ -51,6 +51,7 @@ export class CoreGuard implements CanActivate {
     if (!claims?.tid || !(await this.s.auth.isSessionActive(claims.sid))) throw unauthorized();
     const tenant = await this.s.tenancy.getTenant(claims.tid);
     if (!tenant || tenant.status === 'closed') throw forbidden('TENANT_CLOSED', 'حساب این سازمان بسته شده است');
+    if (tenant.status === 'pending') throw forbidden('TENANT_PENDING', 'درخواست ثبت‌نام سازمان شما در انتظار تأیید مدیر سامانه است');
 
     const identity = await this.identity(claims.sub, claims.tid, claims.sid, claims.amr, req.headers['x-company-id']);
     req[IDENTITY_KEY] = identity;

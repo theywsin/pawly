@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatMoney, formatNumber, isValidNationalId, jalaliParts, normalizePersian, toLatinDigits, toPersianDigits } from '../src/index.js';
+import { formatDate, formatMoney, formatNumber, isValidNationalId, jalaliParts, normalizeIranMobile, normalizePersian, normalizePhone, toLatinDigits, toPersianDigits } from '../src/index.js';
 
 describe('persian', () => {
   it('converts digits both ways', () => {
@@ -37,5 +37,14 @@ describe('persian', () => {
     expect(isValidNationalId('۰۴۹۹۳۷۰۸۹۹')).toBe(true);
     expect(isValidNationalId('0499370898')).toBe(false);
     expect(isValidNationalId('1111111111')).toBe(false);
+  });
+
+  it('normalises phone numbers', () => {
+    expect(normalizeIranMobile('۰۹۱۲ ۳۴۵ ۶۷۸۹')).toBe('09123456789');
+    expect(normalizeIranMobile('+989123456789')).toBe('09123456789');
+    expect(normalizeIranMobile('00989123456789')).toBe('09123456789');
+    expect(normalizeIranMobile('0812345678')).toBeNull();
+    expect(normalizePhone('021-88776655')).toBe('02188776655');
+    expect(normalizePhone('abc')).toBeNull();
   });
 });

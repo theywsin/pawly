@@ -119,8 +119,12 @@ export class AuthService {
 
     let tid: string | undefined;
     if (subject === 'user') {
-      const tenants = (await this.userTenants(row.id)).filter((t) => t.status !== 'closed');
-      if (tenants.length === 0) throw forbidden('NO_TENANT', 'این حساب عضو هیچ سازمانی نیست');
+      const all = (await this.userTenants(row.id)).filter((t) => t.status !== 'closed');
+      if (all.length === 0) throw forbidden('NO_TENANT', 'این حساب عضو هیچ سازمانی نیست');
+      const tenants = all.filter((t) => t.status !== 'pending');
+      if (tenants.length === 0 || (tenantId && all.some((t) => t.id === tenantId && t.status === 'pending'))) {
+        throw forbidden('TENANT_PENDING', 'درخواست ثبت‌نام سازمان شما در انتظار تأیید مدیر سامانه است');
+      }
       if (tenantId) {
         if (!tenants.some((t) => t.id === tenantId)) throw forbidden('NOT_A_MEMBER', 'شما عضو این سازمان نیستید');
         tid = tenantId;

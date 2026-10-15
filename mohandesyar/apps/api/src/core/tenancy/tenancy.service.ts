@@ -20,9 +20,10 @@ export interface TenantInfo {
   id: string;
   slug: string;
   name: string;
-  status: 'trial' | 'active' | 'suspended' | 'closed';
+  status: 'pending' | 'trial' | 'active' | 'suspended' | 'closed';
   timezone: string;
   number_style: 'fa' | 'latn';
+  onboarding_completed_at: string | null;
 }
 
 function slugify(name: string): string {
@@ -38,7 +39,7 @@ export class TenancyService {
   ) {}
 
   /** Creates user (or reuses an existing one after password check by the caller), tenant, first company and admin role. */
-  async signup(input: SignupInput, opts: { trialDays?: number; defaultPlan?: string } = {}): Promise<{ userId: string; tenantId: string; companyId: string }> {
+  async signup(input: SignupInput, opts: { trialDays?: number; defaultPlan?: string; pendingApproval?: boolean } = {}): Promise<{ userId: string; tenantId: string; companyId: string }> {
     const policy = passwordPolicyError(input.password);
     if (policy) throw badRequest('WEAK_PASSWORD', policy);
     const passwordHash = await hashPassword(input.password);
@@ -56,7 +57,7 @@ export class TenancyService {
       if (slugTaken.rows.length) slug = `${slug.slice(0, 30)}-${uuidv7().slice(-6)}`;
 
       await tx.execute(sql`INSERT INTO core_users (id, email, full_name, password_hash) VALUES (${userId}, ${input.email}, ${input.fullName}, ${passwordHash})`);
-      await tx.execute(sql`INSERT INTO core_tenants (id, slug, name, status) VALUES (${tenantId}, ${slug}, ${input.tenantName}, ${opts.trialDays ? 'trial' : 'active'})`);
+      await tx.execute(sql`INSERT INTO core_tenants (id, slug, name, status) VALUES (${tenantId}, ${slug}, ${input.tenantName}, ${opts.pendingApproval ? 'pending' : opts.trialDays ? 'trial' : 'active'})`);
       if (opts.defaultPlan) {
         const days = opts.trialDays ?? 30;
         await tx.execute(sql`INSERT INTO core_subscriptions (id, tenant_id, plan_key, status, period_start, period_end, trial_end)
@@ -75,7 +76,7 @@ export class TenancyService {
   }
 
   async getTenant(tenantId: string): Promise<TenantInfo | null> {
-    const r = await this.db.app.execute(sql`SELECT id, slug, name, status, timezone, number_style FROM core_tenants WHERE id = ${tenantId}`);
+    const r = await this.db.app.execute(sql`SELECT id, slug, name, status, timezone, number_style, onboarding_completed_at FROM core_tenants WHERE id = ${tenantId}`);
     return (r.rows[0] as unknown as TenantInfo | undefined) ?? null;
   }
 
@@ -139,5 +140,31 @@ export class TenancyService {
          GROUP BY m.id, u.id ORDER BY u.full_name`);
       return r.rows;
     });
+  }
+
+  async updateCompany(tenantId: string, actorId: string, companyId: string, input: { name: string; legalName?: string | null; nationalId?: string | null; economicCode?: string | null; phone?: string | null; address?: string | null }) {
+    await this.db.tx({ tenantId, companyIds: [companyId] }, async (tx) => {
+      const r = await tx.execute(sql`UPDATE core_companies SET name = ${input.name}, legal_name = ${input.legalName ?? null}, national_id = ${input.nationalId ?? null},
+        economic_code = ${input.economicCode ?? null}, phone = ${input.phone ?? null}, address = ${input.address ?? null}, updated_at = now() WHERE id = ${companyId} RETURNING id`);
+      if (!r.rows.length) throw conflict('NOT_FOUND', 'شرکت یافت نشد');
+      await this.audit.append({ tenantId, actorType: 'user', actorId, action: 'company.updated', entityType: 'company', entityId: companyId, after: input }, tx);
+    });
+  }
+
+  async company(tenantId: string, companyId: string) {
+    return this.db.tx({ tenantId, companyIds: [companyId] }, async (tx) => {
+      const r = await tx.execute(sql`SELECT id, name, legal_name, national_id, economic_code, phone, address FROM core_companies WHERE id = ${companyId}`);
+      return r.rows[0] ?? null;
+    });
+  }
+
+  async updateTenant(tenantId: string, actorId: string, input: { name: string; timezone: string; numberStyle: 'fa' | 'latn' }) {
+    await this.db.app.execute(sql`UPDATE core_tenants SET name = ${input.name}, timezone = ${input.timezone}, number_style = ${input.numberStyle}, updated_at = now() WHERE id = ${tenantId}`);
+    await this.audit.append({ tenantId, actorType: 'user', actorId, action: 'tenant.updated', entityType: 'tenant', entityId: tenantId, after: input });
+  }
+
+  async completeOnboarding(tenantId: string, actorId: string) {
+    await this.db.app.execute(sql`UPDATE core_tenants SET onboarding_completed_at = coalesce(onboarding_completed_at, now()) WHERE id = ${tenantId}`);
+    await this.audit.append({ tenantId, actorType: 'user', actorId, action: 'tenant.onboarding_completed', entityType: 'tenant', entityId: tenantId });
   }
 }

@@ -272,4 +272,109 @@ export class ConsoleController {
       loadErrors: Object.fromEntries(this.s.registry.loadErrors),
     };
   }
+
+  // ---------------------------------------------------------------- tenant approval, signup policy
+
+  @Console('super_admin', 'sales_admin')
+  @Post('tenants/:tenantId/approve')
+  @HttpCode(200)
+  async approveTenant(@Param('tenantId') tenantId: string, @CurrentAdmin() a: AdminIdentity, @RequestMetaParam() meta: RequestMeta) {
+    const r = await this.s.db.app.execute(sql`UPDATE core_tenants SET status = 'active', updated_at = now() WHERE id = ${parse(z.uuid(), tenantId)} AND status = 'pending' RETURNING id`);
+    if (!r.rows.length) throw notFound('سازمانی در انتظار تأیید با این شناسه یافت نشد');
+    this.s.entitlement.invalidate(tenantId);
+    await this.s.audit.append({ tenantId: null, actorType: 'admin', actorId: a.adminId, action: 'tenant.approved', entityType: 'tenant', entityId: tenantId, ip: meta.ip });
+    return { ok: true };
+  }
+
+  @Console()
+  @Get('settings/signup')
+  async signupSettings() {
+    return { mode: await this.s.site.signupMode() };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Put('settings/signup')
+  async setSignup(@Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    const { mode } = parse(z.object({ mode: z.enum(['open', 'approval', 'closed']) }), body);
+    await this.s.site.setSignupMode(mode, a.adminId);
+    return { mode };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Post('plans/:key/archive')
+  @HttpCode(200)
+  async archivePlan(@Param('key') key: string, @Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    const { archived } = parse(z.object({ archived: z.boolean() }), body);
+    const r = await this.s.db.app.execute(sql`UPDATE core_plans SET status = ${archived ? 'archived' : 'active'} WHERE key = ${key} RETURNING key`);
+    if (!r.rows.length) throw notFound();
+    this.s.entitlement.invalidate();
+    await this.s.audit.append({ tenantId: null, actorType: 'admin', actorId: a.adminId, action: archived ? 'plan.archived' : 'plan.restored', entityType: 'plan', entityId: key });
+    return { ok: true };
+  }
+
+  // ---------------------------------------------------------------- leads (demo/contact requests)
+
+  @Console('super_admin', 'sales_admin', 'support')
+  @Get('leads')
+  leads(@Query('status') status?: string, @Query('kind') kind?: string) {
+    return this.s.site.listLeads({ status, kind });
+  }
+
+  @Console('super_admin', 'sales_admin', 'support')
+  @Get('leads/:id')
+  lead(@Param('id') id: string) {
+    return this.s.site.lead(parse(z.uuid(), id));
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Post('leads/:id')
+  @HttpCode(200)
+  async updateLead(@Param('id') id: string, @Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    const b = parse(z.object({ status: z.enum(['new', 'contacted', 'qualified', 'won', 'lost', 'spam']).optional(), note: z.string().trim().min(1).max(4000).optional() }), body);
+    await this.s.site.updateLead(parse(z.uuid(), id), b, a.adminId);
+    return { ok: true };
+  }
+
+  // ---------------------------------------------------------------- landing content
+
+  @Console('super_admin', 'sales_admin')
+  @Get('content')
+  async content() {
+    return { content: await this.s.site.allContent(), faq: await this.s.site.listFaq() };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Put('content/:key')
+  async setContent(@Param('key') key: string, @Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    const k = parse(z.enum(['contact', 'about', 'terms', 'privacy']), key);
+    try {
+      return { value: await this.s.site.setContent(k, body, a.adminId) };
+    } catch (err) {
+      if (err instanceof z.ZodError) throw badRequest('VALIDATION_FAILED', 'محتوا معتبر نیست', err.issues.map((i) => ({ path: i.path.join('.'), message: i.message })));
+      throw err;
+    }
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Post('content/:key/delete')
+  @HttpCode(200)
+  async deleteContent(@Param('key') key: string, @CurrentAdmin() a: AdminIdentity) {
+    await this.s.site.deleteContent(parse(z.enum(['contact', 'about', 'terms', 'privacy']), key), a.adminId);
+    return { ok: true };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Put('faq/:id')
+  async saveFaq(@Param('id') id: string, @Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    const { faqSchema } = await import('../../../platform/site.service.js');
+    return { id: await this.s.site.saveFaq(id === 'new' ? null : parse(z.uuid(), id), parse(faqSchema, body), a.adminId) };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Post('faq/:id/delete')
+  @HttpCode(200)
+  async deleteFaq(@Param('id') id: string, @CurrentAdmin() a: AdminIdentity) {
+    await this.s.site.deleteFaq(parse(z.uuid(), id), a.adminId);
+    return { ok: true };
+  }
 }

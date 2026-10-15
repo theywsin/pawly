@@ -5,7 +5,8 @@ import { Services } from '../../../app/services.js';
 import type { LoginResult, RequestMeta } from '../../auth/auth.service.js';
 import { REFRESH_TTL_DAYS } from '../../auth/auth.service.js';
 import { CurrentAdmin, CurrentIdentity, RequestMetaParam, Console, type AdminIdentity, type Identity } from '../context.js';
-import { badRequest, parse, unauthorized } from '../errors.js';
+import { badRequest, forbidden, parse, tooMany, unauthorized } from '../errors.js';
+import { rateLimit } from '../../../infra/redis.js';
 
 interface Reply {
   setCookie(name: string, value: string, opts: Record<string, unknown>): void;
@@ -80,11 +81,18 @@ export class AuthController extends BaseAuth {
   @Post('signup')
   async signup(@Body() body: unknown, @Res({ passthrough: true }) reply: Reply, @RequestMetaParam() meta: RequestMeta) {
     const input = parse(signupSchema, body);
+    const mode = await this.s.site.signupMode();
+    if (mode === 'closed') throw forbidden('SIGNUP_CLOSED', 'ثبت‌نام عمومی در حال حاضر بسته است؛ از فرم درخواست دمو استفاده کنید');
+    if (!(await rateLimit(this.s.redis, `signup:${meta.ip ?? '-'}`, 10, 3600))) throw tooMany();
     const plans = await this.s.db.app.execute(
       (await import('drizzle-orm')).sql`SELECT key, (features->>'trialDays')::int AS trial FROM core_plans WHERE status = 'active' AND (features->>'signupDefault')::boolean IS TRUE LIMIT 1`,
     );
     const plan = plans.rows[0] as { key: string; trial: number | null } | undefined;
-    const r = await this.s.tenancy.signup({ ...input, companyName: input.companyName ?? input.tenantName }, { defaultPlan: plan?.key, trialDays: plan?.trial ?? undefined });
+    const r = await this.s.tenancy.signup(
+      { ...input, companyName: input.companyName ?? input.tenantName },
+      { defaultPlan: plan?.key, trialDays: plan?.trial ?? undefined, pendingApproval: mode === 'approval' },
+    );
+    if (mode === 'approval') return { pendingApproval: true, tenantId: r.tenantId };
     const login = await this.s.auth.login('user', input.email, input.password, r.tenantId, meta);
     return { ...this.respond('user', login, reply), tenantId: r.tenantId };
   }

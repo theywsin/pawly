@@ -7,6 +7,7 @@ import { Services } from '../../../app/services.js';
 import { CurrentIdentity, RequestMetaParam, type Identity } from '../context.js';
 import { badRequest, forbidden, notFound, parse } from '../errors.js';
 import { taskInput, taskUpdate } from '../../tasks/task.service.js';
+import { toLatinDigits } from '@mohandesyar/persian';
 import { channelName } from '../../notifications/notification.service.js';
 import type { RequestMeta } from '../../auth/auth.service.js';
 
@@ -75,6 +76,70 @@ export class CoreController {
   async createCompany(@CurrentIdentity() id: Identity, @Body() body: unknown) {
     const { name } = parse(z.object({ name: z.string().trim().min(2, 'نام شرکت الزامی است').max(120) }), body);
     return { id: await this.s.tenancy.createCompany(id.tenantId, id.userId, name) };
+  }
+
+  // ---------------------------------------------------------------- onboarding & organisation profile
+
+  @Get('onboarding')
+  async onboarding(@CurrentIdentity() id: Identity) {
+    const [tenant, company] = await Promise.all([this.s.tenancy.getTenant(id.tenantId), this.s.tenancy.company(id.tenantId, id.companyId)]);
+    return { completedAt: tenant?.onboarding_completed_at ?? null, tenant, company };
+  }
+
+  @Put('companies/:companyId')
+  @RequirePermission('core.company.manage')
+  async updateCompany(@CurrentIdentity() id: Identity, @Param('companyId') companyId: string, @Body() body: unknown) {
+    const cid = parse(z.uuid(), companyId);
+    if (!id.allowedCompanyIds.includes(cid)) throw forbidden('COMPANY_FORBIDDEN', 'به این شرکت دسترسی ندارید');
+    const b = parse(
+      z.object({
+        name: z.string().trim().min(2, 'نام شرکت الزامی است').max(120),
+        legalName: z.string().trim().max(200).nullable().optional(),
+        nationalId: z
+          .string()
+          .trim()
+          .nullable()
+          .optional()
+          .transform((v) => (v ? toLatinDigits(v) : null))
+          .refine((v) => !v || /^\d{11}$/.test(v), 'شناسه ملی شخص حقوقی باید ۱۱ رقم باشد'),
+        economicCode: z.string().trim().max(20).nullable().optional(),
+        phone: z.string().trim().max(40).nullable().optional(),
+        address: z.string().trim().max(400).nullable().optional(),
+      }),
+      body,
+    );
+    await this.s.tenancy.updateCompany(id.tenantId, id.userId, cid, b);
+    return { ok: true };
+  }
+
+  @Put('tenant')
+  @RequirePermission('core.settings.manage')
+  async updateTenant(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    const b = parse(
+      z.object({
+        name: z.string().trim().min(2, 'نام سازمان الزامی است').max(120),
+        timezone: z.string().refine((tz) => {
+          try {
+            new Intl.DateTimeFormat('en', { timeZone: tz });
+            return true;
+          } catch {
+            return false;
+          }
+        }, 'منطقه زمانی معتبر نیست'),
+        numberStyle: z.enum(['fa', 'latn']),
+      }),
+      body,
+    );
+    await this.s.tenancy.updateTenant(id.tenantId, id.userId, b);
+    return { ok: true };
+  }
+
+  @Post('onboarding/complete')
+  @HttpCode(200)
+  @RequirePermission('core.settings.manage')
+  async completeOnboarding(@CurrentIdentity() id: Identity) {
+    await this.s.tenancy.completeOnboarding(id.tenantId, id.userId);
+    return { ok: true };
   }
 
   @Get('members')
