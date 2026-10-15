@@ -5,6 +5,8 @@ import { cashWidget, dueAlerts, dueWidget, kpi, onInvoiceApproved, onOrderApprov
 import { FinanceController } from './controller.js';
 import { onWorkflowCompleted } from './money.js';
 
+import { importCounterparties } from './import.js';
+
 export default defineModule({
   manifest,
   controllers: [FinanceController],
@@ -38,4 +40,5 @@ export default defineModule({
     'finance.overdue_receivables': (ctx, p) => kpi.overdueReceivables(ctx, p),
   },
   searchProviders: { 'finance.counterparties': (ctx, q, limit) => search(ctx, q, limit) },
+  importers: { 'finance.counterparties': (ctx, rows, opts) => importCounterparties(ctx, rows, opts) },
 });

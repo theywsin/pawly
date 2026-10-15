@@ -4,6 +4,8 @@ import manifest from '../../module.manifest.json' with { type: 'json' };
 import { HrController } from './controller.js';
 import { contractAlerts, kpi, myLeaveWidget, onWorkflowCompleted, overviewWidget, publicService, search } from './logic.js';
 
+import { importEmployees } from './import.js';
+
 export default defineModule({
   manifest,
   controllers: [HrController],
@@ -27,4 +29,5 @@ export default defineModule({
     'hr.leave_days': (ctx, p) => kpi.leaveDays(ctx, p),
   },
   searchProviders: { 'hr.employees': (ctx, q, limit) => search(ctx, q, limit) },
+  importers: { 'hr.employees': (ctx, rows, opts) => importEmployees(ctx, rows, opts) },
 });

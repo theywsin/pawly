@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays } from 'lucide-react';
+import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays, FileSpreadsheet } from 'lucide-react';
 import { Badge, cn, Toaster } from '@mohandesyar/ui';
 import { appApi, getToken, setToken } from '../../lib/api.js';
 import { useAppSession } from '../../lib/session.js';
@@ -118,6 +118,9 @@ export function AppShell() {
           <ClipboardCheck className="size-5" /> گردش‌های تأیید
         </NavLink>
       )}
+      <NavLink to="/app/settings/imports" className={link}>
+        <FileSpreadsheet className="size-5" /> ورود داده از Excel
+      </NavLink>
       {can('core.audit.view') && (
         <NavLink to="/app/settings/audit" className={link}>
           <ScrollText className="size-5" /> گزارش رویدادها

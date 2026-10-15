@@ -56,7 +56,8 @@
   "kpiProviders":    [{ "key": "projects.physical_progress", "title": { "fa": "پیشرفت فیزیکی" }, "unit": "percent", "dimensions": ["project"] }],
   "reportProviders": [{ "key": "projects.status", "title": { "fa": "گزارش وضعیت پروژه‌ها" }, "permission": "projects.project.export" }],
   "searchProviders": [{ "key": "projects.project", "title": { "fa": "پروژه" }, "permission": "projects.project.view" }],
-  "importTemplates": [{ "key": "projects.projects", "title": { "fa": "ورود پروژه‌ها" } }],
+  "importTemplates": [{ "key": "projects.projects", "title": { "fa": "پروژه‌ها" }, "permission": "projects.project.create",
+                        "columns": [{ "key": "code", "header": "کد پروژه", "required": true }, { "key": "plannedStart", "header": "شروع برنامه‌ای", "type": "date" }] }],
   "backend":  { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/style.css"] },
   "migrations": "migrations/",
@@ -139,8 +140,11 @@ export default defineModule({
   kpiProviders: { 'projects.physical_progress': PhysicalProgressKpi },
   searchProviders: { 'projects.project': ProjectSearch },
   widgetData: { 'projects.delayed': DelayedWidget },
+  importers: { 'projects.projects': importProjects },
 });
 ```
+
+**ورود داده از Excel (فاز ۵):** هسته فایل xlsx یا CSV را می‌خواند (بدون کتابخانه خارجی؛ حداکثر ۵۰۰۰ ردیف)، سطر عنوان را با `header` ستون‌ها تطبیق می‌دهد و هر خانه را بر اساس `type` تبدیل می‌کند (`text`، `integer`، `decimal`، `money`، `date` — شمسی، میلادی یا سریال Excel —، `boolean`، `enum` با `values`). سپس `importer(ctx, rows, { dryRun: true })` ماژول را صدا می‌زند تا قواعد خود (Zod، تکراری‌ها) را بررسی کند؛ فقط اگر هیچ خطایی نبود و کاربر تأیید کرد، همان importer با `dryRun: false` همه ردیف‌ها را در یک تراکنش می‌نویسد (همه یا هیچ). مجوز هر قالب در manifest است و صفحه «ورود داده از Excel» فقط قالب‌های مجاز کاربر را نشان می‌دهد.
 
 5. AppModule با `imports: [...coreModules, ...loadedModuleDynamicModules]` ساخته می‌شود و `app.listen()`.
 6. شکست بارگذاری یک ماژول: ماژول در `core_module_runtime_status` با وضعیت `load_failed` و خطا ثبت می‌شود، **بقیه سیستم بالا می‌آید**، و ماژول‌هایی که وابستگی اجباری به آن دارند نیز بارگذاری نمی‌شوند.

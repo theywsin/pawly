@@ -4,6 +4,8 @@ import manifest from '../../module.manifest.json' with { type: 'json' };
 import { ProjectsController } from './controller.js';
 import { activeCount, delayedCount, onWorkflowCompleted, openIssues, overview, publicService, search } from './logic.js';
 
+import { importProjects } from './import.js';
+
 export default defineModule({
   manifest,
   controllers: [ProjectsController],
@@ -33,4 +35,5 @@ export default defineModule({
   searchProviders: {
     'projects.projects': (ctx, q, limit) => search(ctx, q, limit),
   },
+  importers: { 'projects.projects': (ctx, rows, opts) => importProjects(ctx, rows, opts) },
 });

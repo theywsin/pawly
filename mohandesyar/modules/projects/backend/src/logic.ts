@@ -198,6 +198,17 @@ async function progressOf(tx: Db, ctx: { services: ModuleRequestContext['service
   return { planned, actual, time, financial };
 }
 
+/** Inserts a project with its manager as a member (shared by create and the spreadsheet import). */
+export async function insertProject(ctx: ModuleRequestContext, tx: Db, id: string, input: z.infer<typeof projectInput>, manager: string) {
+  await tx.execute(sql`INSERT INTO projects_projects (id, tenant_id, company_id, code, title, project_type, employer_name, crm_account_id, contracts_contract_id, manager_id, province, city, location,
+      specs, description, planned_start, planned_finish, budget_amount, status, created_by)
+    VALUES (${id}, ${ctx.tenantId}, ${ctx.companyId}, ${input.code}, ${input.title}, ${input.projectType}, ${input.employerName}, ${input.crmAccountId}, ${input.contractId}, ${manager},
+      ${input.province}, ${input.city}, ${input.location}, ${input.specs}, ${input.description}, ${input.plannedStart}, ${input.plannedFinish}, ${input.budgetAmount}, ${input.status}, ${ctx.userId})`);
+  await tx.execute(sql`INSERT INTO projects_members (id, tenant_id, company_id, project_id, user_id, role) VALUES (${randomUUID()}, ${ctx.tenantId}, ${ctx.companyId}, ${id}, ${manager}, 'manager')`);
+  await audit(ctx, tx, 'project.created', id, { code: input.code });
+  await ctx.publish('projects.project.created', { projectId: id, code: input.code, title: input.title }, tx);
+}
+
 export const Projects = {
   async list(ctx: ModuleRequestContext, f: z.infer<typeof listQuery>, today: string) {
     const cal = await calendarOf(ctx);
@@ -263,13 +274,7 @@ export const Projects = {
     const manager = input.managerId ?? ctx.userId;
     await ctx.db.transaction(async (tx) => {
       if (await one(tx, sql`SELECT 1 FROM projects_projects WHERE company_id = ${ctx.companyId} AND code = ${input.code} AND deleted_at IS NULL`)) throw conflict('DUPLICATE_CODE', 'پروژه‌ای با این کد در این شرکت ثبت شده است');
-      await tx.execute(sql`INSERT INTO projects_projects (id, tenant_id, company_id, code, title, project_type, employer_name, crm_account_id, contracts_contract_id, manager_id, province, city, location,
-          specs, description, planned_start, planned_finish, budget_amount, status, created_by)
-        VALUES (${id}, ${ctx.tenantId}, ${ctx.companyId}, ${input.code}, ${input.title}, ${input.projectType}, ${input.employerName}, ${input.crmAccountId}, ${input.contractId}, ${manager},
-          ${input.province}, ${input.city}, ${input.location}, ${input.specs}, ${input.description}, ${input.plannedStart}, ${input.plannedFinish}, ${input.budgetAmount}, ${input.status}, ${ctx.userId})`);
-      await tx.execute(sql`INSERT INTO projects_members (id, tenant_id, company_id, project_id, user_id, role) VALUES (${randomUUID()}, ${ctx.tenantId}, ${ctx.companyId}, ${id}, ${manager}, 'manager')`);
-      await audit(ctx, tx, 'project.created', id, { code: input.code });
-      await ctx.publish('projects.project.created', { projectId: id, code: input.code, title: input.title }, tx);
+      await insertProject(ctx, tx, id, input, manager);
     });
     return { id };
   },

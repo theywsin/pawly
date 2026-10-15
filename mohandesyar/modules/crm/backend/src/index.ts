@@ -4,6 +4,8 @@ import manifest from '../../module.manifest.json' with { type: 'json' };
 import { CrmController } from './controller.js';
 import { followupReminders, followups, newLeads, pipelineWidget, publicService, searchAccounts, searchOpportunities, wonValue } from './logic.js';
 
+import { importAccounts } from './import.js';
+
 export default defineModule({
   manifest,
   controllers: [CrmController],
@@ -25,4 +27,5 @@ export default defineModule({
     'crm.accounts': (ctx, q, limit) => searchAccounts(ctx, q, limit),
     'crm.opportunities': (ctx, q, limit) => searchOpportunities(ctx, q, limit),
   },
+  importers: { 'crm.accounts': (ctx, rows, opts) => importAccounts(ctx, rows, opts) },
 });

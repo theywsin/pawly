@@ -57,6 +57,22 @@ const provider = z.object({
   permission: z.string().regex(KEY).optional(),
 });
 
+/** A spreadsheet the core can import into the module (Settings → Import from Excel); see ModuleDefinition.importers. */
+const importColumn = z.object({
+  key: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]*$/),
+  header: z.string().min(1).max(80),
+  required: z.boolean().default(false),
+  type: z.enum(['text', 'integer', 'decimal', 'money', 'date', 'boolean', 'enum']).default('text'),
+  /** For `enum`: accepted cell texts mapped to stored values, e.g. { "فعال": "active" }. */
+  values: z.record(z.string().min(1), z.string().min(1)).optional(),
+  maxLength: z.number().int().positive().max(10_000).optional(),
+  hint: z.string().max(200).optional(),
+});
+const importTemplate = z
+  .object({ key: z.string().regex(KEY), title: localized, permission: z.string().regex(KEY), description: localized.optional(), columns: z.array(importColumn).min(1).max(60) })
+  .refine((t) => new Set(t.columns.map((c) => c.key)).size === t.columns.length && new Set(t.columns.map((c) => c.header)).size === t.columns.length, 'کلید و عنوان ستون‌ها باید یکتا باشند')
+  .refine((t) => t.columns.every((c) => c.type !== 'enum' || (c.values && Object.keys(c.values).length > 0)), 'ستون enum باید values داشته باشد');
+
 const kpiProvider = provider.extend({
   unit: z.string().default('count'),
   dimensions: z.array(z.string()).default([]),
@@ -126,6 +142,7 @@ export const manifestSchema = z
     kpiProviders: z.array(kpiProvider).default([]),
     reportProviders: z.array(provider).default([]),
     searchProviders: z.array(provider).default([]),
+    importTemplates: z.array(importTemplate).default([]),
     backend: z.object({ entry: packagePath }),
     frontend: z.object({ entry: packagePath.optional(), styles: z.array(packagePath).default([]) }).default({ styles: [] }),
     migrations: packagePath.default('migrations/'),

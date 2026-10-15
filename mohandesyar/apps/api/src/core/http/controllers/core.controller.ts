@@ -12,6 +12,7 @@ import { channelName } from '../../notifications/notification.service.js';
 import type { RequestMeta } from '../../auth/auth.service.js';
 import { directoryOf, workCalendarOf } from '../../modules/context.js';
 import { uuidv7 } from '../../../infra/ids.js';
+import { runImport } from '../../imports/import.service.js';
 
 /** Permissions defined by the core itself (modules register theirs from their manifests). */
 export const CORE_PERMISSIONS = [
@@ -319,6 +320,51 @@ export class CoreController {
       }
     }
     return { query, groups };
+  }
+
+  // ---------------------------------------------------------------- spreadsheet import (module templates)
+
+  /** Import templates of the tenant's active modules that the user may use (template permission). */
+  @Get('imports/templates')
+  async importTemplates(@CurrentIdentity() id: Identity) {
+    const out: unknown[] = [];
+    for (const eff of await this.s.registry.effectiveFor(id.tenantId)) {
+      const m = this.s.registry.loaded.get(eff.id);
+      if (!m) continue;
+      for (const t of m.manifest.importTemplates) {
+        if (!m.definition.importers?.[t.key] || !id.permissions.can(t.permission)) continue;
+        out.push({ moduleId: m.id, moduleName: m.manifest.name, ...t });
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Upload a filled template (xlsx or CSV, multipart field `file`; `commit=1` to write). Always validated
+   * first; nothing is written unless every row is valid (all or nothing, inside the module importer).
+   */
+  @Post('imports/:moduleId/:key')
+  @HttpCode(200)
+  async runImport(
+    @CurrentIdentity() id: Identity,
+    @Param('moduleId') moduleId: string,
+    @Param('key') key: string,
+    @Req() req: { file(): Promise<{ filename: string; toBuffer(): Promise<Buffer>; fields: Record<string, { value?: string } | undefined> } | undefined> },
+  ) {
+    const m = await this.activeModule(id, moduleId);
+    const t = m.manifest.importTemplates.find((x) => x.key === key);
+    const importer = m.definition.importers?.[key];
+    if (!t || !importer) throw notFound('قالب ورود داده یافت نشد');
+    if (!id.permissions.can(t.permission)) throw forbidden();
+    const part = await req.file();
+    if (!part) throw badRequest('NO_FILE', 'فایلی ارسال نشده است');
+    const data = await part.toBuffer();
+    const commit = part.fields.commit?.value === '1';
+    const r = await runImport(t, importer, await this.s.contexts.forRequest(m, id), { data, name: part.filename }, commit);
+    if (r.imported) {
+      await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'core.import.completed', moduleId, after: { template: key, file: part.filename, rows: r.total, created: r.created } });
+    }
+    return r;
   }
 
   // ---------------------------------------------------------------- notifications (+ real-time stream)

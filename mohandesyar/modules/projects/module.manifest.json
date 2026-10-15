@@ -59,6 +59,28 @@
     { "key": "projects.delayed_count", "title": { "fa": "تعداد پروژه‌های دارای تأخیر" }, "unit": "count" }
   ],
   "searchProviders": [{ "key": "projects.projects", "title": { "fa": "پروژه‌ها" }, "permission": "projects.project.view" }],
+  "importTemplates": [
+    {
+      "key": "projects.projects",
+      "title": {"fa": "پروژه‌ها"},
+      "permission": "projects.project.create",
+      "description": {"fa": "هر ردیف یک پروژه؛ واردکننده مدیر پروژه‌ها می‌شود و بعداً قابل تغییر است."},
+      "columns": [
+        { "key": "code", "header": "کد پروژه", "required": true, "maxLength": 40 },
+        { "key": "title", "header": "عنوان", "required": true, "maxLength": 200 },
+        { "key": "projectType", "header": "نوع پروژه", "type": "enum", "values": {"ساختمانی": "building", "زیربنایی": "infrastructure", "صنعتی": "industrial", "راه و ابنیه": "road", "آب و فاضلاب": "water", "انرژی": "energy", "مشاوره و طراحی": "consulting", "سایر": "other"} },
+        { "key": "status", "header": "وضعیت", "type": "enum", "values": {"برنامه‌ریزی": "planning", "در حال اجرا": "active", "متوقف": "on_hold", "تکمیل‌شده": "completed", "لغوشده": "cancelled"} },
+        { "key": "employerName", "header": "کارفرما", "maxLength": 200 },
+        { "key": "province", "header": "استان", "maxLength": 60 },
+        { "key": "city", "header": "شهر", "maxLength": 60 },
+        { "key": "location", "header": "محل", "maxLength": 500 },
+        { "key": "plannedStart", "header": "شروع برنامه‌ای", "type": "date", "hint": "شمسی مثل ۱۴۰۵/۰۷/۰۱ یا تاریخ Excel" },
+        { "key": "plannedFinish", "header": "پایان برنامه‌ای", "type": "date" },
+        { "key": "budgetAmount", "header": "بودجه (ریال)", "type": "money" },
+        { "key": "description", "header": "شرح", "maxLength": 5000 }
+      ]
+    }
+  ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
   "tablePrefix": "projects_",

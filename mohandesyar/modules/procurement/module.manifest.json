@@ -49,6 +49,23 @@
     { "key": "procurement.on_time_rate", "title": { "fa": "درصد تحویل به‌موقع در دوره" }, "unit": "percent" }
   ],
   "searchProviders": [{ "key": "procurement.suppliers", "title": { "fa": "تأمین‌کنندگان" }, "permission": "procurement.supplier.view" }],
+  "importTemplates": [
+    {
+      "key": "procurement.suppliers",
+      "title": {"fa": "تأمین‌کنندگان"},
+      "permission": "procurement.supplier.manage",
+      "columns": [
+        { "key": "name", "header": "نام", "required": true, "maxLength": 160 },
+        { "key": "nationalId", "header": "شناسه ملی / کد ملی", "maxLength": 20 },
+        { "key": "economicCode", "header": "کد اقتصادی", "maxLength": 20 },
+        { "key": "phone", "header": "تلفن", "maxLength": 30 },
+        { "key": "email", "header": "ایمیل", "maxLength": 200 },
+        { "key": "address", "header": "نشانی", "maxLength": 500 },
+        { "key": "iban", "header": "شماره شبا" },
+        { "key": "notes", "header": "یادداشت", "maxLength": 2000 }
+      ]
+    }
+  ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
   "tablePrefix": "procurement_",

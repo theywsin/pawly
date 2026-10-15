@@ -3,7 +3,7 @@
   "manifestVersion": 1,
   "id": "hr",
   "name": { "fa": "پرونده کارکنان", "en": "HR" },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": {
     "fa": "پرونده کارکنان، قرارداد کاری محرمانه، سوابق، مهارت‌ها و آموزش‌ها، مرخصی با گردش کار تأیید و مانده، ارزیابی عملکرد و انتقال انتخابی اطلاعات از بانک رزومه.",
     "en": "Employee files, contracts, records, trainings, leave with approval, performance reviews."
@@ -54,6 +54,25 @@
     { "key": "hr.leave_days", "title": { "fa": "روز مرخصی تأییدشده در دوره" }, "unit": "day" }
   ],
   "searchProviders": [{ "key": "hr.employees", "title": { "fa": "کارکنان" }, "permission": "hr.employee.view" }],
+  "importTemplates": [
+    {
+      "key": "hr.employees",
+      "title": {"fa": "پرونده کارکنان"},
+      "permission": "hr.employee.manage",
+      "description": {"fa": "مشخصات پایه و تاریخ استخدام؛ قرارداد و حقوق برای هر نفر جداگانه ثبت می‌شود."},
+      "columns": [
+        { "key": "personnelNo", "header": "شماره پرسنلی", "required": true, "maxLength": 30 },
+        { "key": "fullName", "header": "نام و نام خانوادگی", "required": true, "maxLength": 120 },
+        { "key": "nationalId", "header": "کد ملی", "hint": "۱۰ رقم؛ ستون را «متن» کنید" },
+        { "key": "mobile", "header": "تلفن همراه" },
+        { "key": "email", "header": "ایمیل", "maxLength": 200 },
+        { "key": "department", "header": "واحد", "maxLength": 120 },
+        { "key": "position", "header": "سمت", "maxLength": 120 },
+        { "key": "hiredOn", "header": "تاریخ استخدام", "required": true, "type": "date" },
+        { "key": "notes", "header": "یادداشت", "maxLength": 4000 }
+      ]
+    }
+  ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
   "tablePrefix": "hr_",

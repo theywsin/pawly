@@ -200,6 +200,32 @@ export interface SearchProvider {
 }
 
 /**
+ * One spreadsheet row after the core converted it by the template: text trimmed, numbers and money as Latin
+ * digit strings, dates as ISO (Jalali or Gregorian input), booleans 'true'/'false', enums as stored values;
+ * empty cells are null. `row` is the 1-based row number in the file (for error messages).
+ */
+export interface ImportRow {
+  row: number;
+  values: Record<string, string | null>;
+}
+
+export interface ImportResult {
+  /** Problems found; when any is returned the core imports nothing (the importer must not write on dryRun). */
+  errors: { row: number; column?: string; message: string }[];
+  /** Records created (or that would be created on a dry run). */
+  created: number;
+}
+
+/**
+ * Imports rows of a declared template. Called first with dryRun = true (validate only, no writes), then —
+ * when there were no errors and the user confirmed — with dryRun = false, which must write all rows in one
+ * transaction (all or nothing) and re-validate, since data may have changed in between.
+ */
+export interface Importer {
+  (ctx: ModuleRequestContext, rows: ImportRow[], opts: { dryRun: boolean }): Promise<ImportResult>;
+}
+
+/**
  * Periodic job, run by the core once per period for every tenant where the module is active
  * (cluster-wide: exactly one worker runs each period). Keep it idempotent.
  */
@@ -218,6 +244,8 @@ export interface ModuleDefinition {
   widgetData?: Record<string, WidgetDataProvider>;
   kpiProviders?: Record<string, KpiProvider>;
   searchProviders?: Record<string, SearchProvider>;
+  /** Spreadsheet importers keyed by `manifest.importTemplates[].key`. */
+  importers?: Record<string, Importer>;
   /** Idempotent per-tenant seed, run when the module is enabled for a tenant. */
   seedTenant?: (ctx: ModuleEventContext) => Promise<void>;
   schedules?: Record<string, ScheduledJob>;

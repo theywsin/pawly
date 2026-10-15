@@ -3,7 +3,7 @@
   "manifestVersion": 1,
   "id": "crm",
   "name": { "fa": "مشتریان و فروش (CRM)", "en": "CRM" },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": {
     "fa": "CRM مهندسی: مشتریان (شخص/شرکت) و مخاطبان، سابقه ارتباط، سرنخ‌ها با منبع، نیاز، بودجه و امتیاز، قیف فروش با مراحل قابل تنظیم، فرصت‌ها، پیشنهاد فنی و مالی با نسخه‌بندی و اعتبار، یادآوری پیگیری و گزارش فروش.",
     "en": "Accounts, contacts, leads, pipeline, opportunities, proposals and sales reports."
@@ -47,6 +47,27 @@
   "searchProviders": [
     { "key": "crm.accounts", "title": { "fa": "مشتریان" }, "permission": "crm.account.view" },
     { "key": "crm.opportunities", "title": { "fa": "فرصت‌های فروش" }, "permission": "crm.pipeline.view" }
+  ],
+  "importTemplates": [
+    {
+      "key": "crm.accounts",
+      "title": {"fa": "مشتریان"},
+      "permission": "crm.account.manage",
+      "description": {"fa": "هر ردیف یک مشتری (شرکت یا شخص)؛ مالک، واردکننده است."},
+      "columns": [
+        { "key": "kind", "header": "نوع", "type": "enum", "values": {"شرکت": "company", "شخص": "person"} },
+        { "key": "name", "header": "نام", "required": true, "maxLength": 200 },
+        { "key": "nationalId", "header": "شناسه ملی / کد ملی", "maxLength": 20, "hint": "ستون را در Excel «متن» کنید تا صفر ابتدایی حذف نشود" },
+        { "key": "economicCode", "header": "کد اقتصادی", "maxLength": 20 },
+        { "key": "industry", "header": "صنعت", "maxLength": 100 },
+        { "key": "phone", "header": "تلفن", "maxLength": 40 },
+        { "key": "email", "header": "ایمیل", "maxLength": 200 },
+        { "key": "city", "header": "شهر", "maxLength": 60 },
+        { "key": "address", "header": "نشانی", "maxLength": 500 },
+        { "key": "source", "header": "منبع", "maxLength": 60 },
+        { "key": "notes", "header": "یادداشت", "maxLength": 5000 }
+      ]
+    }
   ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },

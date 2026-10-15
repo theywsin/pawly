@@ -47,6 +47,8 @@ export class NotesController {
 
 `ModuleRequestContext` تنها راه دسترسی به هسته است: `db.transaction`، `publish` (رویداد در همان تراکنش، از طریق outbox)، `audit`، `notify`، `settings`، `services.get(name, range)` (سرویس عمومی ماژول دیگر یا `undefined`)، `modules.isActive(id)`، `can(permission, scope)` و `startWorkflow(...)`.
 
+**ورود داده از Excel:** قالب را در `manifest.importTemplates` (کلید، عنوان، `permission` و ستون‌ها با `key`/`header`/`type`/`required`) اعلام کنید و در `defineModule` یک `importers: { '<key>': (ctx, rows, { dryRun }) => … }` بدهید. کلید ستون‌ها را هم‌نام فیلدهای اسکیمای Zod ورودی بگذارید تا خطاها به ستون درست برسند؛ در `dryRun` هیچ چیز ننویسید و در اجرای واقعی همه ردیف‌ها را در یک تراکنش بنویسید و دوباره اعتبارسنجی کنید. نمونه‌ها: `modules/{projects,crm,finance,procurement,hr}/backend/src/import.ts`.
+
 ## ۴. فرانت‌اند
 
 بسته فرانت ESM است و React، روتر، TanStack Query، `@mohandesyar/ui` و `@mohandesyar/module-sdk/web` را از import map میزبان می‌گیرد (یک نمونه React مشترک). کلاس‌های Tailwind استفاده‌شده هنگام `module:pack` به `frontend/module.css` تبدیل می‌شوند (فقط utility؛ توکن‌های رنگ از میزبان). در manifest باید `"styles": ["frontend/module.css"]` باشد.

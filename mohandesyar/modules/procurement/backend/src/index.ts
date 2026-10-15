@@ -4,6 +4,8 @@ import manifest from '../../module.manifest.json' with { type: 'json' };
 import { ProcurementController } from './controller.js';
 import { kpi, onWorkflowCompleted, search, statusWidget } from './logic.js';
 
+import { importSuppliers } from './import.js';
+
 export default defineModule({
   manifest,
   controllers: [ProcurementController],
@@ -32,4 +34,5 @@ export default defineModule({
     'procurement.on_time_rate': (ctx, p) => kpi.onTimeRate(ctx, p),
   },
   searchProviders: { 'procurement.suppliers': (ctx, q, limit) => search(ctx, q, limit) },
+  importers: { 'procurement.suppliers': (ctx, rows, opts) => importSuppliers(ctx, rows, opts) },
 });
