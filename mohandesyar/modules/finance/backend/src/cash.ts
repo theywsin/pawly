@@ -343,6 +343,19 @@ export function publicService(ctx: ModuleEventContext) {
         );
         return r!;
       }),
+    /** Payment requests by number or description, e.g. to link a document to a payment. */
+    searchPayments: (q: string, limit: number) => {
+      const like = `%${q.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
+      return ctx.db.transaction((tx) =>
+        rows<{ id: string; number: number; description: string; amount: string; status: string }>(
+          tx,
+          sql`SELECT p.id, p.number, p.description, p.amount::text, p.status FROM finance_payment_requests p
+            WHERE ${q === ''} OR p.number::text = ${q} OR p.description ILIKE ${like} ORDER BY p.number DESC LIMIT ${Math.min(50, limit)}`,
+        ),
+      );
+    },
+    getPayment: async (id: string) =>
+      (await ctx.db.transaction((tx) => one<{ id: string; number: number; description: string; amount: string }>(tx, sql`SELECT id, number, description, amount::text FROM finance_payment_requests WHERE id = ${id}`))) ?? null,
   };
 }
 
