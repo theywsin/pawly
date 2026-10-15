@@ -549,7 +549,7 @@ export class ModuleLifecycleService {
     if ((r.rows[0] as { seeded_version: string | null } | undefined)?.seeded_version === loaded.version) return;
     await this.db.tx({ tenantId }, async (tx) => {
       for (const role of loaded.manifest.defaultRoles) {
-        await this.rbac.ensureRole(tx, tenantId, { key: role.key, name: role.name?.fa ?? role.key, grants: role.grants.map((g) => ({ permission: g })) }, { system: false, moduleId });
+        await this.rbac.ensureRole(tx, tenantId, { key: role.key, name: role.name?.fa ?? role.key, grants: role.grants.map(parseGrant) }, { system: false, moduleId });
       }
     });
     if (loaded.definition.seedTenant) {
@@ -657,4 +657,12 @@ export class ModuleLifecycleService {
       log(`${f}: installed ${r.moduleId}@${r.version}`);
     }
   }
+}
+
+/** Manifest role grants: "key" (company scope) or "key@scope" (e.g. "projects.project.view@project"). */
+export function parseGrant(g: string): { permission: string; scope: 'company' | 'unit' | 'project' | 'own' } {
+  const [permission, scope] = g.split('@') as [string, string | undefined];
+  if (scope === undefined) return { permission, scope: 'company' };
+  if (scope !== 'company' && scope !== 'unit' && scope !== 'project' && scope !== 'own') throw new Error(`invalid grant scope in "${g}"`);
+  return { permission, scope };
 }

@@ -35,18 +35,18 @@ export function ContractsPage() {
         </div>
       )}
       <div className="mb-4 flex flex-wrap gap-2">
-        <Input aria-label="جست‌وجو در قراردادها" placeholder="شماره، عنوان یا طرف قرارداد" value={q} onChange={(e) => setQ(e.target.value)} className="w-64" />
-        <Select aria-label="وضعیت" value={status} onChange={(e) => setStatus(e.target.value)} className="w-40">
+        <div className="w-full sm:w-64"><Input aria-label="جست‌وجو در قراردادها" placeholder="شماره، عنوان یا طرف قرارداد" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <div className="w-full sm:w-40"><Select aria-label="وضعیت" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">همه وضعیت‌ها</option>
           {Object.entries(STATUS).map(([k, s]) => (
             <option key={k} value={k}>{s.label}</option>
           ))}
-        </Select>
-        <Select aria-label="جهت مالی" value={direction} onChange={(e) => setDirection(e.target.value)} className="w-40">
+        </Select></div>
+        <div className="w-full sm:w-40"><Select aria-label="جهت مالی" value={direction} onChange={(e) => setDirection(e.target.value)}>
           <option value="">درآمدی و هزینه‌ای</option>
           <option value="income">درآمدی</option>
           <option value="expense">هزینه‌ای</option>
-        </Select>
+        </Select></div>
       </div>
       <PageState
         query={list}

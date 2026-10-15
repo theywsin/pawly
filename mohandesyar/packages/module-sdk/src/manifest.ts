@@ -109,7 +109,7 @@ export const manifestSchema = z
     provides: z.object({ services: z.array(z.object({ name: z.string().regex(KEY), version: semverString })).default([]) }).default({ services: [] }),
     permissions: z.array(permission).default([]),
     defaultRoles: z
-      .array(z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/), name: localized.optional(), grants: z.array(z.string()).min(1) }))
+      .array(z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/), name: localized.optional(), grants: z.array(z.string().regex(/^[a-z*][a-z0-9_.*-]*(@(company|unit|project|own))?$/, 'مجوز نقش باید «کلید» یا «کلید@محدوده» باشد')).min(1) }))
       .default([]),
     menu: z.array(menuItem).default([]),
     routes: z.array(route).default([]),

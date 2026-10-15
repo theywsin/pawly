@@ -1,0 +1,66 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "projects",
+  "name": { "fa": "پروژه‌ها", "en": "Projects" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "مدیریت پروژه‌های مهندسی و عمرانی: مشخصات و تیم، ساختار شکست کار، وابستگی فعالیت‌ها و مسیر بحرانی، نمودار گانت، پیشرفت برنامه‌ای و واقعی (فیزیکی، زمانی و مالی)، تأخیرها و موانع، ریسک‌ها، گزارش روزانه، درخواست تغییر با گردش تأیید، مراحل و تحویل موقت/قطعی.",
+    "en": "Engineering and construction project management."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "contracts": "^1.0.0", "crm": "^1.0.0" },
+  "provides": { "services": [{ "name": "projects.projects", "version": "1.0.0" }] },
+  "permissions": [
+    { "key": "projects.project.view", "fa": "مشاهده پروژه‌ها", "scopes": ["company", "project"] },
+    { "key": "projects.project.create", "fa": "تعریف پروژه", "scopes": ["company"] },
+    { "key": "projects.project.update", "fa": "ویرایش مشخصات، تیم و مراحل پروژه", "scopes": ["company", "project"] },
+    { "key": "projects.project.delete", "fa": "حذف پروژه بدون فعالیت ثبت‌شده", "scopes": ["company"] },
+    { "key": "projects.schedule.edit", "fa": "ویرایش برنامه زمان‌بندی (فعالیت‌ها و وابستگی‌ها)", "scopes": ["company", "project"] },
+    { "key": "projects.progress.record", "fa": "ثبت پیشرفت، گزارش روزانه، تأخیر، مانع و ریسک", "scopes": ["company", "project"] },
+    { "key": "projects.change.create", "fa": "ثبت و ارسال درخواست تغییر", "scopes": ["company", "project"] }
+  ],
+  "defaultRoles": [
+    { "key": "projects_manager", "name": { "fa": "مدیر پروژه‌ها" }, "grants": ["projects.*"] },
+    {
+      "key": "project_team",
+      "name": { "fa": "عضو تیم پروژه" },
+      "grants": ["projects.project.view@project", "projects.progress.record@project", "projects.change.create@project"]
+    }
+  ],
+  "menu": [
+    { "key": "projects", "label": { "fa": "پروژه‌ها" }, "icon": "folder-kanban", "path": "/app/projects", "permission": "projects.project.view", "order": 20 }
+  ],
+  "routes": [{ "path": "/app/projects/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "projects.overview", "title": { "fa": "پروژه‌های فعال و دارای تأخیر" }, "entry": "frontend/index.js", "export": "OverviewWidget", "permission": "projects.project.view", "sizes": ["lg"] },
+    { "key": "projects.issues", "title": { "fa": "موانع و ریسک‌های باز پروژه‌ها" }, "entry": "frontend/index.js", "export": "IssuesWidget", "permission": "projects.project.view", "sizes": ["md"] }
+  ],
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "delayThreshold": { "type": "number", "title": "آستانه «دارای تأخیر» (اختلاف پیشرفت برنامه‌ای و واقعی، درصد)", "default": 5, "minimum": 0, "maximum": 100 }
+      }
+    }
+  },
+  "events": {
+    "publishes": [
+      { "type": "projects.project.created", "version": 1 },
+      { "type": "projects.change_request.approved", "version": 1 }
+    ],
+    "consumes": [{ "type": "core.workflow.completed", "version": 1 }]
+  },
+  "kpiProviders": [
+    { "key": "projects.active_count", "title": { "fa": "تعداد پروژه‌های فعال" }, "unit": "count" },
+    { "key": "projects.delayed_count", "title": { "fa": "تعداد پروژه‌های دارای تأخیر" }, "unit": "count" }
+  ],
+  "searchProviders": [{ "key": "projects.projects", "title": { "fa": "پروژه‌ها" }, "permission": "projects.project.view" }],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "projects_",
+  "entitlement": { "key": "mod.projects", "plans": [] }
+}

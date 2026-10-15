@@ -491,18 +491,22 @@ export async function search(ctx: ModuleRequestContext, q: string, limit: number
 
 /** Public service contracts.contracts@1 for other modules (projects, crm). */
 export function publicService(ctx: ModuleEventContext) {
-  const list = (where: SQL) =>
+  const list = (where: SQL, limit = 500) =>
     ctx.db.transaction((tx) =>
       rows<{ id: string; code: string; title: string; status: string; direction: string; current_amount: string; approved_gross: string; end_on: string | null }>(
         tx,
         sql`SELECT c.id, c.code, c.title, c.status, c.direction, c.end_on::text,
           (c.initial_amount + coalesce((SELECT sum(a.amount_delta) FROM contracts_amendments a WHERE a.contract_id = c.id), 0))::text AS current_amount,
           coalesce((SELECT max(s.cumulative_gross) FROM contracts_statements s WHERE s.contract_id = c.id AND s.status = 'approved' AND s.deleted_at IS NULL), 0)::text AS approved_gross
-          FROM contracts_contracts c WHERE c.deleted_at IS NULL AND ${where} ORDER BY c.created_at`,
+          FROM contracts_contracts c WHERE c.deleted_at IS NULL AND ${where} ORDER BY c.created_at DESC LIMIT ${limit}`,
       ),
     );
   return {
     byProject: (projectId: string) => list(sql`c.projects_project_id = ${projectId}`),
+    search: (q: string, limit: number) => {
+      const like = `%${q.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
+      return list(sql`(${q === ''} OR c.code ILIKE ${like} OR c.title ILIKE ${like})`, Math.min(50, limit));
+    },
     byAccount: (accountId: string) => list(sql`c.crm_account_id = ${accountId}`),
     get: async (id: string) => (await list(sql`c.id = ${id}`))[0] ?? null,
   };
