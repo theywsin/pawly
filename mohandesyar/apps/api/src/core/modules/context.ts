@@ -30,6 +30,16 @@ async function ensureWorkflow(workflow: WorkflowService, db: Database, tenantId:
   if (!exists.rows.length) await workflow.define(tenantId, moduleId, key, definition, null);
 }
 
+/** Weekly days off and holidays entered by the organisation. */
+export async function workCalendarOf(db: Database, tenantId: string): Promise<{ weeklyOff: number[]; holidays: string[] }> {
+  const { sql } = await import('drizzle-orm');
+  return db.tx({ tenantId }, async (tx) => {
+    const t = await tx.execute(sql`SELECT weekly_off FROM core_tenants WHERE id = ${tenantId}`);
+    const h = await tx.execute(sql`SELECT date::text AS date FROM core_holidays ORDER BY date`);
+    return { weeklyOff: ((t.rows[0] as { weekly_off: number[] } | undefined)?.weekly_off ?? [5]).map(Number), holidays: (h.rows as { date: string }[]).map((r) => r.date) };
+  });
+}
+
 export interface RequestIdentity {
   tenantId: string;
   userId: string;
@@ -93,6 +103,7 @@ export class ModuleContextFactory {
         return (await settings.getModuleSettings(tenantId, module.manifest)) as T;
       },
       directory: (ids) => directoryOf(db, tenantId, ids),
+      workCalendar: () => workCalendarOf(db, tenantId),
       ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, db, tenantId, moduleId, key, definition),
     };
     return self;
@@ -124,6 +135,7 @@ export class ModuleContextFactory {
         return (await settings.getModuleSettings(tenantId, module.manifest)) as T;
       },
       directory: (ids) => directoryOf(this.db, tenantId, ids),
+      workCalendar: () => workCalendarOf(this.db, tenantId),
       ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, this.db, tenantId, module.id, key, definition),
     };
   }

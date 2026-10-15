@@ -71,7 +71,7 @@ export function ActivityDialog({ projectId, parent, activity, onClose }: { proje
         <>
           <Field label="نام فعالیت" required error={f.name}><Input value={v.name} onChange={(e) => set('name')(e.target.value)} /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="مدت (روز)" required error={f.durationDays} hint="۰ = نقطه عطف (milestone)"><Input dir="ltr" inputMode="numeric" value={v.durationDays} onChange={(e) => set('durationDays')(e.target.value)} /></Field>
+            <Field label="مدت (روز کاری)" required error={f.durationDays} hint="۰ = نقطه عطف؛ جمعه‌ها و تعطیلات رسمی حساب نمی‌شوند"><Input dir="ltr" inputMode="numeric" value={v.durationDays} onChange={(e) => set('durationDays')(e.target.value)} /></Field>
             <Field label="وزن در پیشرفت پروژه" error={f.weight} hint="نسبی؛ مثلاً هزینه یا نفر-روز"><Input dir="ltr" inputMode="decimal" value={v.weight} onChange={(e) => set('weight')(e.target.value)} /></Field>
           </div>
           <Field label="مسئول" error={f.assigneeId}><UserSelect value={v.assigneeId} onChange={set('assigneeId')} /></Field>

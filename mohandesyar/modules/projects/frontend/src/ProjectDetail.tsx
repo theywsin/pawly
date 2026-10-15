@@ -137,7 +137,7 @@ export function ProjectDetail() {
             {tab === 'schedule' && (
               <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-muted">{p.planned_start ? 'تاریخ‌ها با روش مسیر بحرانی (CPM) از شروع برنامه‌ای پروژه محاسبه می‌شوند؛ همه روزهای تقویم کاری حساب می‌شوند.' : 'برای محاسبه تاریخ‌ها، شروع برنامه‌ای پروژه را تعیین کنید.'}</p>
+                  <p className="text-sm text-muted">{p.planned_start ? 'تاریخ‌ها با روش مسیر بحرانی (CPM) از شروع برنامه‌ای پروژه و بر پایه روزهای کاری محاسبه می‌شوند (جمعه‌ها، تعطیلات رسمی و تعطیلات ثبت‌شده سازمان در تنظیمات «تقویم کاری»).' : 'برای محاسبه تاریخ‌ها، شروع برنامه‌ای پروژه را تعیین کنید.'}</p>
                   <div className="flex gap-2">{add('activity', 'فعالیت', can.schedule)}{can.schedule && q.data.activities.length > 1 && <Button size="sm" variant="secondary" onClick={() => setDialog({ kind: 'dependency' })}>وابستگی</Button>}</div>
                 </div>
                 {ordered.length === 0 ? <EmptyState title="هنوز فعالیتی تعریف نشده است" description="ساختار شکست کار (WBS) را با افزودن فعالیت‌ها بسازید." /> : (
@@ -148,7 +148,7 @@ export function ProjectDetail() {
                         <tr key={x.id} className={x.leaf ? '' : 'bg-surface-2/50 font-semibold'}>
                           <Td className="tabular-nums">{x.code.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]!)}</Td>
                           <Td><span style={{ paddingInlineStart: `${x.depth * 1.25}rem` }}>{x.name}</span>{x.critical && <Badge tone="danger" className="ms-2">بحرانی</Badge>}{x.leaf && x.duration_days === 0 && <Badge className="ms-2">نقطه عطف</Badge>}</Td>
-                          <Td>{x.leaf ? `${x.duration_days.toLocaleString('fa-IR')} روز` : '—'}</Td>
+                          <Td>{x.leaf ? `${x.duration_days.toLocaleString('fa-IR')} روز کاری` : '—'}</Td>
                           <Td><DayText value={x.planned_start} /></Td>
                           <Td><DayText value={x.planned_finish} /></Td>
                           <Td>{x.total_float === null ? '—' : `${x.total_float.toLocaleString('fa-IR')} روز`}</Td>

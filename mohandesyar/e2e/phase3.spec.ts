@@ -107,7 +107,7 @@ test.describe.serial('phase 3 — business modules', () => {
     await dialog(app).getByRole('button', { name: 'ذخیره' }).click();
     await expect(app.getByRole('row', { name: /نصب سازه/ })).toContainText('بحرانی');
     await expect(app.getByRole('row', { name: /محوطه‌سازی/ })).toContainText('۴۵ روز'); // float
-    await expect(app.getByRole('row', { name: /نصب سازه/ })).toContainText('۱۴۰۵/۰۲/۰۴'); // starts after 20 days
+    await expect(app.getByRole('row', { name: /نصب سازه/ })).toContainText('۱۴۰۵/۰۲/۰۷'); // 20 working days after Sat 15 Farvardin (three Fridays skipped)
     await app.getByRole('tab', { name: 'گانت' }).click();
     await expect(app.getByRole('img', { name: 'نمودار گانت برنامه زمان‌بندی' })).toBeVisible();
   });

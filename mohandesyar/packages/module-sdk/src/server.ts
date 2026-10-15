@@ -85,6 +85,11 @@ export interface BaseModuleContext {
    * yet; an existing definition — possibly edited by the organisation — is never overwritten.
    */
   ensureWorkflow(key: string, definition: WorkflowDefinitionInput): Promise<void>;
+  /**
+   * The organisation's work calendar: weekly days off (JS weekday numbers, Friday = 5) and holidays it
+   * entered (ISO dates). Fixed solar official holidays are added by `isWorkingDay` in @mohandesyar/persian.
+   */
+  workCalendar(): Promise<{ weeklyOff: number[]; holidays: string[] }>;
   /** Active members of the tenant; with `ids`, only those (unknown or inactive ids are left out). */
   directory(ids?: readonly string[]): Promise<DirectoryUser[]>;
 }

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { generateSigningKey } from '@mohandesyar/module-package';
-import { addDays, todayIso } from '@mohandesyar/persian';
+import { addDays, todayIso, workingDayAt, workingDaysBetween } from '@mohandesyar/persian';
 import { TestApp } from '../helpers/app.js';
 import { buildModule } from '../helpers/packages.js';
 
@@ -14,6 +14,9 @@ let approver: { token: string; userId: string };
 const api = (p: string) => `/api/m/projects/v1/projects${p}`;
 const today = todayIso();
 const start = addDays(today, -10);
+const cal = { weeklyOff: [5], holidays: new Set<string>() };
+/** n-th working day of the project (Fridays and fixed official holidays off). */
+const wd = (n: number) => workingDayAt(start, n, cal);
 let projectId = '';
 const act: Record<string, string> = {};
 
@@ -65,15 +68,31 @@ describe('projects', () => {
 
     const d = await t.req('GET', api(`/${projectId}`), { token: a.token });
     const byId = Object.fromEntries(d.body.activities.map((x: { id: string }) => [x.id, x]));
-    expect(byId[act.excavation]).toMatchObject({ es: 0, ef: 10, critical: true, planned_start: start, planned_finish: addDays(start, 9) });
+    expect(byId[act.excavation]).toMatchObject({ es: 0, ef: 10, critical: true, planned_start: wd(0), planned_finish: wd(9) });
     // Structure starts 10 days after the foundation starts (SS+10), so delaying the foundation delays everything: critical.
     expect(byId[act.foundation]).toMatchObject({ es: 10, ef: 30, critical: true, total_float: 0 });
     expect(byId[act.structure]).toMatchObject({ es: 20, ef: 50, critical: true });
-    expect(byId[act.handover]).toMatchObject({ es: 50, ef: 50, planned_start: addDays(start, 50) });
+    expect(byId[act.handover]).toMatchObject({ es: 50, ef: 50, planned_start: wd(50) });
+    expect(byId[act.structure].planned_finish).toBe(wd(49));
     expect(byId[act.permits]).toMatchObject({ es: 0, total_float: 45, critical: false });
     expect(byId[act.civil]).toMatchObject({ es: 0, ef: 50, critical: true, leaf: false });
-    expect(d.body.computedFinish).toBe(addDays(start, 49));
+    expect(d.body.computedFinish).toBe(wd(49));
     expect(d.body.dependencies).toHaveLength(3);
+  });
+
+  it('a holiday added to the organisation calendar moves the schedule', async () => {
+    const holiday = wd(3);
+    expect((await t.req('POST', '/api/core/calendar/holidays', { token: a.token, body: { date: holiday, title: 'تعطیلی آزمایشی' } })).status).toBe(201);
+    const d = await t.req('GET', api(`/${projectId}`), { token: a.token });
+    const withHoliday = { ...cal, holidays: new Set([holiday]) };
+    expect(d.body.activities.find((x: { id: string }) => x.id === act.excavation).planned_finish).toBe(workingDayAt(start, 9, withHoliday));
+    expect(workingDayAt(start, 9, withHoliday) > wd(9)).toBe(true);
+    const h = await t.req('GET', '/api/core/calendar', { token: a.token });
+    await t.req('DELETE', `/api/core/calendar/holidays/${h.body.holidays[0].id}`, { token: a.token });
+    const back = await t.req('GET', api(`/${projectId}`), { token: a.token });
+    expect(back.body.activities.find((x: { id: string }) => x.id === act.excavation).planned_finish).toBe(wd(9));
+    expect(h.body.weeklyOff).toEqual([5]);
+    expect(h.body.fixed).toHaveLength(10);
   });
 
   it('records dated progress; weighted actual vs planned progress and the S-curve follow', async () => {
@@ -82,14 +101,16 @@ describe('projects', () => {
     expect((await rec('excavation', addDays(start, 9), 100)).status).toBe(200);
     expect((await rec('civil', today, 10)).body.code).toBe('SUMMARY_PROGRESS');
     const d = await t.req('GET', api(`/${projectId}`), { token: a.token });
-    // Weights 2/3/5 (others 0): actual = 2·100 / 10 = 20%. Planned at day 10: excavation done, foundation 1/20.
+    // Weights 2/3/5 (others 0): actual = 2·100 / 10 = 20%. Planned: linear over each activity's working days.
     expect(d.body.progress.actual).toBeCloseTo(20);
-    expect(d.body.progress.planned).toBeCloseTo((2 * 1 + 3 * (1 / 20)) / 10 * 100);
+    const day = workingDaysBetween(start, today, cal) - 1;
+    const frac = (es: number, dur: number) => Math.min(1, Math.max(0, (day - es + 1) / dur));
+    expect(d.body.progress.planned).toBeCloseTo(((2 * frac(0, 10) + 3 * frac(10, 20) + 5 * frac(20, 30)) / 10) * 100);
     const ex = d.body.activities.find((x: { id: string }) => x.id === act.excavation);
     expect(ex).toMatchObject({ progress: '100.0000', actual_start: addDays(start, 5), actual_finish: addDays(start, 9) });
     expect(d.body.project.actual_start).toBe(addDays(start, 5));
     const c = await t.req('GET', api(`/${projectId}/curve`), { token: a.token });
-    expect(c.body.points.at(0)).toMatchObject({ date: start, actual: 0 });
+    expect(c.body.points.at(0)).toMatchObject({ date: wd(0), actual: 0 });
     expect(c.body.points.at(-1).planned).toBeCloseTo(100);
     expect(c.body.points.at(-1).actual).toBeNull(); // future dates have no actual value
   });

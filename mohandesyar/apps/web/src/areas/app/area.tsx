@@ -10,6 +10,7 @@ import { Profile } from './Profile.js';
 import { Members } from './settings/Members.js';
 import { Modules } from './settings/Modules.js';
 import { Audit } from './settings/Audit.js';
+import { Calendar } from './settings/Calendar.js';
 import { Onboarding } from './Onboarding.js';
 import { ModuleOutlet } from '../../module-host/ModuleOutlet.js';
 
@@ -28,6 +29,7 @@ export const element = (
         <Route path="settings/members" element={<Members />} />
         <Route path="settings/modules" element={<Modules />} />
         <Route path="settings/audit" element={<Audit />} />
+        <Route path="settings/calendar" element={<Calendar />} />
         <Route path="*" element={<ModuleOutlet />} />
       </Route>
     </Routes>

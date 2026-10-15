@@ -2,7 +2,25 @@ import { randomUUID } from 'node:crypto';
 import { sql, type SQL } from 'drizzle-orm';
 import type { z } from 'zod';
 import type { Db, ModuleEventContext, ModuleRequestContext } from '@mohandesyar/module-sdk/server';
-import { addDays, daysBetween } from '@mohandesyar/persian';
+import { daysBetween, workingDayAt, workingDaysBetween, type WorkCalendar } from '@mohandesyar/persian';
+
+/** The organisation's working days (Fridays, fixed official holidays and holidays it entered are off). */
+async function calendarOf(ctx: { workCalendar(): Promise<{ weeklyOff: number[]; holidays: string[] }> }): Promise<WorkCalendar> {
+  const c = await ctx.workCalendar();
+  return { weeklyOff: c.weeklyOff, holidays: new Set(c.holidays) };
+}
+
+/** Identifies a calendar, so a schedule computed with another calendar is recomputed. */
+const fingerprint = (cal: WorkCalendar) => `${[...cal.weeklyOff].sort().join(',')}|${[...cal.holidays].sort().join(',')}`;
+
+/** Recomputes the schedule when it was computed with a different calendar (holidays added or removed). */
+async function ensureSchedule(tx: Db, p: { id: string; planned_start: string | null }, cal: WorkCalendar) {
+  const r = await one<{ schedule_calendar: string | null }>(tx, sql`SELECT schedule_calendar FROM projects_projects WHERE id = ${p.id}`);
+  if (r && r.schedule_calendar !== fingerprint(cal) && (await one(tx, sql`SELECT 1 FROM projects_activities WHERE project_id = ${p.id} AND deleted_at IS NULL LIMIT 1`))) await reschedule(tx, p, cal);
+}
+
+/** Working-day index of `date` from the project start (0 = first working day; −1 before the start). */
+const workIndex = (start: string, date: string, cal: WorkCalendar) => (date < start ? -1 : workingDaysBetween(start, date, cal) - 1);
 import { actualPercent, computeCpm, CycleError, plannedPercent, type DepType } from './cpm.js';
 import { conflict, forbidden, invalid, notFound } from './errors.js';
 import type { activityInput, changeRequestInput, dailyReportInput, dependencyInput, issueInput, listQuery, memberInput, phaseInput, phaseStatusInput, progressInput, projectInput, riskInput } from './inputs.js';
@@ -106,7 +124,7 @@ function leaves(acts: ActivityRow[]): ActivityRow[] {
 }
 
 /** Recomputes CPM for the project and stores results and planned dates. Throws 400 on a dependency cycle. */
-async function reschedule(tx: Db, p: { id: string; planned_start: string | null }) {
+async function reschedule(tx: Db, p: { id: string; planned_start: string | null }, cal: WorkCalendar) {
   const acts = await activitiesOf(tx, p.id);
   const deps = await depsOf(tx, p.id);
   const leafs = leaves(acts);
@@ -123,7 +141,7 @@ async function reschedule(tx: Db, p: { id: string; planned_start: string | null 
     }
     throw err;
   }
-  const dateAt = (offset: number) => (p.planned_start ? addDays(p.planned_start, offset) : null);
+  const dateAt = (offset: number) => (p.planned_start ? workingDayAt(p.planned_start, offset, cal) : null);
   const result = new Map<string, { es: number; ef: number; ls: number; lf: number; total_float: number; critical: boolean }>();
   for (const a of leafs) {
     const x = r.results.get(a.id)!;
@@ -155,20 +173,21 @@ async function reschedule(tx: Db, p: { id: string; planned_start: string | null 
     await tx.execute(sql`UPDATE projects_activities SET es = ${v.es}, ef = ${v.ef}, ls = ${v.ls}, lf = ${v.lf}, total_float = ${v.total_float}, critical = ${v.critical},
       planned_start = ${start}, planned_finish = ${finish} WHERE id = ${a.id}`);
   }
-  await tx.execute(sql`UPDATE projects_projects SET schedule_error = NULL WHERE id = ${p.id}`);
+  await tx.execute(sql`UPDATE projects_projects SET schedule_error = NULL, schedule_calendar = ${fingerprint(cal)} WHERE id = ${p.id}`);
   return r.projectDuration;
 }
 
 /** Planned/actual physical, time and financial progress of one project at `today`. */
-async function progressOf(tx: Db, ctx: { services: ModuleRequestContext['services'] }, p: ProjectRow, today: string) {
+async function progressOf(tx: Db, ctx: { services: ModuleRequestContext['services'] }, p: ProjectRow, today: string, cal: WorkCalendar) {
   const acts = await activitiesOf(tx, p.id);
   const leafs = leaves(acts);
   const weight = (a: ActivityRow) => Number(a.weight);
-  const day = p.planned_start ? daysBetween(p.planned_start, today) : null;
+  const day = p.planned_start ? workIndex(p.planned_start, today, cal) : null;
+  const calDay = p.planned_start ? daysBetween(p.planned_start, today) : null;
   const planned = day === null || !leafs.length ? null : plannedPercent(leafs.map((a) => ({ es: a.es ?? 0, duration: a.duration_days, weight: weight(a) })), day);
   const actual = leafs.length ? actualPercent(leafs.map((a) => ({ percent: Number(a.progress), weight: weight(a) }))) : null;
   const span = p.planned_start && p.planned_finish ? daysBetween(p.planned_start, p.planned_finish) + 1 : null;
-  const time = span && day !== null ? Math.min(100, Math.max(0, ((day + 1) / span) * 100)) : null;
+  const time = span && calDay !== null ? Math.min(100, Math.max(0, ((calDay + 1) / span) * 100)) : null;
   let financial: number | null = null;
   const contracts = ctx.services.get<{ byProject(id: string): Promise<{ direction: string; status: string; current_amount: string; approved_gross: string }[]> }>('contracts.contracts', '^1');
   if (contracts) {
@@ -181,6 +200,7 @@ async function progressOf(tx: Db, ctx: { services: ModuleRequestContext['service
 
 export const Projects = {
   async list(ctx: ModuleRequestContext, f: z.infer<typeof listQuery>, today: string) {
+    const cal = await calendarOf(ctx);
     const q = f.q ? `%${f.q.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%` : null;
     const s = await ctx.settings<{ delayThreshold: number }>();
     return ctx.db.transaction(async (tx) => {
@@ -189,7 +209,8 @@ export const Projects = {
         ORDER BY CASE p.status WHEN 'active' THEN 0 WHEN 'planning' THEN 1 WHEN 'on_hold' THEN 2 ELSE 3 END, p.created_at DESC LIMIT 300`);
       const out = [];
       for (const p of ps) {
-        const pr = await progressOf(tx, ctx, p, today);
+        await ensureSchedule(tx, p, cal);
+        const pr = await progressOf(tx, ctx, p, today, cal);
         out.push({ ...p, progress: pr, delayed: p.status === 'active' && pr.planned !== null && pr.actual !== null && pr.planned - pr.actual > s.delayThreshold });
       }
       return out;
@@ -197,8 +218,10 @@ export const Projects = {
   },
 
   async get(ctx: ModuleRequestContext, id: string, today: string) {
+    const cal = await calendarOf(ctx);
     return ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.project.view');
+      await ensureSchedule(tx, p, cal);
       const [members, activities, dependencies, phases, issues, risks, reports, changes] = await Promise.all([
         rows(tx, sql`SELECT id, user_id, role FROM projects_members WHERE project_id = ${id} ORDER BY created_at`),
         activitiesOf(tx, id),
@@ -209,13 +232,13 @@ export const Projects = {
         rows(tx, sql`SELECT id, report_date::text, weather, workforce, equipment, work_done, problems, created_by FROM projects_daily_reports WHERE project_id = ${id} AND deleted_at IS NULL ORDER BY report_date DESC LIMIT 60`),
         rows(tx, sql`SELECT id, number, title, description, cost_impact::text, time_impact_days, status, created_by, created_at, decided_at FROM projects_change_requests WHERE project_id = ${id} AND deleted_at IS NULL ORDER BY number DESC`),
       ]);
-      const progress = await progressOf(tx, ctx, p, today);
+      const progress = await progressOf(tx, ctx, p, today, cal);
       const leafIds = new Set(leaves(activities).map((a) => a.id));
       const finishDay = Math.max(0, ...activities.map((a) => a.ef ?? 0));
       return {
         project: p,
         progress,
-        computedFinish: p.planned_start && activities.length ? addDays(p.planned_start, Math.max(0, finishDay - 1)) : null,
+        computedFinish: p.planned_start && activities.length ? workingDayAt(p.planned_start, Math.max(0, finishDay - 1), cal) : null,
         members,
         activities: activities.map((a) => ({ ...a, leaf: leafIds.has(a.id) })),
         dependencies,
@@ -252,6 +275,7 @@ export const Projects = {
   },
 
   async update(ctx: ModuleRequestContext, id: string, version: number, input: z.infer<typeof projectInput>) {
+    const cal = await calendarOf(ctx);
     await validateUsers(ctx, [input.managerId]);
     await ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.project.update', true);
@@ -270,7 +294,7 @@ export const Projects = {
         await tx.execute(sql`INSERT INTO projects_members (id, tenant_id, company_id, project_id, user_id, role) VALUES (${randomUUID()}, ${ctx.tenantId}, ${p.company_id}, ${id}, ${input.managerId}, 'manager')
           ON CONFLICT (project_id, user_id) DO UPDATE SET role = 'manager'`);
       }
-      if (input.plannedStart !== p.planned_start) await reschedule(tx, { id, planned_start: input.plannedStart });
+      if (input.plannedStart !== p.planned_start) await reschedule(tx, { id, planned_start: input.plannedStart }, cal);
       await audit(ctx, tx, 'project.updated', id, { status: input.status });
     });
   },
@@ -308,6 +332,7 @@ export const Projects = {
   // ------------------------------------------------------------- schedule
 
   async addActivity(ctx: ModuleRequestContext, id: string, input: z.infer<typeof activityInput>) {
+    const cal = await calendarOf(ctx);
     await validateUsers(ctx, [input.assigneeId]);
     return ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.schedule.edit', true);
@@ -325,12 +350,13 @@ export const Projects = {
       await tx.execute(sql`INSERT INTO projects_activities (id, tenant_id, company_id, project_id, parent_id, sort, name, duration_days, weight, assignee_id, created_by)
         VALUES (${aid}, ${ctx.tenantId}, ${p.company_id}, ${id}, ${input.parentId}, ${input.sort ?? sql`(SELECT coalesce(max(sort), 0) + 1 FROM projects_activities WHERE project_id = ${id})`},
           ${input.name}, ${input.durationDays}, ${input.weight}, ${input.assigneeId}, ${ctx.userId})`);
-      await reschedule(tx, p);
+      await reschedule(tx, p, cal);
       return { id: aid };
     });
   },
 
   async updateActivity(ctx: ModuleRequestContext, id: string, aid: string, input: z.infer<typeof activityInput>) {
+    const cal = await calendarOf(ctx);
     await validateUsers(ctx, [input.assigneeId]);
     await ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.schedule.edit', true);
@@ -339,11 +365,12 @@ export const Projects = {
       if (input.parentId !== a.parent_id) throw invalid('PARENT_FIXED', 'جابه‌جایی فعالیت در ساختار شکست کار هنوز پشتیبانی نمی‌شود');
       await tx.execute(sql`UPDATE projects_activities SET name = ${input.name}, duration_days = ${input.durationDays}, weight = ${input.weight}, assignee_id = ${input.assigneeId},
         sort = coalesce(${input.sort ?? null}, sort), updated_at = now() WHERE id = ${aid}`);
-      await reschedule(tx, p);
+      await reschedule(tx, p, cal);
     });
   },
 
   async removeActivity(ctx: ModuleRequestContext, id: string, aid: string) {
+    const cal = await calendarOf(ctx);
     await ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.schedule.edit', true);
       if (await one(tx, sql`SELECT 1 FROM projects_activities WHERE parent_id = ${aid} AND deleted_at IS NULL LIMIT 1`)) throw conflict('HAS_CHILDREN', 'ابتدا زیرفعالیت‌ها را حذف کنید');
@@ -351,11 +378,12 @@ export const Projects = {
       const r = await rows(tx, sql`UPDATE projects_activities SET deleted_at = now() WHERE id = ${aid} AND project_id = ${id} AND deleted_at IS NULL RETURNING id`);
       if (!r.length) throw notFound('فعالیت');
       await tx.execute(sql`DELETE FROM projects_dependencies WHERE predecessor_id = ${aid} OR successor_id = ${aid}`);
-      await reschedule(tx, p);
+      await reschedule(tx, p, cal);
     });
   },
 
   async addDependency(ctx: ModuleRequestContext, id: string, input: z.infer<typeof dependencyInput>) {
+    const cal = await calendarOf(ctx);
     if (input.predecessorId === input.successorId) throw invalid('SELF_DEPENDENCY', 'فعالیت نمی‌تواند پیش‌نیاز خودش باشد');
     return ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.schedule.edit', true);
@@ -369,17 +397,18 @@ export const Projects = {
       const did = randomUUID();
       await tx.execute(sql`INSERT INTO projects_dependencies (id, tenant_id, company_id, project_id, predecessor_id, successor_id, type, lag_days)
         VALUES (${did}, ${ctx.tenantId}, ${p.company_id}, ${id}, ${input.predecessorId}, ${input.successorId}, ${input.type}, ${input.lagDays})`);
-      await reschedule(tx, p); // throws on a cycle → the insert is rolled back
+      await reschedule(tx, p, cal); // throws on a cycle → the insert is rolled back
       return { id: did };
     });
   },
 
   async removeDependency(ctx: ModuleRequestContext, id: string, did: string) {
+    const cal = await calendarOf(ctx);
     await ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.schedule.edit', true);
       const r = await rows(tx, sql`DELETE FROM projects_dependencies WHERE id = ${did} AND project_id = ${id} RETURNING id`);
       if (!r.length) throw notFound('وابستگی');
-      await reschedule(tx, p);
+      await reschedule(tx, p, cal);
     });
   },
 
@@ -411,6 +440,7 @@ export const Projects = {
 
   /** S-curve: planned vs actual weighted physical progress at evenly spaced dates. */
   async curve(ctx: ModuleRequestContext, id: string, today: string) {
+    const cal = await calendarOf(ctx);
     return ctx.db.transaction(async (tx) => {
       const p = await load(tx, ctx, id, 'projects.project.view');
       if (!p.planned_start) return { points: [], reason: 'NO_START' };
@@ -418,13 +448,13 @@ export const Projects = {
       if (!acts.length) return { points: [], reason: 'NO_ACTIVITIES' };
       const entries = await rows<{ activity_id: string; entry_date: string; percent: string }>(tx, sql`SELECT activity_id, entry_date::text, percent::text FROM projects_progress_entries WHERE project_id = ${id} ORDER BY entry_date, created_at`);
       const finishDay = Math.max(1, ...acts.map((a) => a.ef ?? 0));
-      const lastDay = Math.max(finishDay - 1, daysBetween(p.planned_start, today));
+      const lastDay = Math.max(finishDay - 1, workIndex(p.planned_start, today, cal));
       const steps = Math.min(24, Math.max(2, lastDay + 1));
       const points = [];
-      const todayDay = daysBetween(p.planned_start, today);
+      const todayDay = workIndex(p.planned_start, today, cal);
       const days = [...new Set([...Array.from({ length: steps }, (_, i) => Math.round((lastDay * i) / (steps - 1))), ...(todayDay >= 0 && todayDay <= lastDay ? [todayDay] : [])])].sort((x, y) => x - y);
       for (const day of days) {
-        const date = addDays(p.planned_start, day);
+        const date = workingDayAt(p.planned_start, day, cal);
         const planned = plannedPercent(acts.map((a) => ({ es: a.es ?? 0, duration: a.duration_days, weight: Number(a.weight) })), day);
         const latest = new Map<string, number>();
         for (const e of entries) if (e.entry_date <= date) latest.set(e.activity_id, Number(e.percent));
@@ -627,12 +657,13 @@ export async function activeCount(ctx: ModuleEventContext, p: { companyId: strin
 }
 
 export async function delayedCount(ctx: ModuleEventContext, p: { companyId: string }, today: string) {
+    const cal = await calendarOf(ctx);
   const s = await ctx.settings<{ delayThreshold: number }>();
   return ctx.db.transaction(async (tx) => {
     const ps = await rows<ProjectRow>(tx, sql`SELECT ${PROJECT_COLUMNS} FROM projects_projects p WHERE p.deleted_at IS NULL AND p.status = 'active' AND p.company_id = ${p.companyId}`);
     let n = 0;
     for (const x of ps) {
-      const pr = await progressOf(tx, ctx, x, today);
+      const pr = await progressOf(tx, ctx, x, today, cal);
       if (pr.planned !== null && pr.actual !== null && pr.planned - pr.actual > s.delayThreshold) n++;
     }
     return n;

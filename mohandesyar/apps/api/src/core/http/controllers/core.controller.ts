@@ -1,16 +1,17 @@
 import type { ServerResponse } from 'node:http';
-import { Body, Controller, Get, HttpCode, Inject, Param, Patch, Post, Put, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Put, Query, Req, Res } from '@nestjs/common';
 import { RequirePermission, AllowInReadOnly } from '@mohandesyar/module-sdk/server';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { Services } from '../../../app/services.js';
 import { CurrentIdentity, RequestMetaParam, type Identity } from '../context.js';
-import { badRequest, forbidden, notFound, parse } from '../errors.js';
+import { badRequest, conflict, forbidden, notFound, parse } from '../errors.js';
 import { taskInput, taskUpdate } from '../../tasks/task.service.js';
 import { toLatinDigits } from '@mohandesyar/persian';
 import { channelName } from '../../notifications/notification.service.js';
 import type { RequestMeta } from '../../auth/auth.service.js';
-import { directoryOf } from '../../modules/context.js';
+import { directoryOf, workCalendarOf } from '../../modules/context.js';
+import { uuidv7 } from '../../../infra/ids.js';
 
 /** Permissions defined by the core itself (modules register theirs from their manifests). */
 export const CORE_PERMISSIONS = [
@@ -147,6 +148,49 @@ export class CoreController {
   @Get('directory')
   directory(@CurrentIdentity() id: Identity) {
     return directoryOf(this.s.db, id.tenantId);
+  }
+
+  // ---------------------------------------------------------------- work calendar
+
+  @Get('calendar')
+  async calendar(@CurrentIdentity() id: Identity, @Query('year') year?: string) {
+    const { fixedHolidays, toJalali, todayIso } = await import('@mohandesyar/persian');
+    const jy = year ? parse(z.coerce.number().int().min(1300).max(1600), year) : toJalali(...(todayIso().split('-').map(Number) as [number, number, number])).jy;
+    const cal = await workCalendarOf(this.s.db, id.tenantId);
+    const custom = await this.s.db.tx({ tenantId: id.tenantId }, (tx) => tx.execute(sql`SELECT id, date::text AS date, title, kind FROM core_holidays ORDER BY date`));
+    return { year: jy, weeklyOff: cal.weeklyOff, fixed: fixedHolidays(jy), holidays: custom.rows };
+  }
+
+  @Put('calendar/weekly-off')
+  @RequirePermission('core.settings.manage')
+  async setWeeklyOff(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    const b = parse(z.object({ weeklyOff: z.array(z.number().int().min(0).max(6)).max(3) }), body);
+    await this.s.db.app.execute(sql`UPDATE core_tenants SET weekly_off = ${`{${[...new Set(b.weeklyOff)].join(',')}}`}::smallint[] WHERE id = ${id.tenantId}`);
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'core.calendar.weekly_off', after: b });
+    return { ok: true };
+  }
+
+  @Post('calendar/holidays')
+  @RequirePermission('core.settings.manage')
+  async addHoliday(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    const b = parse(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'تاریخ معتبر نیست'), title: z.string().trim().min(2, 'عنوان تعطیلی الزامی است').max(120), kind: z.enum(['official', 'company']).default('official') }), body);
+    const hid = uuidv7();
+    try {
+      await this.s.db.tx({ tenantId: id.tenantId }, (tx) => tx.execute(sql`INSERT INTO core_holidays (id, tenant_id, date, title, kind, created_by) VALUES (${hid}, ${id.tenantId}, ${b.date}, ${b.title}, ${b.kind}, ${id.userId})`));
+    } catch (err) {
+      if ((err as { code?: string; cause?: { code?: string } }).code === '23505' || (err as { cause?: { code?: string } }).cause?.code === '23505') throw conflict('DUPLICATE', 'برای این روز قبلاً تعطیلی ثبت شده است');
+      throw err;
+    }
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'core.calendar.holiday_added', after: b });
+    return { id: hid };
+  }
+
+  @Delete('calendar/holidays/:holidayId')
+  @HttpCode(200)
+  @RequirePermission('core.settings.manage')
+  async removeHoliday(@CurrentIdentity() id: Identity, @Param('holidayId') holidayId: string) {
+    await this.s.db.tx({ tenantId: id.tenantId }, (tx) => tx.execute(sql`DELETE FROM core_holidays WHERE id = ${parse(z.uuid(), holidayId)}`));
+    return { ok: true };
   }
 
   @Get('members')
