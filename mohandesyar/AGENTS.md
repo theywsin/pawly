@@ -4,8 +4,8 @@
 
 ## وضعیت پروژه
 
-- فاز ۰ و ۱ تأیید شدند. **فاز ۲ (لندینگ، فروش، ثبت‌نام و راه‌اندازی) تکمیل‌شده، منتظر تأیید برای شروع فاز ۳.**
-- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md). اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- فاز ۰ تا ۲ تأیید شدند. **فاز ۳ (ماژول‌های قراردادها، پروژه‌ها، CRM، جلسات و داشبورد) تکمیل‌شده، منتظر تأیید برای شروع فاز ۴.**
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
@@ -93,4 +93,7 @@ pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <pub
 - تست‌های یکپارچه با PostgreSQL واقعی؛ mock دیتابیس ممنوع.
 - صفحات عمومی: هر صفحه دقیقاً یک `h1` (`<Section page>`)؛ متن بازاریابی فقط در `areas/public/catalog.ts` و بدون آمار/مشتری/نظر ساختگی؛ ادعای امنیتی فقط برای رفتار تست‌شده؛ مسیر عمومی جدید باید به `PRERENDER` در `routes.tsx` اضافه شود.
 - `zod` در وب با `jitless` پیکربندی شده (CSP بدون eval)؛ `src/zod-config.ts` باید اولین import در `main.tsx` بماند.
+- ماژول‌های کسب‌وکار: منطق در `backend/src/logic.ts` با SQL خام (`sql` از drizzle) و تاریخ‌ها به‌صورت `::text`؛ ورودی‌ها در `inputs.ts` (Zod، پیام فارسی)؛ محدوده own/project در خود کوئری؛ اتصال به ماژول دیگر فقط از `ctx.services.get(...)` و lookup سمت بک‌اند (فرانت ماژول هرگز API ماژول دیگر را صدا نمی‌زند).
+- تاریخ بدون زمان: `date` و ISO؛ در UI `DateInput`/`DayText`؛ ساعت: `zonedToUtc`/`utcToZoned` از `@mohandesyar/persian`؛ مبلغ: `MoneyInput`/`Money` و `bigint` در محاسبات.
+- تست یکپارچه ماژول: `buildModule(id, key)` و `t.installModules(...)`؛ کارهای زمان‌بندی با `t.services.scheduler.tick(now)`.
 - IP کاربر از `X-Forwarded-For` فقط برای peerهای `TRUST_PROXY` خوانده می‌شود.
