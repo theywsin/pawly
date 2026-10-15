@@ -107,6 +107,7 @@ export class ModuleContextFactory {
       directory: (ids) => directoryOf(db, tenantId, ids),
       workCalendar: () => workCalendarOf(db, tenantId),
       ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, db, tenantId, moduleId, key, definition),
+      files: { remove: (fileId) => this.files.remove({ tenantId, companyIds, userId }, moduleId, fileId) },
     };
     return self;
   }
@@ -139,6 +140,7 @@ export class ModuleContextFactory {
       directory: (ids) => directoryOf(this.db, tenantId, ids),
       workCalendar: () => workCalendarOf(this.db, tenantId),
       ensureWorkflow: (key, definition) => ensureWorkflow(this.workflow, this.db, tenantId, module.id, key, definition),
+      files: { remove: (fileId) => this.files.remove({ tenantId, companyIds, userId: null }, module.id, fileId) },
     };
   }
 
@@ -153,6 +155,7 @@ export class ModuleContextFactory {
       startWorkflow: (input, tx) =>
         this.workflow.start({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId }, { moduleId: module.id, ...input }, tx as never),
       files: {
+        remove: base.files.remove,
         claim: (fileId, entity, tx) => {
           return this.files.claim({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId }, module.id, fileId, entity, tx);
         },

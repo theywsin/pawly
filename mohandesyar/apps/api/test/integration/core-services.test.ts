@@ -130,7 +130,14 @@ describe('files (S3-compatible storage)', () => {
     expect(claimed.name).toBe('cv.txt');
     // A file can be claimed only once, and only by its module.
     await expect(t.services.files.claim(s, 'recruitment', f.id, { type: 'candidate', id: 'c-2' })).rejects.toThrow();
-    expect((await t.services.files.downloadUrl(s, f.id, 'recruitment')).url).toContain('X-Amz-Expires=300');
+    const link = (await t.services.files.downloadUrl(s, f.id, 'recruitment')).url;
+    expect(link).toContain('X-Amz-Expires=300');
+    // Removal (retention purge) is limited to the owner module and erases the stored object.
+    await t.services.files.remove(s, 'crm', f.id);
+    expect((await fetch(link)).status).toBe(200);
+    await t.services.files.remove(s, 'recruitment', f.id);
+    expect((await fetch(link)).status).toBeGreaterThanOrEqual(400);
+    await expect(t.services.files.downloadUrl(s, f.id, 'recruitment')).rejects.toThrow();
   });
 
   it('rejects executable/script uploads and empty files', async () => {

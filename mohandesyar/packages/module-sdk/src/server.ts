@@ -92,6 +92,13 @@ export interface BaseModuleContext {
   workCalendar(): Promise<{ weeklyOff: number[]; holidays: string[] }>;
   /** Active members of the tenant; with `ids`, only those (unknown or inactive ids are left out). */
   directory(ids?: readonly string[]): Promise<DirectoryUser[]>;
+  /** Files this module owns (uploaded for it through the host). */
+  readonly files: ModuleFileStore;
+}
+
+export interface ModuleFileStore {
+  /** Erases a file owned by this module (stored object included), e.g. for a retention purge. */
+  remove(fileId: string): Promise<void>;
 }
 
 export interface WorkflowDefinitionInput {
@@ -109,7 +116,7 @@ export interface StartWorkflowInput {
   amount?: number | null;
 }
 
-export interface ModuleFiles {
+export interface ModuleFiles extends ModuleFileStore {
   /** Attach a file the current user uploaded for this module (host `upload`) to a record; returns its metadata. */
   claim(fileId: string, entity: { type: string; id: string }, tx?: Db): Promise<{ id: string; name: string; mime: string; size: number }>;
   /** 5-minute download link; call only after the module's own permission check. Confidential files are audited. */

@@ -9,7 +9,7 @@ rm -rf "$E2E" && mkdir -p "$E2E"
 psql "$ADMIN_URL" -q -c "DROP DATABASE IF EXISTS mohandesyar_e2e WITH (FORCE)" >/dev/null
 psql "$ADMIN_URL" -q -v owner_pw=ownerpw -v app_pw=apppw -v db_name=mohandesyar_e2e -f "$ROOT/infra/db/init-roles.sql" >/dev/null
 redis-cli -p 63799 -n 3 flushdb >/dev/null
-PREINSTALL=contracts,projects,crm,meetings node "$ROOT/e2e/prepare-packages.mjs" "$E2E"
+PREINSTALL=contracts,projects,crm,meetings,recruitment node "$ROOT/e2e/prepare-packages.mjs" "$E2E"
 cat > "$E2E/env" <<ENV
 NODE_ENV=production
 PORT=3200

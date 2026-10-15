@@ -1,6 +1,6 @@
 import type { Db } from '@mohandesyar/module-sdk/server';
 import { createHash } from 'node:crypto';
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, CreateBucketCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { sql } from 'drizzle-orm';
 import type { Config } from '../../config.js';
@@ -113,6 +113,20 @@ export class FileService {
       { expiresIn: 300 },
     );
     return { url, name: row.name };
+  }
+
+  /**
+   * Permanently removes a module-owned file (retention purge, record deletion): the row is marked deleted
+   * and the stored object is erased. Only the owning module can remove its files.
+   */
+  async remove(s: { tenantId: string; companyIds: readonly string[]; userId: string | null }, module: string, id: string): Promise<void> {
+    const row = await this.db.tx({ tenantId: s.tenantId, companyIds: s.companyIds }, async (tx) => {
+      const r = await tx.execute(sql`UPDATE core_files SET deleted_at = now() WHERE id = ${id} AND owner_module = ${module} AND deleted_at IS NULL RETURNING object_key`);
+      const k = r.rows[0] as { object_key: string } | undefined;
+      if (k) await this.audit.append({ tenantId: s.tenantId, actorType: s.userId ? 'user' : 'system', actorId: s.userId, moduleId: module, action: 'file.deleted', entityType: 'file', entityId: id }, tx);
+      return k;
+    });
+    if (row) await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: row.object_key }));
   }
 
   async list(s: Scope, owner: { module: string; entityType: string; entityId: string }) {
