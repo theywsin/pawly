@@ -11,13 +11,13 @@ import { CtaLink } from './PublicLayout.js';
 import { NotFound } from './Home.js';
 
 export const PAGE_META = {
-  pricing: { title: 'پلن‌ها و قیمت‌ها', description: 'پلن‌های اشتراک مهندس‌یار، ماژول‌های هر پلن و مقایسه آن‌ها.' },
-  modules: { title: 'ماژول‌ها', description: 'ماژول‌های مهندس‌یار: پروژه، CRM، قراردادها، مالی و بودجه، تدارکات، منابع انسانی، KPI، اسناد، QHSE، جلسات و هلدینگ.' },
-  about: { title: 'درباره ما', description: 'درباره مهندس‌یار.' },
-  contact: { title: 'تماس با ما', description: 'راه‌های ارتباط با مهندس‌یار و فرم تماس.' },
-  demo: { title: 'درخواست دمو', description: 'درخواست نمایش سامانه مهندس‌یار و بررسی نیازهای سازمان شما.' },
-  terms: { title: 'شرایط استفاده', description: 'شرایط استفاده از سامانه مهندس‌یار.' },
-  privacy: { title: 'حریم خصوصی', description: 'سیاست حریم خصوصی مهندس‌یار.' },
+  pricing: { title: 'پلن‌ها و قیمت‌ها', description: 'پلن‌های اشتراک مهندیکس، ماژول‌های هر پلن و مقایسه آن‌ها.' },
+  modules: { title: 'ماژول‌ها', description: 'ماژول‌های مهندیکس: پروژه، CRM، قراردادها، مالی و بودجه، تدارکات، منابع انسانی، KPI، اسناد، QHSE، جلسات و هلدینگ.' },
+  about: { title: 'درباره ما', description: 'درباره مهندیکس.' },
+  contact: { title: 'تماس با ما', description: 'راه‌های ارتباط با مهندیکس و فرم تماس.' },
+  demo: { title: 'درخواست دمو', description: 'درخواست نمایش سامانه مهندیکس و بررسی نیازهای سازمان شما.' },
+  terms: { title: 'شرایط استفاده', description: 'شرایط استفاده از سامانه مهندیکس.' },
+  privacy: { title: 'حریم خصوصی', description: 'سیاست حریم خصوصی مهندیکس.' },
 } as const;
 
 export function PricingPage() {

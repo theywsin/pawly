@@ -5,6 +5,7 @@ import { cn, Ltr } from '@mohandesyar/ui';
 import { jalaliParts, toPersianDigits } from '@mohandesyar/persian';
 import { useUi } from '../../lib/ui-store.js';
 import { useSite } from './data.js';
+import { BRAND_NAME, BrandMark } from '../../brand.js';
 
 const NAV = [
   { to: '/modules', label: 'ماژول‌ها' },
@@ -45,8 +46,8 @@ export function PublicLayout() {
       </a>
       <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
-          <Link to="/" className="text-xl font-extrabold text-primary">
-            مهندس‌یار
+          <Link to="/" className="text-xl font-extrabold text-primary" aria-label={`${BRAND_NAME} — صفحه اصلی`}>
+            <BrandMark />
           </Link>
           <nav aria-label="منوی اصلی" className="hidden flex-1 items-center gap-1 md:flex">
             {NAV.map((n) => (
@@ -94,7 +95,7 @@ export function PublicLayout() {
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="text-lg font-extrabold text-primary">مهندس‌یار</p>
+            <p className="text-lg font-extrabold text-primary"><BrandMark size={28} /></p>
             <p className="mt-2 text-sm leading-7 text-muted">سامانه ماژولار مدیریت شرکت‌های مهندسی، مشاور، پیمانکار و هلدینگ‌های عمرانی؛ قابل استقرار روی سرور خود سازمان.</p>
           </div>
           <div>
@@ -126,7 +127,7 @@ export function PublicLayout() {
             </div>
           )}
         </div>
-        <p className="border-t border-border py-4 text-center text-xs text-muted">© {year} مهندس‌یار</p>
+        <p className="border-t border-border py-4 text-center text-xs text-muted">© {year} {BRAND_NAME}</p>
       </footer>
     </div>
   );

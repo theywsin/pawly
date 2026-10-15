@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
+import { BRAND_NAME } from '../../brand.js';
 
 export interface PageMeta {
   title: string;
   description: string;
 }
 
-export const SITE_NAME = 'مهندس‌یار';
+export const SITE_NAME = BRAND_NAME;
 
 export function fullTitle(title: string): string {
   return title === SITE_NAME ? title : `${title} | ${SITE_NAME}`;

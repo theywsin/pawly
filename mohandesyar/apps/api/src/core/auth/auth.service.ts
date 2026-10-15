@@ -178,7 +178,7 @@ export class AuthService {
     if (row.totp_enabled) throw badRequest('MFA_ALREADY_ENABLED', 'تأیید دومرحله‌ای قبلاً فعال شده است');
     const secret = generateTotpSecret();
     await this.redis.set(`totp-enrol:${subject}:${id}`, secret, 'EX', 600);
-    return { secret, otpauthUrl: otpauthUrl(secret, row.email, 'Mohandesyar') };
+    return { secret, otpauthUrl: otpauthUrl(secret, row.email, 'Mohandix') };
   }
 
   async confirmTotpEnrollment(subject: Subject, ref: { pendingToken?: string; subjectId?: string }, code: string, meta: RequestMeta): Promise<LoginResult | { enabled: true }> {

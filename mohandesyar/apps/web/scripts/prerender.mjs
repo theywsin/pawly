@@ -24,7 +24,7 @@ await writeFile(join(dist, 'app-shell.html'), rawTemplate.replace('<title>', '<m
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'Organization', name: SITE_NAME, url: '%%ORIGIN%%/' },
+    { '@type': 'Organization', name: SITE_NAME, url: '%%ORIGIN%%/', logo: '%%ORIGIN%%/brand/logo-512.png' },
     {
       '@type': 'SoftwareApplication',
       name: SITE_NAME,
@@ -52,6 +52,10 @@ for (const page of PRERENDER) {
     `<meta property="og:title" content="${title}" />`,
     `<meta property="og:description" content="${desc}" />`,
     `<meta property="og:url" content="${url}" />`,
+    `<meta property="og:image" content="%%ORIGIN%%/brand/og.png" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:card" content="summary" />`,
     page.path === '/' ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : '',
   ]

@@ -9,7 +9,7 @@ import { LeadForm } from './LeadForm.js';
 import { toPersianDigits } from '@mohandesyar/persian';
 
 export const HOME_META = {
-  title: 'مهندس‌یار',
+  title: 'مهندیکس',
   description: 'سامانه ماژولار مدیریت پروژه، قرارداد، مالی، منابع انسانی و ایمنی برای شرکت‌های مهندسی، مشاور، پیمانکار و هلدینگ‌های عمرانی؛ قابل استقرار روی سرور سازمان.',
 };
 
@@ -61,7 +61,7 @@ export function Home() {
         </div>
       </section>
 
-      <Section id="problems" title="چالش‌هایی که حل می‌کنیم" lead="شرکت‌های مهندسی معمولاً با اطلاعات پراکنده و فرایندهای دستی کار می‌کنند. مهندس‌یار برای همین مسائل طراحی شده است.">
+      <Section id="problems" title="چالش‌هایی که حل می‌کنیم" lead="شرکت‌های مهندسی معمولاً با اطلاعات پراکنده و فرایندهای دستی کار می‌کنند. مهندیکس برای همین مسائل طراحی شده است.">
         <ul className="grid gap-4 md:grid-cols-2">
           {PROBLEMS.map((p) => (
             <li key={p.problem} className="rounded-lg border border-border bg-surface p-5">

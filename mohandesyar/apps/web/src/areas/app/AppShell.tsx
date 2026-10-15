@@ -7,6 +7,7 @@ import { appApi, getToken, setToken } from '../../lib/api.js';
 import { useAppSession } from '../../lib/session.js';
 import { MenuIcon } from '../../lib/icons.js';
 import { useUi } from '../../lib/ui-store.js';
+import { BrandMark } from '../../brand.js';
 
 function useOnline() {
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -123,7 +124,7 @@ export function AppShell() {
         رفتن به محتوای اصلی
       </a>
       <aside className="hidden border-e border-border bg-surface lg:block">
-        <div className="flex h-14 items-center border-b border-border px-5 font-extrabold text-primary">مهندس‌یار</div>
+        <div className="flex h-14 items-center border-b border-border px-5 font-extrabold text-primary"><BrandMark size={28} /></div>
         {sidebar}
       </aside>
       {sidebarOpen && (
@@ -131,7 +132,7 @@ export function AppShell() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebar(false)} />
           <aside className="absolute inset-y-0 start-0 w-72 bg-surface">
             <div className="flex h-14 items-center justify-between border-b border-border px-4 font-extrabold text-primary">
-              مهندس‌یار
+              <BrandMark size={28} />
               <button aria-label="بستن منو" onClick={() => setSidebar(false)} className="rounded p-1 text-muted">
                 <X className="size-5" />
               </button>
