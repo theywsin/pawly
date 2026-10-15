@@ -84,7 +84,7 @@ test.describe.serial('phase 5 — finance and operations', () => {
     const download = app.waitForEvent('download');
     await app.getByRole('button', { name: 'دانلود قالب' }).click();
     expect((await download).suggestedFilename()).toBe('procurement.suppliers.xlsx');
-    const csv = (body: string) => ({ name: 'suppliers.csv', mimeType: 'text/csv', buffer: Buffer.from(`﻿${body}`, 'utf8') });
+    const csv = (body: string) => ({ name: 'suppliers.csv', mimeType: 'text/csv', buffer: Buffer.from(`\uFEFF${body}`, 'utf8') });
     await app.getByLabel('فایل پرشده').setInputFiles(csv('نام,شماره شبا\nفولاد البرز,123\n'));
     await app.getByRole('button', { name: 'بررسی فایل' }).click();
     await expect(app.getByText('۱ خطا پیدا شد؛ هیچ ردیفی وارد نشد')).toBeVisible();
