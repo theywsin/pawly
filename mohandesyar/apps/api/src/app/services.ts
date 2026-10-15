@@ -80,9 +80,9 @@ export class Services {
     );
     this.tasks = new TaskService(this.db, this.audit, this.notifications);
     this.workflow = new WorkflowService(this.db, this.audit, this.notifications, this.events);
-    this.contexts = new ModuleContextFactory(this.db, this.registry, this.events, this.audit, this.notifications, this.settings, this.workflow);
-    this.scheduler = new ModuleScheduler(this.db, this.redis, this.registry, this.contexts, (err, ctx) => logger.error({ err, ...ctx }, 'scheduled job failed'));
     this.files = new FileService(this.db, this.audit, config);
+    this.contexts = new ModuleContextFactory(this.db, this.registry, this.events, this.audit, this.notifications, this.settings, this.workflow, this.files);
+    this.scheduler = new ModuleScheduler(this.db, this.redis, this.registry, this.contexts, (err, ctx) => logger.error({ err, ...ctx }, 'scheduled job failed'));
     this.site = new SiteService(this.db, this.redis, this.audit, config.JWT_SECRET);
     this.lifecycle = new ModuleLifecycleService(this.db, this.registry, this.rbac, this.audit, this.contexts, {
       storeDir: config.MODULE_STORE_DIR,

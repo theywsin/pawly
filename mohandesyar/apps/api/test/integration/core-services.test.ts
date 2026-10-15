@@ -118,6 +118,21 @@ describe('files (S3-compatible storage)', () => {
     expect((await t.req('GET', `/api/core/files/${up.body.id}/url`, { token: other.token })).status).toBe(404);
   });
 
+  it('keeps module-owned files out of the generic download endpoint', async () => {
+    const bad = multipart(Buffer.from('cv'), 'cv.txt', 'file', { module: 'no.such' });
+    expect((await t.req('POST', '/api/core/files', { token: owner.token, ...bad })).body.code).toBe('MODULE_INACTIVE');
+    const s = await scopeOf(owner.token);
+    const f = await t.services.files.upload(s, { name: 'cv.txt', mime: 'text/plain', data: Buffer.from('رزومه') }, { confidentiality: 'confidential', owner: { module: 'recruitment' } });
+    // Only the owning module (after its own permission check) can hand out a link.
+    expect((await t.req('GET', `/api/core/files/${f.id}/url`, { token: owner.token })).status).toBe(404);
+    await expect(t.services.files.downloadUrl(s, f.id, 'crm')).rejects.toThrow();
+    const claimed = await t.services.files.claim(s, 'recruitment', f.id, { type: 'candidate', id: 'c-1' });
+    expect(claimed.name).toBe('cv.txt');
+    // A file can be claimed only once, and only by its module.
+    await expect(t.services.files.claim(s, 'recruitment', f.id, { type: 'candidate', id: 'c-2' })).rejects.toThrow();
+    expect((await t.services.files.downloadUrl(s, f.id, 'recruitment')).url).toContain('X-Amz-Expires=300');
+  });
+
   it('rejects executable/script uploads and empty files', async () => {
     const html = multipart(Buffer.from('<script>alert(1)</script>'), 'x.html');
     expect((await t.req('POST', '/api/core/files', { token: owner.token, ...html })).body.code).toBe('FILE_TYPE_BLOCKED');

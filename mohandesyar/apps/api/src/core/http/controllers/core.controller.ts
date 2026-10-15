@@ -404,8 +404,12 @@ export class CoreController {
     if (!part) throw badRequest('NO_FILE', 'فایلی ارسال نشده است');
     const data = await part.toBuffer();
     const conf = part.fields.confidentiality?.value;
+    // Uploaded for a module: the module attaches it to its record (ctx.files.claim) and controls downloads.
+    const module = part.fields.module?.value;
+    if (module && !(await this.s.registry.effectiveFor(id.tenantId)).some((m) => m.id === module)) throw badRequest('MODULE_INACTIVE', 'ماژول مقصد فعال نیست');
     return this.s.files.upload(scope(id), { name: part.filename, mime: part.mimetype, data }, {
       confidentiality: conf === 'public' || conf === 'confidential' || conf === 'secret' ? conf : 'internal',
+      owner: module ? { module } : undefined,
     });
   }
 

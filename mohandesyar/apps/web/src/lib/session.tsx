@@ -58,7 +58,18 @@ export function AppSession({ children }: { children: ReactNode }) {
     },
     [qc],
   );
-  const host = useMemo<HostApi | null>(() => (me.data ? { me: me.data, request: (p, i) => appApi(p, i) } : null), [me.data]);
+  const host = useMemo<HostApi | null>(() => (me.data ? {
+            me: me.data,
+            request: (p, i) => appApi(p, i),
+            upload: (file, o) => {
+              // Fields must precede the file part: the server reads them from the file part's preamble.
+              const fd = new FormData();
+              fd.append('module', o.module);
+              fd.append('confidentiality', o.confidentiality ?? 'internal');
+              fd.append('file', file);
+              return appApi('/api/core/files', { method: 'POST', raw: fd });
+            },
+          } : null), [me.data]);
   if (status === 'anonymous') return <Navigate to={`/auth/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   if (status === 'checking' || me.isPending) return <FullPageSpinner />;
   if (me.isError || !host || !me.data) {

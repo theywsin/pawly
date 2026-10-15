@@ -109,6 +109,13 @@ export interface StartWorkflowInput {
   amount?: number | null;
 }
 
+export interface ModuleFiles {
+  /** Attach a file the current user uploaded for this module (host `upload`) to a record; returns its metadata. */
+  claim(fileId: string, entity: { type: string; id: string }, tx?: Db): Promise<{ id: string; name: string; mime: string; size: number }>;
+  /** 5-minute download link; call only after the module's own permission check. Confidential files are audited. */
+  url(fileId: string): Promise<{ url: string; name: string }>;
+}
+
 export interface ModuleRequestContext extends BaseModuleContext {
   readonly userId: string;
   readonly companyId: string;
@@ -120,6 +127,7 @@ export interface ModuleRequestContext extends BaseModuleContext {
    * `core.workflow.completed` event (declare it in manifest.events.consumes).
    */
   startWorkflow(input: StartWorkflowInput, tx?: Db): Promise<{ instanceId: string; state: string }>;
+  readonly files: ModuleFiles;
 }
 
 export interface ModuleEventContext extends BaseModuleContext {

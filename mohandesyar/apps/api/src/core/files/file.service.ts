@@ -1,3 +1,4 @@
+import type { Db } from '@mohandesyar/module-sdk/server';
 import { createHash } from 'node:crypto';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -54,7 +55,7 @@ export class FileService {
   async upload(
     s: Scope,
     file: { name: string; mime: string; data: Buffer },
-    meta: { confidentiality?: 'public' | 'internal' | 'confidential' | 'secret'; owner?: { module: string; entityType: string; entityId: string } } = {},
+    meta: { confidentiality?: 'public' | 'internal' | 'confidential' | 'secret'; owner?: { module: string; entityType?: string; entityId?: string } } = {},
   ): Promise<{ id: string; size: number; sha256: string }> {
     if (file.data.length === 0) throw badRequest('EMPTY_FILE', 'فایل خالی است');
     if (file.data.length > MAX_FILE_BYTES) throw badRequest('FILE_TOO_LARGE', 'حجم فایل بیش از ۵۰ مگابایت است');
@@ -73,13 +74,31 @@ export class FileService {
     return { id, size: file.data.length, sha256 };
   }
 
+  /**
+   * Attaches a file the same user uploaded for `module` to one of the module's records. A file can be
+   * claimed once; afterwards only the module decides who may download it.
+   */
+  async claim(s: Scope, module: string, id: string, entity: { type: string; id: string }, txIn?: Db): Promise<{ id: string; name: string; mime: string; size: number }> {
+    const run = async (tx: Db) => {
+      const r = await tx.execute(sql`UPDATE core_files SET owner_entity_type = ${entity.type}, owner_entity_id = ${entity.id}
+        WHERE id = ${id} AND owner_module = ${module} AND owner_entity_id IS NULL AND uploaded_by = ${s.userId} AND deleted_at IS NULL
+        RETURNING id, name, mime, size`);
+      const row = r.rows[0] as { id: string; name: string; mime: string; size: number } | undefined;
+      if (!row) throw notFound('فایل بارگذاری‌شده یافت نشد یا قبلاً پیوست شده است');
+      return row;
+    };
+    return txIn ? run(txIn) : this.db.tx({ tenantId: s.tenantId, companyIds: s.companyIds, userId: s.userId }, run);
+  }
+
   /** Returns a 5-minute presigned URL. Confidential files are audited on every download. */
-  async downloadUrl(s: Scope, id: string): Promise<{ url: string; name: string }> {
+  async downloadUrl(s: Scope, id: string, viaModule?: string): Promise<{ url: string; name: string }> {
     const row = await this.db.tx({ tenantId: s.tenantId, companyIds: s.companyIds }, async (tx) => {
-      const r = await tx.execute(sql`SELECT object_key, name, mime, confidentiality FROM core_files WHERE id = ${id} AND deleted_at IS NULL`);
-      return r.rows[0] as { object_key: string; name: string; mime: string; confidentiality: string } | undefined;
+      const r = await tx.execute(sql`SELECT object_key, name, mime, confidentiality, owner_module FROM core_files WHERE id = ${id} AND deleted_at IS NULL`);
+      return r.rows[0] as { object_key: string; name: string; mime: string; confidentiality: string; owner_module: string | null } | undefined;
     });
     if (!row) throw notFound();
+    // Files owned by a module (resumes, contracts…) are served only through that module's own permission checks.
+    if (row.owner_module && row.owner_module !== viaModule) throw notFound();
     if (row.confidentiality === 'confidential' || row.confidentiality === 'secret') {
       await this.audit.append({ tenantId: s.tenantId, actorType: 'user', actorId: s.userId, action: 'file.downloaded', entityType: 'file', entityId: id });
     }

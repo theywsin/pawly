@@ -42,6 +42,8 @@ export interface RequestInit {
 
 export interface HostApi {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
+  /** Uploads a file for a module; the module then attaches it to a record with ctx.files.claim. */
+  upload?(file: File, opts: { module: string; confidentiality?: 'internal' | 'confidential' | 'secret' }): Promise<{ id: string; size: number }>;
   me: MeData;
 }
 

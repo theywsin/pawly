@@ -7,6 +7,7 @@ import type { EventBus } from '../events/event-bus.js';
 import type { NotificationService } from '../notifications/notification.service.js';
 import type { PermissionSet } from '../rbac/permissions.js';
 import type { SettingsService } from '../settings/settings.service.js';
+import type { FileService } from '../files/file.service.js';
 import type { WorkflowService } from '../workflow/workflow.service.js';
 import type { LoadedModule } from './loader.js';
 import type { ModuleRegistry } from './registry.js';
@@ -58,6 +59,7 @@ export class ModuleContextFactory {
     private readonly notifications: NotificationService,
     private readonly settings: SettingsService,
     private readonly workflow: WorkflowService,
+    private readonly files: FileService,
   ) {}
 
   private async base(module: LoadedModule, tenantId: string, companyIds: readonly string[], userId: string | null, defaultCompany: string | null): Promise<BaseModuleContext> {
@@ -150,6 +152,14 @@ export class ModuleContextFactory {
       can: (permission: string, scope?: PermissionScope) => id.permissions.can(permission, scope),
       startWorkflow: (input, tx) =>
         this.workflow.start({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId }, { moduleId: module.id, ...input }, tx as never),
+      files: {
+        claim: (fileId, entity, tx) => {
+          return this.files.claim({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId }, module.id, fileId, entity, tx);
+        },
+        url: (fileId) => {
+          return this.files.downloadUrl({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId }, fileId, module.id);
+        },
+      },
     };
   }
 

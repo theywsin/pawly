@@ -165,9 +165,10 @@ export class TestApp {
 }
 
 /** Minimal multipart/form-data body with one file field. */
-export function multipart(file: Buffer, filename: string, field = 'file'): { payload: Buffer; headers: Record<string, string> } {
+export function multipart(file: Buffer, filename: string, field = 'file', fields: Record<string, string> = {}): { payload: Buffer; headers: Record<string, string> } {
   const boundary = `----mohandesyar${Date.now()}`;
-  const head = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${field}"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`);
+  const pre = Object.entries(fields).map(([k, v]) => `--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`).join('');
+  const head = Buffer.from(`${pre}--${boundary}\r\nContent-Disposition: form-data; name="${field}"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`);
   const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
   return { payload: Buffer.concat([head, file, tail]), headers: { 'content-type': `multipart/form-data; boundary=${boundary}` } };
 }
