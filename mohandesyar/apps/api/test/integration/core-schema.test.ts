@@ -24,7 +24,8 @@ describe('core schema and RLS', () => {
         JOIN pg_namespace n ON n.oid = c.relnamespace
        WHERE n.nspname = 'public' AND c.relkind = 'r'
          AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'tenant_id')`);
-    const platform = new Set(['core_tenant_modules', 'core_subscriptions', 'core_subscription_addons', 'core_tenant_grants', 'core_sessions']);
+    // Platform-owned rows read by the console across organisations; tenant endpoints filter by the caller's tenant.
+    const platform = new Set(['core_tenant_modules', 'core_subscriptions', 'core_subscription_addons', 'core_tenant_grants', 'core_sessions', 'core_invoices', 'core_payments']);
     for (const t of r.rows) {
       if (platform.has(t.relname)) continue;
       expect(t.relrowsecurity, t.relname).toBe(true);

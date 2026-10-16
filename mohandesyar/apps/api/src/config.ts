@@ -34,6 +34,8 @@ const schema = z.object({
   API_WORKERS: z.coerce.number().int().min(1).default(1),
   COOKIE_SECURE: envBool(true),
   PUBLIC_ORIGIN: z.string().default('http://localhost:3000'),
+  /** Enables the built-in test bank (no money moves). Never set on a production server. */
+  PAYMENT_SANDBOX: envBool(false),
   /** SMTP server for email copies of notifications, e.g. smtp://user:pass@mail.example.ir:587 (empty = in-app only). */
   SMTP_URL: z.string().optional(),
   MAIL_FROM: z.string().default('مهندیکس <no-reply@localhost>'),

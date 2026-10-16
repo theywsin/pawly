@@ -29,7 +29,9 @@ export class EntitlementService {
     const hit = this.cache.get(tenantId);
     if (hit && Date.now() - hit.at < this.ttlMs) return hit.value;
     const r = await this.db.app.execute(sql`
-      SELECT t.status AS tenant_status, s.status AS sub_status, s.plan_key,
+      SELECT t.status AS tenant_status,
+             -- A trial or paid period that has ended counts as expired even before anyone updates the row.
+             CASE WHEN s.status IN ('trialing', 'active') AND s.period_end <= now() THEN 'expired' ELSE s.status END AS sub_status, s.plan_key,
              (p.user_limit + coalesce(s.user_limit_extra, 0)) AS user_limit,
              ARRAY(
                SELECT pm.module_id FROM core_plan_modules pm WHERE pm.plan_key = s.plan_key AND pm.included

@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Activity, Building2, CreditCard, FileText, Inbox, KeyRound, LogOut, Newspaper, Puzzle, ScrollText } from 'lucide-react';
+import { Activity, Building2, CreditCard, FileText, Wallet, Inbox, KeyRound, LogOut, Newspaper, Puzzle, ScrollText } from 'lucide-react';
 import { cn, Toaster } from '@mohandesyar/ui';
 import { consoleApi, setToken } from '../../lib/api.js';
 import { useAdmin } from '../../lib/session.js';
@@ -38,6 +38,9 @@ export function ConsoleShell() {
               <>
                 <NavLink to="/console/plans" className={link}>
                   <CreditCard className="size-4" /> پلن‌ها
+                </NavLink>
+                <NavLink to="/console/billing" className={link}>
+                  <Wallet className="size-4" /> پرداخت و فروش
                 </NavLink>
                 <NavLink to="/console/content" className={link}>
                   <FileText className="size-4" /> محتوای سایت

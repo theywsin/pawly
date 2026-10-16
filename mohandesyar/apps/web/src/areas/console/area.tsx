@@ -11,6 +11,7 @@ import { Leads } from './Leads.js';
 import { Plans } from './Plans.js';
 import { Content } from './Content.js';
 import { BlogCategories, BlogEditor, BlogPosts } from './Blog.js';
+import { ConsoleBilling } from './Billing.js';
 
 /** Platform console area (lazy chunk). */
 export const element = (
@@ -32,6 +33,7 @@ export const element = (
       <Route path="leads" element={<Leads />} />
       <Route path="plans" element={<Plans />} />
       <Route path="content" element={<Content />} />
+      <Route path="billing" element={<ConsoleBilling />} />
       <Route path="blog" element={<BlogPosts />} />
       <Route path="blog/categories" element={<BlogCategories />} />
       <Route path="blog/:id" element={<BlogEditor />} />

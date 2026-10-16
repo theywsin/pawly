@@ -27,6 +27,7 @@ export const CORE_PERMISSIONS = [
   'core.file.upload', 'core.file.download',
   'core.workflow.manage_definitions', 'core.workflow.start',
   'core.integration.manage',
+  'core.billing.manage',
 ] as const;
 
 const scope = (id: Identity) => ({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId });

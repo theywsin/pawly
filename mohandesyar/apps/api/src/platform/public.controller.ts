@@ -54,6 +54,13 @@ export class PublicController {
     return m.data;
   }
 
+  /** Whether online purchase is available, VAT and the free trial length. */
+  @Public()
+  @Get('billing')
+  billing() {
+    return this.s.billing.publicInfo();
+  }
+
   @Public()
   @Get('blog')
   blog(@Query('page') page?: string, @Query('category') category?: string, @Query('tag') tag?: string) {

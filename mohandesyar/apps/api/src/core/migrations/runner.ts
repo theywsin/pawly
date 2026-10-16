@@ -153,7 +153,7 @@ export async function grantCoreAccess(client: pg.PoolClient): Promise<void> {
       WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'S') AND (starts_with(c.relname, 'core_') OR starts_with(c.relname, 'platform_'))`,
   );
   for (const t of r.rows) {
-    if (t.relkind === 'S') continue; // only the audit sequence exists; appends go through SECURITY DEFINER
+    if (t.relkind === 'S') continue; // sequences are granted by their migration (the audit one stays definer-only)
     const priv = CORE_READ_ONLY.has(t.relname) ? 'SELECT' : 'SELECT, INSERT, UPDATE, DELETE';
     await client.query(`GRANT ${priv} ON "${t.relname}" TO mohandesyar_app`);
   }
