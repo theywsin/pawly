@@ -1,0 +1,113 @@
+# Self-hosted deployment of Mohandix on one server (docs/10 §4): PostgreSQL, Redis, SeaweedFS (S3),
+# the app (migrate job + API) and Caddy in front (HTTPS, and /<bucket>/ forwarded to the storage so
+# signed download links work through the same address). Configure .env (see .env.example) — or run
+# install.sh, which generates it.
+name: mohandix
+
+x-app: &app
+  image: ${MOHANDIX_IMAGE:-mohandix:latest}
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://mohandesyar_app:${APP_DB_PASSWORD}@postgres:5432/mohandesyar
+    DATABASE_MIGRATOR_URL: postgres://mohandesyar_owner:${OWNER_DB_PASSWORD}@postgres:5432/mohandesyar
+    REDIS_URL: redis://redis:6379/0
+    S3_ENDPOINT: http://s3:8333
+    S3_PUBLIC_ENDPOINT: ${PUBLIC_ORIGIN}
+    S3_FORCE_PATH_STYLE: 'true'
+    MODULE_TRUSTED_KEYS: /keys/release.pub.pem
+    PREINSTALLED_MODULES_DIR: /preinstalled
+    HOST: 0.0.0.0
+    PORT: '3000'
+  volumes:
+    - appdata:/var/lib/mohandesyar
+    - ./keys:/keys:ro
+    - ./modules:/preinstalled:ro
+  networks: [internal, egress]
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      retries: 30
+    networks: [internal]
+    restart: unless-stopped
+
+  db-init:
+    image: postgres:16-alpine
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./init-roles.sql:/init-roles.sql:ro
+    command: >
+      psql -h postgres -U postgres -v ON_ERROR_STOP=1 -v owner_pw=${OWNER_DB_PASSWORD} -v app_pw=${APP_DB_PASSWORD}
+      -v db_name=mohandesyar -f /init-roles.sql
+    networks: [internal]
+    restart: 'no'
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    networks: [internal]
+    restart: unless-stopped
+
+  s3:
+    image: chrislusf/seaweedfs:3.97
+    command: ['server', '-dir=/data', '-s3', '-s3.port=8333', '-s3.config=/etc/seaweedfs/s3.json', '-master.volumeSizeLimitMB=1024']
+    volumes:
+      - s3data:/data
+      - ./s3.json:/etc/seaweedfs/s3.json:ro
+    networks: [internal]
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ['migrate']
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+      s3: { condition: service_started }
+    restart: 'no'
+
+  api:
+    <<: *app
+    command: ['serve']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:2.10-alpine
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+      S3_BUCKET: ${S3_BUCKET:-mohandesyar}
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on: [api]
+    networks: [internal, egress]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  s3data:
+  appdata:
+  caddydata:
+
+networks:
+  internal:
+    internal: true
+  egress: {}

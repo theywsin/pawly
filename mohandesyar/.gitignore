@@ -1,0 +1,13 @@
+!modules/**/fixtures/*.mypkg
+*.mypkg
+*.tsbuildinfo
+.env
+.local/
+.turbo/
+apps/web/public/shared/
+coverage/
+dist/
+node_modules/
+playwright-report/
+test-results/
+apps/web/dist-ssr/

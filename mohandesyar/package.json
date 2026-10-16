@@ -1,0 +1,39 @@
+{
+  "name": "mohandesyar",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint . && depcruise --config packages/config/dependency-cruiser.cjs apps modules packages tools",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration --concurrency=1",
+    "test:e2e": "PW_CHROMIUM=${PW_CHROMIUM:-} playwright test -c e2e/playwright.config.ts",
+    "services:up": "bash infra/scripts/local-services.sh start",
+    "services:down": "bash infra/scripts/local-services.sh stop",
+    "module:keygen": "node tools/module-cli/dist/cli.js keygen",
+    "module:pack": "node tools/module-cli/dist/cli.js pack",
+    "module:sign": "node tools/module-cli/dist/cli.js sign",
+    "module:verify": "node tools/module-cli/dist/cli.js verify",
+    "test:lighthouse": "node e2e/lighthouse.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.20.5",
+    "dependency-cruiser": "^18.6.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
+    "lighthouse": "^13.5.0",
+    "tsx": "^4.23.15",
+    "turbo": "^2.11.8",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.4"
+  }
+}

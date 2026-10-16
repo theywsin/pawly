@@ -1,0 +1,52 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "qhse",
+  "name": { "fa": "کیفیت، ایمنی، بهداشت و محیط‌زیست", "en": "QHSE" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "حوادث و شبه‌حوادث با اعلان فوری موارد بحرانی، نفر-ساعت و نرخ‌های تکرار، ریسک ایمنی، چک‌لیست و بازرسی، عدم انطباق، اقدام اصلاحی/پیشگیرانه با تأیید اثربخشی، آموزش ایمنی، تحویل تجهیزات حفاظت فردی و گزارش وضعیت ایمنی.",
+    "en": "Incidents, man-hours, risks, inspections, non-conformances, CAPA, training, PPE, safety status."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "projects": "^1.2.0" },
+  "permissions": [
+    { "key": "qhse.view", "fa": "مشاهده QHSE (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "qhse.incident.report", "fa": "گزارش حادثه و شبه‌حادثه (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "qhse.manage", "fa": "بررسی حوادث، ریسک، بازرسی، عدم انطباق، اقدامات، آموزش و PPE (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "qhse.admin", "fa": "چک‌لیست‌ها و گیرندگان اعلان فوری", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "hse_manager", "name": { "fa": "مدیر HSE" }, "grants": ["qhse.view", "qhse.incident.report", "qhse.manage", "qhse.admin"] },
+    { "key": "site_hse_officer", "name": { "fa": "افسر ایمنی کارگاه" }, "grants": ["qhse.view@project", "qhse.incident.report@project", "qhse.manage@project"] },
+    { "key": "incident_reporter", "name": { "fa": "گزارش‌دهنده حادثه" }, "grants": ["qhse.incident.report@project"] }
+  ],
+  "menu": [
+    { "key": "qhse", "label": { "fa": "QHSE" }, "icon": "shield-check", "path": "/app/qhse", "permission": "qhse.incident.report", "order": 55 }
+  ],
+  "routes": [{ "path": "/app/qhse/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "qhse.status", "title": { "fa": "وضعیت ایمنی" }, "entry": "frontend/index.js", "export": "StatusWidget", "permission": "qhse.view", "sizes": ["md"] }
+  ],
+  "events": {
+    "publishes": [{ "type": "qhse.incident.reported", "version": 1 }],
+    "consumes": []
+  },
+  "kpiProviders": [
+    { "key": "qhse.incidents", "title": { "fa": "تعداد حوادث (بدون شبه‌حادثه) در دوره" }, "unit": "count" },
+    { "key": "qhse.near_misses", "title": { "fa": "تعداد شبه‌حوادث گزارش‌شده در دوره" }, "unit": "count" },
+    { "key": "qhse.ltifr", "title": { "fa": "نرخ تکرار حوادث با روز کاری از دست رفته (LTIFR، در یک میلیون نفر-ساعت)" }, "unit": "rate" },
+    { "key": "qhse.overdue_actions", "title": { "fa": "اقدامات اصلاحی معوق (پایان دوره)" }, "unit": "count" },
+    { "key": "qhse.inspection_score", "title": { "fa": "میانگین امتیاز بازرسی‌ها در دوره" }, "unit": "percent" }
+  ],
+  "searchProviders": [{ "key": "qhse.incidents", "title": { "fa": "حوادث" }, "permission": "qhse.view" }],
+  "reportProviders": [
+    { "key": "qhse.incidents_report", "title": {"fa": "فهرست حوادث"}, "permission": "qhse.view", "filters": [{"key": "kind", "label": "نوع", "options": {"injury": "حادثه با آسیب", "near_miss": "شبه‌حادثه", "unsafe_condition": "شرایط ناایمن", "property_damage": "خسارت به اموال", "environmental": "رویداد زیست‌محیطی"}}, {"key": "severity", "label": "شدت", "options": {"low": "کم", "medium": "متوسط", "high": "زیاد", "critical": "بحرانی"}}] }
+  ],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "qhse_",
+  "entitlement": { "key": "mod.qhse", "plans": [] }
+}
