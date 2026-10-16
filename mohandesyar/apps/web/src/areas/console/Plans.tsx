@@ -140,7 +140,7 @@ export function Plans() {
   return (
     <>
       <PageHeader title="پلن‌ها" description="صفحه قیمت‌های سایت مستقیماً از همین پلن‌ها ساخته می‌شود." actions={<Button onClick={() => setEditing('new')}>پلن جدید</Button>} />
-      <PageState query={q} isEmpty={q.data?.length === 0} empty={<EmptyState icon={<CreditCard className="size-8" />} title="هنوز پلنی تعریف نشده است" description="تا وقتی پلنی منتشر نشده، صفحه قیمت‌ها کاربر را به درخواست دمو هدایت می‌کند." />}>
+      <PageState query={q} isEmpty={q.data?.length === 0} empty={<EmptyState icon={<CreditCard className="size-8" />} title="هنوز پلنی تعریف نشده است" description="تا وقتی پلنی منتشر نشده، صفحه قیمت‌ها کاربر را به صفحه تماس هدایت می‌کند و خرید آنلاین ممکن نیست." />}>
         <Table>
           <thead>
             <tr>

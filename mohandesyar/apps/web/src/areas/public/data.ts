@@ -18,7 +18,11 @@ export interface PublicSite {
   pages: { about: boolean; terms: boolean; privacy: boolean };
   signupMode: 'open' | 'approval' | 'closed';
   availableModules: { id: string; name: { fa: string }; active_version: string }[];
+  clients: { id: string; name: string; url: string | null; logo: string }[];
+  apps: Record<AppPlatform, { url: string; version: string; note: string }>;
 }
+
+export type AppPlatform = 'android' | 'ios' | 'windows' | 'mac';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(path, { headers: { accept: 'application/json' } });

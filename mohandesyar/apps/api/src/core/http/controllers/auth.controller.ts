@@ -82,7 +82,7 @@ export class AuthController extends BaseAuth {
   async signup(@Body() body: unknown, @Res({ passthrough: true }) reply: Reply, @RequestMetaParam() meta: RequestMeta) {
     const input = parse(signupSchema, body);
     const mode = await this.s.site.signupMode();
-    if (mode === 'closed') throw forbidden('SIGNUP_CLOSED', 'ثبت‌نام عمومی در حال حاضر بسته است؛ از فرم درخواست دمو استفاده کنید');
+    if (mode === 'closed') throw forbidden('SIGNUP_CLOSED', 'ثبت‌نام عمومی در حال حاضر بسته است؛ از صفحه تماس با ما در ارتباط باشید');
     if (!(await rateLimit(this.s.redis, `signup:${meta.ip ?? '-'}`, 10, 3600))) throw tooMany();
     const plans = await this.s.db.app.execute(
       (await import('drizzle-orm')).sql`SELECT key, (features->>'trialDays')::int AS trial FROM core_plans WHERE status = 'active' AND (features->>'signupDefault')::boolean IS TRUE LIMIT 1`,

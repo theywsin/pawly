@@ -5,13 +5,13 @@ import { totp } from './totp.js';
 /**
  * Phase-2 exit checks through the real UI against the real clustered server:
  * prerendered public pages (readable without JS), console-managed plans/FAQ/contact shown on the site,
- * demo form → lead in the console, signup → onboarding wizard, signup approval mode,
+ * contact form → lead in the console, Dot-Web credits, signup → onboarding wizard, signup approval mode,
  * accessibility (axe, light and dark) and no horizontal overflow on a phone viewport.
  */
 
 const ADMIN = { email: 'sales@platform.test', password: 'Sales-Passw0rd-e2e' };
 const stamp = Date.now();
-const PUBLIC_PAGES = ['/', '/pricing', '/modules', '/modules/projects', '/demo', '/contact', '/terms', '/privacy', '/about'];
+const PUBLIC_PAGES = ['/', '/pricing', '/modules', '/modules/projects', '/download', '/contact', '/terms', '/privacy', '/about'];
 let admin: Page;
 let secret = '';
 let lastCode = '';
@@ -29,7 +29,7 @@ test.describe('public site without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
   test('pages are prerendered with title, description, canonical and content', async ({ page }) => {
-    for (const path of ['/', '/pricing', '/modules/finance', '/demo']) {
+    for (const path of ['/', '/pricing', '/modules/finance', '/download']) {
       const res = await page.goto(path);
       expect(res?.status()).toBe(200);
       await expect(page.locator('h1').first()).toBeVisible();
@@ -65,7 +65,7 @@ test.describe.serial('phase 2 — console-managed site, leads, signup', () => {
     await expect(admin.getByRole('heading', { name: 'وضعیت سامانه' })).toBeVisible();
   });
 
-  test('without plans the pricing page sends visitors to the demo form (no invented prices)', async ({ page }) => {
+  test('without plans the pricing page sends visitors to the contact page (no invented prices)', async ({ page }) => {
     await page.goto('/pricing');
     await expect(page.getByText('پلن‌های اشتراک هنوز منتشر نشده‌اند.')).toBeVisible();
   });
@@ -87,8 +87,8 @@ test.describe.serial('phase 2 — console-managed site, leads, signup', () => {
     await admin.getByRole('button', { name: 'ذخیره' }).first().click();
     await admin.getByLabel('تلفن').fill('021-88001234');
     await admin.getByLabel('ساعات پاسخ‌گویی').fill('شنبه تا چهارشنبه ۹ تا ۱۷');
-    await admin.getByRole('button', { name: 'ذخیره' }).last().click();
-    await expect(admin.getByText(/ذخیره شد/).first()).toBeVisible();
+    await admin.getByRole('button', { name: 'ذخیره', exact: true }).last().click();
+    await expect(admin.getByText('اطلاعات تماس ذخیره شد')).toBeVisible();
 
     await page.goto('/pricing');
     await expect(page.getByRole('heading', { name: `پایه ${stamp}` })).toBeVisible();
@@ -99,24 +99,35 @@ test.describe.serial('phase 2 — console-managed site, leads, signup', () => {
     await expect(page.getByRole('main').getByText('021-88001234')).toBeVisible();
   });
 
-  test('demo request: validation, then the lead reaches the console', async ({ page }) => {
-    await page.goto('/demo');
-    const form = page.getByRole('form', { name: 'فرم درخواست دمو' });
-    await expect(form.getByRole('button', { name: 'ثبت درخواست دمو' })).toBeEnabled();
-    await form.getByRole('button', { name: 'ثبت درخواست دمو' }).click();
+  test('contact request: validation, then the lead reaches the console', async ({ page }) => {
+    await page.goto('/contact');
+    const form = page.getByRole('form', { name: 'فرم تماس' });
+    await expect(form.getByRole('button', { name: 'ارسال پیام' })).toBeEnabled();
+    await form.getByRole('button', { name: 'ارسال پیام' }).click();
     await expect(form.getByText(/نام/).filter({ hasText: /وارد|کوتاه|حداقل/ }).first()).toBeVisible();
-    await form.getByLabel('نام و نام خانوادگی').fill(`متقاضی دمو ${stamp}`);
-    await form.getByLabel('نام شرکت').fill('مهندسین مشاور نمونه');
+    await form.getByLabel('نام و نام خانوادگی').fill(`متقاضی ${stamp}`);
     await form.getByLabel('شماره تماس').fill('۰۹۱۲۱۲۳۴۵۶۷');
-    await form.getByLabel('نیازها و ماژول‌های مورد نظر').fill('مدیریت پروژه و قراردادها');
+    await form.getByLabel('پیام').fill('پرسش درباره پلن‌ها');
     await page.waitForTimeout(3500); // the server stores faster-than-human submissions as spam
-    await form.getByRole('button', { name: 'ثبت درخواست دمو' }).click();
+    await form.getByRole('button', { name: 'ارسال پیام' }).click();
     await expect(page.getByText('درخواست شما ثبت شد.')).toBeVisible();
 
     await admin.goto('/console/leads');
-    const row = admin.getByRole('row', { name: new RegExp(`متقاضی دمو ${stamp}`) });
+    const row = admin.getByRole('row', { name: new RegExp(`متقاضی ${stamp}`) });
     await expect(row).toBeVisible();
     await expect(row).toContainText('09121234567');
+  });
+
+  test('home shows the Dot-Web credits instead of a demo request; old demo links go to the plans', async ({ page }) => {
+    await page.goto('/');
+    const credits = page.locator('#credits');
+    await expect(credits.getByRole('link', { name: 'آژانس دات وب' })).toHaveAttribute('href', 'https://dot-web.ir/');
+    await expect(credits.getByRole('link', { name: '۰۹۱۱۸۲۲۰۹۴۳' })).toHaveAttribute('href', 'tel:09118220943');
+    await expect(page.getByRole('contentinfo')).toContainText('طراحی شده توسط شرکت دات وب');
+    await expect(page.getByRole('contentinfo').getByRole('link', { name: 'dot-web.ir' })).toHaveAttribute('href', 'https://dot-web.ir/');
+    await expect(page.getByText('درخواست دمو')).toHaveCount(0);
+    await page.goto('/demo');
+    await expect(page).toHaveURL(/\/pricing$/);
   });
 
   test('signup opens the onboarding wizard; finishing it lands on the dashboard', async ({ browser }) => {

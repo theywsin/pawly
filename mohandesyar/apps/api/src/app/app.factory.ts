@@ -16,6 +16,7 @@ import { AuthController, ConsoleAuthController } from '../core/http/controllers/
 import { CoreController } from '../core/http/controllers/core.controller.js';
 import { ConsoleController } from '../core/http/controllers/console.controller.js';
 import { PublicController } from '../platform/public.controller.js';
+import { ConsoleSiteController } from '../platform/console-site.controller.js';
 import { META_MODULE } from '../core/http/context.js';
 import type { LoadedModule } from '../core/modules/loader.js';
 import { loadModuleFromStore } from '../core/modules/loader.js';
@@ -204,7 +205,7 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
 
   @Module({
     imports: [...moduleClasses.map((x) => x.cls), RouterModule.register(routes)],
-    controllers: [HealthController, AuthController, ConsoleAuthController, CoreController, ConsoleController, PublicController],
+    controllers: [HealthController, AuthController, ConsoleAuthController, CoreController, ConsoleController, PublicController, ConsoleSiteController],
     providers: [
       { provide: Services, useValue: s },
       { provide: APP_GUARD, useClass: CoreGuard },

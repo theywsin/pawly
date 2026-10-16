@@ -5,7 +5,6 @@ import { usePageMeta } from './meta.js';
 import { AUDIENCES, PROBLEMS, SECURITY, STEPS } from './catalog.js';
 import { ArchitectureDiagram, HeroMockup, ModuleGrid, Plans, Section } from './Sections.js';
 import { CtaLink } from './PublicLayout.js';
-import { LeadForm } from './LeadForm.js';
 import { toPersianDigits } from '@mohandesyar/persian';
 
 export const HOME_META = {
@@ -31,6 +30,53 @@ function Faq() {
   );
 }
 
+/** Customers' logos from the console; hidden until the first one is published (no invented customers). */
+function Clients() {
+  const clients = useSite().data?.clients ?? [];
+  if (!clients.length) return null;
+  return (
+    <Section id="clients" title="مشتریان ما" tone="muted">
+      <ul className="grid grid-cols-2 items-center gap-6 sm:grid-cols-3 lg:grid-cols-6">
+        {clients.map((c) => {
+          const img = <img src={c.logo} alt={c.name} loading="lazy" className="mx-auto max-h-16 w-auto object-contain grayscale transition hover:grayscale-0" />;
+          return (
+            <li key={c.id} className="flex h-24 items-center justify-center rounded-lg border border-border bg-surface p-3">
+              {c.url ? (
+                <a href={c.url} target="_blank" rel="noopener noreferrer" aria-label={c.name}>
+                  {img}
+                </a>
+              ) : (
+                img
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Section>
+  );
+}
+
+export const DOT_WEB = { url: 'https://dot-web.ir/', phone: '09118220943' };
+
+export function DotWebCredit() {
+  return (
+    <div className="flex flex-col items-start gap-4 rounded-lg border border-border bg-surface p-6 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-lg font-bold leading-9">
+        طراحی و توسعه توسط{' '}
+        <a href={DOT_WEB.url} target="_blank" rel="noopener" className="text-primary underline">
+          آژانس دات وب
+        </a>
+      </p>
+      <p className="text-sm">
+        شماره تماس:{' '}
+        <a href={`tel:${DOT_WEB.phone}`} className="font-semibold text-primary" dir="ltr">
+          {toPersianDigits(DOT_WEB.phone)}
+        </a>
+      </p>
+    </div>
+  );
+}
+
 export function Home() {
   usePageMeta(HOME_META);
   const site = useSite();
@@ -45,10 +91,10 @@ export function Home() {
               پروژه، قرارداد، بودجه، تدارکات، منابع انسانی و ایمنی را یکپارچه مدیریت کنید. داده‌های هر سازمان جدا نگهداری می‌شود و سامانه روی سرور خود شما قابل استقرار است.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <CtaLink to="/demo">درخواست دمو</CtaLink>
+              <CtaLink to="/pricing">انتخاب پلن و خرید اشتراک</CtaLink>
               {canSignup ? (
                 <CtaLink to="/auth/signup" variant="secondary">
-                  ساخت فضای کاری
+                  شروع رایگان
                 </CtaLink>
               ) : (
                 <CtaLink to="/modules" variant="secondary">
@@ -168,10 +214,12 @@ export function Home() {
         </ol>
       </Section>
 
+      <Clients />
+
       <Faq />
 
-      <Section id="demo" title="درخواست دمو" lead="فرم را پر کنید تا برای نمایش سامانه و بررسی نیازهای سازمان شما هماهنگ کنیم.">
-        <LeadForm kind="demo" />
+      <Section id="credits" title="طراحی و توسعه">
+        <DotWebCredit />
       </Section>
     </>
   );

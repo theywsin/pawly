@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, CardHeader, Checkbox, ConfirmDialog, Field, Input, PageHeader, PageState, Select, Textarea, toast } from '@mohandesyar/ui';
 import { consoleApi } from '../../lib/api.js';
 import { errorMessage } from '../../lib/errors.js';
+import { AppsCard, ClientsCard } from './SiteExtras.js';
 
 interface Faq {
   id: string;
@@ -148,7 +149,7 @@ export function Content() {
   });
   return (
     <>
-      <PageHeader title="محتوای سایت" description="پرسش‌های متداول، اطلاعات تماس و صفحات حقوقی. بخش‌های خالی در سایت نمایش داده نمی‌شوند." />
+      <PageHeader title="محتوای سایت" description="پرسش‌های متداول، اطلاعات تماس، صفحات حقوقی، لوگوی مشتریان و پیوندهای دانلود اپلیکیشن. بخش‌های خالی در سایت نمایش داده نمی‌شوند." />
       <PageState query={q}>
         {q.data && (
           <div className="grid gap-6 lg:grid-cols-2">
@@ -177,6 +178,8 @@ export function Content() {
             </Card>
             <ContactEditor data={q.data} />
             <PageEditor data={q.data} />
+            <ClientsCard />
+            <AppsCard />
           </div>
         )}
       </PageState>

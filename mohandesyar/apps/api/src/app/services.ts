@@ -23,6 +23,7 @@ import { IntegrationService } from '../core/integrations/integration.service.js'
 import { Mailer } from '../core/notifications/mailer.js';
 import { logger } from '../infra/logger.js';
 import { SiteService } from '../platform/site.service.js';
+import { MediaService } from '../platform/media.service.js';
 
 export const RELOAD_CHANNEL = 'mohandesyar:reload';
 export const MODULE_STATE_CHANNEL = 'mohandesyar:module-state';
@@ -55,6 +56,7 @@ export class Services {
   readonly workflow: WorkflowService;
   readonly files: FileService;
   readonly site: SiteService;
+  readonly media: MediaService;
   readonly scheduler: ModuleScheduler;
   readonly mailer: Mailer;
   readonly reports: ReportService;
@@ -95,6 +97,7 @@ export class Services {
       onError: (err, ctx) => logger.warn({ err, ...ctx }, 'webhook delivery failed'),
     });
     this.site = new SiteService(this.db, this.redis, this.audit, config.JWT_SECRET);
+    this.media = new MediaService(this.db, this.files, this.audit);
     this.lifecycle = new ModuleLifecycleService(this.db, this.registry, this.rbac, this.audit, this.contexts, {
       storeDir: config.MODULE_STORE_DIR,
       uploadDir: config.MODULE_UPLOAD_DIR,

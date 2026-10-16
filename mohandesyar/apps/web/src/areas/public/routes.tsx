@@ -1,7 +1,7 @@
-import type { RouteObject } from 'react-router';
+import { Navigate, type RouteObject } from 'react-router';
 import { PublicLayout } from './PublicLayout.js';
 import { Home, HOME_META, NotFound } from './Home.js';
-import { ContactPage, ContentPage, DemoPage, ModuleDetailPage, ModulesPage, PAGE_META, PricingPage } from './Pages.js';
+import { ContactPage, ContentPage, DownloadPage, ModuleDetailPage, ModulesPage, PAGE_META, PricingPage } from './Pages.js';
 import { MODULES } from './catalog.js';
 import type { PageMeta } from './meta.js';
 
@@ -18,7 +18,9 @@ export const publicRoutes: RouteObject[] = [
       { path: '/terms', element: <ContentPage key="terms" pageKey="terms" /> },
       { path: '/privacy', element: <ContentPage key="privacy" pageKey="privacy" /> },
       { path: '/contact', element: <ContactPage /> },
-      { path: '/demo', element: <DemoPage /> },
+      { path: '/download', element: <DownloadPage /> },
+      // The demo request was replaced by online purchase; old links land on the plans.
+      { path: '/demo', element: <Navigate to="/pricing" replace /> },
       { path: '*', element: <NotFound /> },
     ],
   },
@@ -30,7 +32,7 @@ export const PRERENDER: { path: string; meta: PageMeta; priority: number }[] = [
   { path: '/pricing', meta: PAGE_META.pricing, priority: 0.9 },
   { path: '/modules', meta: PAGE_META.modules, priority: 0.9 },
   ...MODULES.map((m) => ({ path: `/modules/${m.id}`, meta: { title: m.name, description: m.tagline }, priority: 0.7 })),
-  { path: '/demo', meta: PAGE_META.demo, priority: 0.8 },
+  { path: '/download', meta: PAGE_META.download, priority: 0.7 },
   { path: '/contact', meta: PAGE_META.contact, priority: 0.6 },
   { path: '/about', meta: PAGE_META.about, priority: 0.5 },
   { path: '/terms', meta: PAGE_META.terms, priority: 0.3 },

@@ -143,6 +143,24 @@ export class FileService {
       return r.rows;
     });
   }
+
+  // Raw object access for platform data (site images, ticket attachments) whose rows and access rules
+  // live outside core_files. Callers authorise before reading.
+
+  async putObject(key: string, data: Buffer, mime: string, name: string): Promise<void> {
+    await this.ensureBucket();
+    await this.s3.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: data, ContentType: mime, ContentDisposition: contentDisposition(name) }));
+  }
+
+  async getObject(key: string): Promise<Buffer> {
+    const r = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    if (!r.Body) throw notFound();
+    return Buffer.from(await r.Body.transformToByteArray());
+  }
+
+  async deleteObject(key: string): Promise<void> {
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+  }
 }
 
 /**

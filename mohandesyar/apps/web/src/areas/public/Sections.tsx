@@ -156,9 +156,9 @@ export function Plans({ compact }: { compact?: boolean }) {
     return (
       <div className="rounded-lg border border-border bg-surface p-6 text-center">
         <p className="font-semibold">پلن‌های اشتراک هنوز منتشر نشده‌اند.</p>
-        <p className="mt-2 text-sm text-muted">برای دریافت پیشنهاد قیمت متناسب با سازمان خود، درخواست دمو ثبت کنید.</p>
-        <Link to="/demo" className="mt-4 inline-block text-primary underline">
-          درخواست دمو و قیمت
+        <p className="mt-2 text-sm text-muted">برای دریافت پیشنهاد قیمت متناسب با سازمان خود با ما تماس بگیرید.</p>
+        <Link to="/contact" className="mt-4 inline-block text-primary underline">
+          تماس با ما
         </Link>
       </div>
     );
@@ -188,8 +188,8 @@ export function Plans({ compact }: { compact?: boolean }) {
                 </li>
               ))}
             </ul>
-            <Link to="/demo" className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 font-medium text-primary-fg">
-              درخواست این پلن
+            <Link to={`/auth/signup?plan=${encodeURIComponent(p.key)}`} className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 font-medium text-primary-fg">
+              خرید این پلن
             </Link>
           </li>
         ))}

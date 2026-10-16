@@ -10,6 +10,7 @@ import { BRAND_NAME, BrandMark } from '../../brand.js';
 const NAV = [
   { to: '/modules', label: 'ماژول‌ها' },
   { to: '/pricing', label: 'قیمت‌ها' },
+  { to: '/download', label: 'دانلود اپلیکیشن' },
   { to: '/about', label: 'درباره ما' },
   { to: '/contact', label: 'تماس' },
 ];
@@ -63,8 +64,8 @@ export function PublicLayout() {
             <Link to="/auth/login" className="hidden rounded-md px-3 py-2 text-[0.9375rem] hover:bg-surface-2 sm:inline-block">
               ورود
             </Link>
-            <CtaLink to="/demo" className="hidden h-10 sm:inline-flex">
-              درخواست دمو
+            <CtaLink to="/pricing" className="hidden h-10 sm:inline-flex">
+              خرید اشتراک
             </CtaLink>
             <button className="rounded-md p-2 md:hidden" aria-label={open ? 'بستن منو' : 'باز کردن منو'} aria-expanded={open} onClick={() => setOpen(!open)}>
               {open ? <X className="size-6" /> : <Menu className="size-6" />}
@@ -82,8 +83,8 @@ export function PublicLayout() {
               <NavLink to="/auth/login" className={link}>
                 ورود
               </NavLink>
-              <CtaLink to="/demo" className="mt-2">
-                درخواست دمو
+              <CtaLink to="/pricing" className="mt-2">
+                خرید اشتراک
               </CtaLink>
             </div>
           </nav>
@@ -103,7 +104,7 @@ export function PublicLayout() {
             <ul className="mt-2 space-y-1 text-sm">
               <li><Link className="hover:text-primary" to="/modules">ماژول‌ها</Link></li>
               <li><Link className="hover:text-primary" to="/pricing">قیمت‌ها</Link></li>
-              <li><Link className="hover:text-primary" to="/demo">درخواست دمو</Link></li>
+              <li><Link className="hover:text-primary" to="/download">دانلود اپلیکیشن</Link></li>
               {site.data?.signupMode !== 'closed' && <li><Link className="hover:text-primary" to="/auth/signup">ثبت‌نام سازمان</Link></li>}
             </ul>
           </div>
@@ -127,7 +128,12 @@ export function PublicLayout() {
             </div>
           )}
         </div>
-        <p className="border-t border-border py-4 text-center text-xs text-muted">© {year} {BRAND_NAME}</p>
+        <p className="border-t border-border px-4 py-4 text-center text-xs leading-6 text-muted">
+          © {year} {BRAND_NAME} — طراحی شده توسط شرکت دات وب{' '}
+          <a href="https://dot-web.ir/" target="_blank" rel="noopener" className="hover:text-primary" dir="ltr">
+            dot-web.ir
+          </a>
+        </p>
       </footer>
     </div>
   );

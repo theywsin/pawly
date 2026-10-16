@@ -101,7 +101,7 @@ export function Leads() {
   return (
     <>
       <PageHeader
-        title="درخواست‌های دمو و تماس"
+        title="پیام‌های تماس"
         description="از فرم‌های سایت. موارد مشکوک به هرزنامه جدا نگهداری می‌شوند."
         actions={
           <Select aria-label="فیلتر وضعیت" value={status} onChange={(e) => setStatus(e.target.value)} className="w-44">

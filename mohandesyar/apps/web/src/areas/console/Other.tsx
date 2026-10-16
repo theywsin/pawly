@@ -107,7 +107,7 @@ function SignupMode() {
   });
   return (
     <Card className="mb-6">
-      <CardHeader title="سیاست ثبت‌نام" description="باز: ثبت‌نام و ورود فوری. با تأیید: سازمان تا تأیید شما غیرفعال می‌ماند. بسته: فقط از طریق درخواست دمو." />
+      <CardHeader title="سیاست ثبت‌نام" description="باز: ثبت‌نام و ورود فوری. با تأیید: سازمان تا تأیید شما غیرفعال می‌ماند. بسته: ثبت‌نام عمومی غیرفعال است." />
       <div className="p-5">
         <Field label="حالت" className="max-w-xs">
           <Select value={q.data?.mode ?? 'open'} disabled={!q.data || set.isPending} onChange={(e) => set.mutate(e.target.value)}>

@@ -1,9 +1,9 @@
 import { Link, useParams } from 'react-router';
-import { Check } from 'lucide-react';
-import { Ltr, Skeleton } from '@mohandesyar/ui';
-import { formatDate } from '@mohandesyar/persian';
+import { Check, Download, Laptop, Monitor, Smartphone, TabletSmartphone } from 'lucide-react';
+import { Badge, Ltr, Skeleton } from '@mohandesyar/ui';
+import { formatDate, toPersianDigits } from '@mohandesyar/persian';
 import { MODULES } from './catalog.js';
-import { usePage, useSite } from './data.js';
+import { usePage, useSite, type AppPlatform } from './data.js';
 import { usePageMeta } from './meta.js';
 import { AvailabilityBadge, ModuleGrid, Plans, Section } from './Sections.js';
 import { LeadForm } from './LeadForm.js';
@@ -15,15 +15,15 @@ export const PAGE_META = {
   modules: { title: 'ماژول‌ها', description: 'ماژول‌های مهندیکس: پروژه، CRM، قراردادها، مالی و بودجه، تدارکات، منابع انسانی، KPI، اسناد، QHSE، جلسات و هلدینگ.' },
   about: { title: 'درباره ما', description: 'درباره مهندیکس.' },
   contact: { title: 'تماس با ما', description: 'راه‌های ارتباط با مهندیکس و فرم تماس.' },
-  demo: { title: 'درخواست دمو', description: 'درخواست نمایش سامانه مهندیکس و بررسی نیازهای سازمان شما.' },
   terms: { title: 'شرایط استفاده', description: 'شرایط استفاده از سامانه مهندیکس.' },
   privacy: { title: 'حریم خصوصی', description: 'سیاست حریم خصوصی مهندیکس.' },
+  download: { title: 'دانلود اپلیکیشن', description: 'دانلود و نصب اپلیکیشن مهندیکس برای اندروید، iOS، ویندوز و مک.' },
 } as const;
 
 export function PricingPage() {
   usePageMeta(PAGE_META.pricing);
   return (
-    <Section page title="پلن‌ها و قیمت‌ها" lead="قیمت‌ها توسط مدیر سامانه تعیین و به‌روز می‌شوند. برای استقرار اختصاصی یا قرارداد سازمانی درخواست دمو ثبت کنید.">
+    <Section page title="پلن‌ها و قیمت‌ها" lead="پلن مناسب سازمان خود را انتخاب کنید و اشتراک را آنلاین بخرید؛ پس از پرداخت، فضای کاری بلافاصله فعال می‌شود.">
       <Plans />
     </Section>
   );
@@ -72,8 +72,8 @@ export function ModuleDetailPage() {
             })}
           </ul>
           <p className="mt-3 text-xs leading-6 text-muted">اتصال به این ماژول‌ها اختیاری است؛ اگر فعال نباشند، قابلیت‌های مربوط پنهان می‌شوند.</p>
-          <CtaLink to="/demo" className="mt-5 w-full">
-            درخواست دمو
+          <CtaLink to="/pricing" className="mt-5 w-full">
+            مشاهده پلن‌ها و خرید
           </CtaLink>
         </aside>
       </div>
@@ -129,11 +129,43 @@ export function ContactPage() {
   );
 }
 
-export function DemoPage() {
-  usePageMeta(PAGE_META.demo);
+const APP_PLATFORMS: { key: AppPlatform; name: string; icon: typeof Smartphone }[] = [
+  { key: 'android', name: 'اندروید', icon: Smartphone },
+  { key: 'ios', name: 'iOS', icon: TabletSmartphone },
+  { key: 'windows', name: 'ویندوز', icon: Monitor },
+  { key: 'mac', name: 'مک', icon: Laptop },
+];
+
+/** Install links set in the console; platforms without a link are shown as coming soon. */
+export function DownloadPage() {
+  usePageMeta(PAGE_META.download);
+  const site = useSite();
   return (
-    <Section page title="درخواست دمو" lead="اطلاعات تماس و نیازهای سازمان خود را بنویسید تا برای نمایش سامانه هماهنگ کنیم.">
-      <LeadForm kind="demo" />
+    <Section page title="دانلود اپلیکیشن" lead="سیستم‌عامل دستگاه خود را انتخاب کنید و اپلیکیشن مهندیکس را نصب کنید. نسخه وب همیشه از مرورگر در دسترس است.">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {APP_PLATFORMS.map(({ key, name, icon: Icon }) => {
+          const app = site.data?.apps[key];
+          return (
+            <li key={key} className="flex flex-col items-center rounded-lg border border-border bg-surface p-6 text-center">
+              <Icon className="size-10 text-primary" aria-hidden="true" />
+              <h2 className="mt-3 text-lg font-bold">{name}</h2>
+              {app?.version && <p className="mt-1 text-sm text-muted">نسخه <Ltr>{toPersianDigits(app.version)}</Ltr></p>}
+              {app?.note && <p className="mt-2 text-sm leading-7 text-muted">{app.note}</p>}
+              <div className="mt-auto pt-5">
+                {!site.data ? (
+                  <Skeleton className="h-10 w-28" />
+                ) : app?.url ? (
+                  <a href={app.url} rel="noopener" className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 font-medium text-primary-fg hover:bg-primary/90" aria-label={`دانلود نسخه ${name}`}>
+                    <Download className="size-4" aria-hidden="true" /> دانلود و نصب
+                  </a>
+                ) : (
+                  <Badge>به‌زودی</Badge>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </Section>
   );
 }

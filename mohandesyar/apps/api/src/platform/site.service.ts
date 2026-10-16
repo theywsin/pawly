@@ -46,6 +46,24 @@ export const leadSchema = z
   })
   .refine((v) => !!v.phone || !!v.email, { path: ['phone'], message: 'تلفن یا ایمیل را وارد کنید' });
 
+export const clientSchema = z.object({
+  name: z.string().trim().min(2, 'نام مشتری را وارد کنید').max(120),
+  logoId: z.uuid('لوگو را بارگذاری کنید'),
+  url: z.url({ protocol: /^https?$/, error: 'نشانی وب‌سایت معتبر نیست (با http یا https)' }).max(300).nullable().default(null),
+  sort: z.number().int().default(0),
+  published: z.boolean().default(true),
+});
+
+const appLink = z.object({
+  url: z.url({ protocol: /^https?$/, error: 'پیوند معتبر نیست (با http یا https)' }).max(500).or(z.literal('')).default(''),
+  version: z.string().trim().max(40).default(''),
+  note: z.string().trim().max(200).default(''),
+});
+export const APP_PLATFORMS = ['android', 'ios', 'windows', 'mac'] as const;
+/** Download links per platform; an empty url means "not available yet" on the download page. */
+export const appsSchema = z.object(Object.fromEntries(APP_PLATFORMS.map((p) => [p, appLink.default({ url: '', version: '', note: '' })])) as Record<(typeof APP_PLATFORMS)[number], z.ZodDefault<typeof appLink>>);
+export type AppLinks = z.infer<typeof appsSchema>;
+
 const MIN_FILL_MS = 3_000;
 const MAX_FILL_MS = 2 * 60 * 60 * 1000;
 
@@ -93,11 +111,13 @@ export class SiteService {
   }
 
   async publicSite() {
-    const [faq, content, mode, modules] = await Promise.all([
+    const [faq, content, mode, modules, clients, apps] = await Promise.all([
       this.db.app.execute(sql`SELECT id, question, answer FROM platform_faq WHERE published ORDER BY sort, updated_at`),
       this.db.app.execute(sql`SELECT key, value FROM platform_content`),
       this.signupMode(),
       this.db.app.execute(sql`SELECT id, name, active_version FROM core_modules WHERE state = 'installed' AND globally_enabled ORDER BY id`),
+      this.db.app.execute(sql`SELECT c.id, c.name, c.url, '/api/public/media/' || c.logo_id AS logo FROM platform_clients c WHERE c.published ORDER BY c.sort, c.name`),
+      this.apps(),
     ]);
     const c = new Map((content.rows as { key: string; value: Record<string, unknown> }[]).map((x) => [x.key, x.value]));
     return {
@@ -106,6 +126,8 @@ export class SiteService {
       pages: Object.fromEntries(['about', 'terms', 'privacy'].map((k) => [k, c.has(k)])),
       signupMode: mode,
       availableModules: modules.rows,
+      clients: clients.rows,
+      apps,
     };
   }
 
@@ -152,6 +174,41 @@ export class SiteService {
   async deleteFaq(id: string, adminId: string) {
     await this.db.app.execute(sql`DELETE FROM platform_faq WHERE id = ${id}`);
     await this.audit.append({ tenantId: null, actorType: 'admin', actorId: adminId, action: 'site.faq_deleted', entityType: 'faq', entityId: id });
+  }
+
+  // ------------------------------------------------------------------ customers' logos & app downloads
+
+  async listClients() {
+    return (await this.db.app.execute(sql`SELECT c.*, '/api/public/media/' || c.logo_id AS logo FROM platform_clients c ORDER BY c.sort, c.name`)).rows;
+  }
+
+  async saveClient(id: string | null, input: z.infer<typeof clientSchema>, adminId: string): Promise<string> {
+    const cid = id ?? uuidv7();
+    const logo = await this.db.app.execute(sql`SELECT 1 FROM platform_media WHERE id = ${input.logoId}`);
+    if (!logo.rows.length) throw badRequest('VALIDATION_FAILED', 'لوگو یافت نشد', [{ path: 'logoId', message: 'لوگو را دوباره بارگذاری کنید' }]);
+    const r = await this.db.app.execute(sql`INSERT INTO platform_clients (id, name, logo_id, url, sort, published) VALUES (${cid}, ${input.name}, ${input.logoId}, ${input.url}, ${input.sort}, ${input.published})
+      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, logo_id = EXCLUDED.logo_id, url = EXCLUDED.url, sort = EXCLUDED.sort, published = EXCLUDED.published, updated_at = now() RETURNING id`);
+    if (!r.rows.length) throw notFound();
+    await this.audit.append({ tenantId: null, actorType: 'admin', actorId: adminId, action: 'site.client_saved', entityType: 'client', entityId: cid });
+    return cid;
+  }
+
+  async deleteClient(id: string, adminId: string) {
+    await this.db.app.execute(sql`DELETE FROM platform_clients WHERE id = ${id}`);
+    await this.audit.append({ tenantId: null, actorType: 'admin', actorId: adminId, action: 'site.client_deleted', entityType: 'client', entityId: id });
+  }
+
+  async apps(): Promise<AppLinks> {
+    const r = await this.db.app.execute(sql`SELECT value FROM platform_settings WHERE key = 'apps'`);
+    return appsSchema.parse((r.rows[0] as { value: unknown } | undefined)?.value ?? {});
+  }
+
+  async setApps(input: unknown, adminId: string): Promise<AppLinks> {
+    const v = appsSchema.parse(input);
+    await this.db.app.execute(sql`INSERT INTO platform_settings (key, value) VALUES ('apps', ${JSON.stringify(v)}::jsonb)
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`);
+    await this.audit.append({ tenantId: null, actorType: 'admin', actorId: adminId, action: 'site.apps_saved', after: v });
+    return v;
   }
 
   // ------------------------------------------------------------------ leads
