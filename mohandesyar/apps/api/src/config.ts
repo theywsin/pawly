@@ -12,6 +12,11 @@ const schema = z.object({
   DATABASE_MIGRATOR_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
   S3_ENDPOINT: z.string().optional(),
+  /**
+   * Address browsers use for download links when S3_ENDPOINT is internal (e.g. https://example.ir with the
+   * reverse proxy forwarding /<bucket>/ to the storage, Host preserved). Empty = S3_ENDPOINT.
+   */
+  S3_PUBLIC_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default('us-east-1'),
   S3_BUCKET: z.string().default('mohandesyar'),
   S3_ACCESS_KEY: z.string().default(''),

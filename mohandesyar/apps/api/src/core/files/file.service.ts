@@ -25,6 +25,8 @@ interface Scope {
  */
 export class FileService {
   private readonly s3: S3Client;
+  /** Signs download links for the address browsers reach (S3_PUBLIC_ENDPOINT); same as `s3` when unset. */
+  private readonly presigner: S3Client;
   private readonly bucket: string;
   private bucketReady = false;
 
@@ -34,12 +36,15 @@ export class FileService {
     config: Config,
   ) {
     this.bucket = config.S3_BUCKET;
-    this.s3 = new S3Client({
-      endpoint: config.S3_ENDPOINT,
-      region: config.S3_REGION,
-      forcePathStyle: config.S3_FORCE_PATH_STYLE,
-      credentials: { accessKeyId: config.S3_ACCESS_KEY, secretAccessKey: config.S3_SECRET_KEY },
-    });
+    const client = (endpoint: string | undefined) =>
+      new S3Client({
+        endpoint,
+        region: config.S3_REGION,
+        forcePathStyle: config.S3_FORCE_PATH_STYLE,
+        credentials: { accessKeyId: config.S3_ACCESS_KEY, secretAccessKey: config.S3_SECRET_KEY },
+      });
+    this.s3 = client(config.S3_ENDPOINT);
+    this.presigner = config.S3_PUBLIC_ENDPOINT ? client(config.S3_PUBLIC_ENDPOINT) : this.s3;
   }
 
   private async ensureBucket(): Promise<void> {
@@ -64,7 +69,9 @@ export class FileService {
     const id = uuidv7();
     const sha256 = createHash('sha256').update(file.data).digest('hex');
     const key = `t/${s.tenantId}/${id}`;
-    await this.s3.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: file.data, ContentType: 'application/octet-stream' }));
+    // Name and type are stored on the object too: some S3 implementations (e.g. SeaweedFS) ignore the
+    // response-* overrides of signed links and serve the stored headers instead.
+    await this.s3.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: file.data, ContentType: file.mime || 'application/octet-stream', ContentDisposition: contentDisposition(file.name) }));
     await this.db.tx({ tenantId: s.tenantId, companyIds: s.companyIds, userId: s.userId }, async (tx) => {
       await tx.execute(sql`INSERT INTO core_files (id, tenant_id, company_id, object_key, name, mime, size, sha256, confidentiality, owner_module, owner_entity_type, owner_entity_id, uploaded_by)
         VALUES (${id}, ${s.tenantId}, ${s.companyId}, ${key}, ${file.name.slice(0, 255)}, ${file.mime.slice(0, 100)}, ${file.data.length}, ${sha256}, ${meta.confidentiality ?? 'internal'},
@@ -103,7 +110,7 @@ export class FileService {
       await this.audit.append({ tenantId: s.tenantId, actorType: 'user', actorId: s.userId, action: 'file.downloaded', entityType: 'file', entityId: id });
     }
     const url = await getSignedUrl(
-      this.s3,
+      this.presigner,
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: row.object_key,
