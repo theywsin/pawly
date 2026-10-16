@@ -4,8 +4,8 @@
 
 ## وضعیت پروژه
 
-- فاز ۰ تا ۵ تأیید شدند. **فاز ۶ (QHSE، هلدینگ، گزارش‌های زمان‌بندی‌شده، کلید API و Webhook) تکمیل‌شده، منتظر بازبینی و تأیید.**
-- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md)، [`docs/phase-6-report.md`](docs/phase-6-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- فاز ۰ تا ۶ تأیید شدند. **فاز ۷ (وبلاگ، خرید آنلاین با درگاه سپ، قیمت ماژول، تیکت، پرونده مشتری، دانلود اپلیکیشن، مشتریان ما، منوی پایین موبایل، اعتبار دات‌وب) تکمیل‌شده، منتظر بازبینی و تأیید.**
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md)، [`docs/phase-6-report.md`](docs/phase-6-report.md)، [`docs/phase-7-report.md`](docs/phase-7-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
@@ -60,6 +60,7 @@ node apps/api/dist/main.js serve              # primary + workers؛ SPA از WEB
 # تحویل سرور (infra/compose: Caddy + SeaweedFS؛ S3_PUBLIC_ENDPOINT برای پیوند دانلود)
 tools/release/build-bundle.sh <out> [--key <private.pem>]   # نیاز به ایمیج mohandix:latest از infra/docker/Dockerfile
 # روی سرور: install.sh | backup.sh | restore.sh backups/<ts> — راهنما: tools/release/راهنمای-نصب.md
+# درگاه سپ: نشانی بازگشت <PUBLIC_ORIGIN>/api/public/payments/sep/callback در پنل پذیرندگی بانک ثبت شود
 
 # ماژول‌ها
 pnpm module:keygen --out <dir> | pnpm module:pack <moduleDir> --out <dir>
@@ -115,4 +116,8 @@ pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <pub
 - گزارش ماژول: `manifest.reportProviders` (با `filters`) + `reports` در `defineModule`؛ Provider همیشه با هویت خواننده اجرا می‌شود (در ارسال زمان‌بندی‌شده: هر گیرنده جداگانه)، پس محدوده دسترسی را مثل صفحه خود ماژول اعمال کند.
 - اتصال‌ها: کلید API (`mk_…`) فقط روی `/api/m/*` و با اشتراک مجوزهای کلید و سازنده؛ Webhook با مصرف‌کننده `'*'` در Event Bus، امضای HMAC و بررسی SSRF (`docs/integrations.md`).
 - خروجی Excel/CSV سمت سرور با `@mohandesyar/export` (همان نویسنده‌ای که `ui` استفاده می‌کند).
+- داده پلتفرم (سایت، وبلاگ، فروش، تیکت) در `apps/api/src/platform/`؛ جدول‌های `platform_*` و فروش (`core_invoices`، `core_payments`) بدون RLS و همیشه با فیلتر صریح `tenant_id` در مسیرهای سازمان؛ هر جدول جدید از این دست باید در فهرست پلتفرمی `core-schema.test.ts` بیاید.
+- تصاویر سایت فقط با `MediaService` (PNG/JPEG/WebP/GIF، نوع از محتوا؛ SVG ممنوع) و نشانی `/api/public/media/<id>`؛ متن وبلاگ بلاک JSON است و هرگز HTML رندر نمی‌شود.
+- پرداخت: فقط verify سمت سرور (با مقایسه مبلغ) چیزی را فعال می‌کند؛ claim اتمی `pending→verifying` جلوی تکرار callback را می‌گیرد. درگاه آزمایشی فقط با `PAYMENT_SANDBOX=true` (هرگز روی سرور واقعی).
+- سرویس‌های پلتفرم به‌جای `Services` یک interface باریک `*Deps` می‌گیرند (بدون import چرخه‌ای).
 - داده شخصی (رزومه، پرونده، حقوق): مشاهده و دانلود در Audit ثبت شود؛ فیلد سن/جنسیت/قومیت/مذهب/سلامت در مدل داده نباشد؛ هیچ انتقال یا پرداخت خودکار.

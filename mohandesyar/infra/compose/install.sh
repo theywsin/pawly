@@ -16,9 +16,15 @@ rand() { openssl rand -hex "${1:-32}"; }
 fresh=0
 if [ ! -f .env ]; then
   fresh=1
-  SITE_ADDRESS=${SITE_ADDRESS:-$(read -rp 'دامنه (مثلاً example.ir) یا :80 برای HTTP: ' x && echo "$x")}
+  SITE_ADDRESS=${SITE_ADDRESS:-$(read -rp 'دامنه (مثلاً example.ir)، یا فقط شماره پورت (مثلاً 5000) برای HTTP روی IP سرور: ' x && echo "$x")}
+  # A bare port (5000 or :5000) means plain HTTP on that host port; the proxy itself listens on :80 inside.
+  case "$SITE_ADDRESS" in
+    ''|*[!0-9:]*) ;;
+    *) HTTP_PORT=${SITE_ADDRESS#:}; HTTPS_PORT=${HTTPS_PORT:-$((HTTP_PORT + 443))}; SITE_ADDRESS=':80' ;;
+  esac
   if [ -z "${PUBLIC_ORIGIN:-}" ]; then
-    case "$SITE_ADDRESS" in :*) PUBLIC_ORIGIN="http://$(hostname -I | awk '{print $1}')${SITE_ADDRESS#:80}";; *) PUBLIC_ORIGIN="https://$SITE_ADDRESS";; esac
+    host=$(hostname -I | awk '{print $1}')
+    case "$SITE_ADDRESS" in :*) PUBLIC_ORIGIN="http://$host$([ "${HTTP_PORT:-80}" = 80 ] || echo ":${HTTP_PORT}")";; *) PUBLIC_ORIGIN="https://$SITE_ADDRESS";; esac
   fi
   case "$PUBLIC_ORIGIN" in https://*) SECURE=true;; *) SECURE=false;; esac
   sed -e "s#^HTTP_PORT=.*#HTTP_PORT=${HTTP_PORT:-80}#" -e "s#^HTTPS_PORT=.*#HTTPS_PORT=${HTTPS_PORT:-443}#" -e "s#^SITE_ADDRESS=.*#SITE_ADDRESS=$SITE_ADDRESS#" -e "s#^PUBLIC_ORIGIN=.*#PUBLIC_ORIGIN=$PUBLIC_ORIGIN#" -e "s#^COOKIE_SECURE=.*#COOKIE_SECURE=$SECURE#" \
@@ -33,6 +39,18 @@ cat > s3.json <<JSON
 {"identities":[{"name":"mohandix","credentials":[{"accessKey":"$S3_ACCESS_KEY","secretKey":"$S3_SECRET_KEY"}],"actions":["Admin","Read","Write","List","Tagging"]}]}
 JSON
 chmod 600 s3.json
+
+# A port already taken by another program (e.g. a web server or hosting panel) fails the start late; say so now.
+if ! docker compose ps --format '{{.Service}}' 2>/dev/null | grep -qx proxy; then
+  for p in "$HTTP_PORT" "$HTTPS_PORT"; do
+    if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then
+      echo "پورت $p روی این سرور در اختیار برنامه دیگری است."
+      command -v ss >/dev/null && ss -ltnp "sport = :$p" | tail -n +2 | head -3
+      echo 'پورت دیگری بدهید (مثلاً SITE_ADDRESS=5000) یا در .env مقدار HTTP_PORT/HTTPS_PORT را عوض کنید، یا آن برنامه را متوقف کنید؛ سپس دوباره ./install.sh را اجرا کنید.'
+      exit 1
+    fi
+  done
+fi
 
 echo '» راه‌اندازی سرویس‌ها و مهاجرت پایگاه داده…'
 docker compose up -d
