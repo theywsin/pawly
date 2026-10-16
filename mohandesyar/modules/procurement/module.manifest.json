@@ -66,6 +66,9 @@
       ]
     }
   ],
+  "reportProviders": [
+    { "key": "procurement.orders", "title": {"fa": "سفارش‌های خرید"}, "permission": "procurement.order.manage", "filters": [{"key": "status", "label": "وضعیت", "options": {"pending": "در انتظار تأیید", "approved": "تأییدشده", "closed": "بسته‌شده", "cancelled": "لغوشده"}}, {"key": "late", "label": "فقط دارای تأخیر", "options": {"1": "بله"}}] }
+  ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
   "tablePrefix": "procurement_",

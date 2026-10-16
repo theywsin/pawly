@@ -80,6 +80,9 @@
       ]
     }
   ],
+  "reportProviders": [
+    { "key": "finance.transactions", "title": {"fa": "گردش تراکنش‌ها"}, "permission": "finance.transaction.view", "filters": [{"key": "type", "label": "نوع", "options": {"receipt": "دریافت", "payment": "پرداخت", "transfer": "انتقال"}}] }
+  ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
   "tablePrefix": "finance_",

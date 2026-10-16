@@ -9,6 +9,7 @@ COPY apps/web/package.json apps/web/
 COPY packages/module-sdk/package.json packages/module-sdk/
 COPY packages/module-package/package.json packages/module-package/
 COPY packages/persian/package.json packages/persian/
+COPY packages/export/package.json packages/export/
 COPY packages/ui/package.json packages/ui/
 COPY packages/config/package.json packages/config/
 COPY tools/module-cli/package.json tools/module-cli/
@@ -17,6 +18,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm --filter @mohandesyar/module-sdk build \
  && pnpm --filter @mohandesyar/persian build \
+ && pnpm --filter @mohandesyar/export build \
  && pnpm --filter @mohandesyar/module-package build \
  && pnpm --filter @mohandesyar/module-cli build \
  && pnpm --filter @mohandesyar/web build \

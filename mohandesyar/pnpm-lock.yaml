@@ -65,6 +65,9 @@ importers:
       '@fastify/static':
         specifier: 10.1.6
         version: 10.1.6
+      '@mohandesyar/export':
+        specifier: workspace:*
+        version: link:../../packages/export
       '@mohandesyar/module-package':
         specifier: workspace:*
         version: link:../../packages/module-package
@@ -871,6 +874,8 @@ importers:
 
   packages/config: {}
 
+  packages/export: {}
+
   packages/module-package:
     dependencies:
       '@mohandesyar/module-sdk':
@@ -927,6 +932,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@mohandesyar/export':
+        specifier: workspace:*
+        version: link:../export
       '@mohandesyar/persian':
         specifier: workspace:*
         version: link:../persian

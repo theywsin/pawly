@@ -42,7 +42,7 @@
 pnpm install --frozen-lockfile
 pnpm services:up                      # PostgreSQL :54329، Redis :63799، S3 (moto) :39000 — محلی
 # ساخت کتابخانه‌ها (پیش‌نیاز typecheck/test بسته‌های وابسته)
-pnpm --filter @mohandesyar/module-sdk build && pnpm --filter @mohandesyar/persian build \
+pnpm --filter @mohandesyar/module-sdk build && pnpm --filter @mohandesyar/persian build && pnpm --filter @mohandesyar/export build \
   && pnpm --filter @mohandesyar/module-package build && pnpm --filter @mohandesyar/module-cli build
 pnpm lint                             # eslint + dependency-cruiser (مرز ماژول‌ها)
 pnpm -r --if-present typecheck

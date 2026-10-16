@@ -81,6 +81,9 @@
       ]
     }
   ],
+  "reportProviders": [
+    { "key": "projects.status", "title": {"fa": "وضعیت پروژه‌ها"}, "permission": "projects.project.view", "filters": [{"key": "status", "label": "وضعیت", "options": {"planning": "برنامه‌ریزی", "active": "در حال اجرا", "on_hold": "متوقف", "completed": "تکمیل‌شده"}}, {"key": "delayed", "label": "فقط دارای تأخیر", "options": {"1": "بله"}}] }
+  ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
   "tablePrefix": "projects_",

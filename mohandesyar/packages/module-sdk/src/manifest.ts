@@ -140,7 +140,18 @@ export const manifestSchema = z
       .object({ publishes: z.array(eventRef).default([]), consumes: z.array(eventRef).default([]) })
       .default({ publishes: [], consumes: [] }),
     kpiProviders: z.array(kpiProvider).default([]),
-    reportProviders: z.array(provider).default([]),
+    reportProviders: z
+      .array(
+        provider.extend({
+          description: localized.optional(),
+          /** Filters offered on screen and stored with saved reports: free text or a fixed list of options. */
+          filters: z
+            .array(z.object({ key: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]*$/), label: z.string().min(1).max(60), options: z.record(z.string().min(1), z.string().min(1)).optional() }))
+            .max(10)
+            .default([]),
+        }),
+      )
+      .default([]),
     searchProviders: z.array(provider).default([]),
     importTemplates: z.array(importTemplate).default([]),
     backend: z.object({ entry: packagePath }),

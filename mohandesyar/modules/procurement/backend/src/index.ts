@@ -6,6 +6,8 @@ import { kpi, onWorkflowCompleted, search, statusWidget } from './logic.js';
 
 import { importSuppliers } from './import.js';
 
+import { ordersReport } from './reports.js';
+
 export default defineModule({
   manifest,
   controllers: [ProcurementController],
@@ -35,4 +37,5 @@ export default defineModule({
   },
   searchProviders: { 'procurement.suppliers': (ctx, q, limit) => search(ctx, q, limit) },
   importers: { 'procurement.suppliers': (ctx, rows, opts) => importSuppliers(ctx, rows, opts) },
+  reports: { 'procurement.orders': (ctx, p) => ordersReport(ctx, p) },
 });

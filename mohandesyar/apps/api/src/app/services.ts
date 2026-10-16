@@ -18,6 +18,7 @@ import { TaskService } from '../core/tasks/task.service.js';
 import { WorkflowService } from '../core/workflow/workflow.service.js';
 import { FileService } from '../core/files/file.service.js';
 import { ModuleScheduler } from '../core/modules/scheduler.js';
+import { ReportService } from '../core/reports/report.service.js';
 import { Mailer } from '../core/notifications/mailer.js';
 import { logger } from '../infra/logger.js';
 import { SiteService } from '../platform/site.service.js';
@@ -55,6 +56,7 @@ export class Services {
   readonly site: SiteService;
   readonly scheduler: ModuleScheduler;
   readonly mailer: Mailer;
+  readonly reports: ReportService;
 
   constructor(
     readonly config: Config,
@@ -83,6 +85,8 @@ export class Services {
     this.files = new FileService(this.db, this.audit, config);
     this.contexts = new ModuleContextFactory(this.db, this.registry, this.events, this.audit, this.notifications, this.settings, this.workflow, this.files);
     this.scheduler = new ModuleScheduler(this.db, this.redis, this.registry, this.contexts, (err, ctx) => logger.error({ err, ...ctx }, 'scheduled job failed'));
+    this.reports = new ReportService(this);
+    this.scheduler.extraJobs.push(() => this.reports.tick());
     this.site = new SiteService(this.db, this.redis, this.audit, config.JWT_SECRET);
     this.lifecycle = new ModuleLifecycleService(this.db, this.registry, this.rbac, this.audit, this.contexts, {
       storeDir: config.MODULE_STORE_DIR,

@@ -11,6 +11,8 @@ import type { ModuleRegistry } from './registry.js';
 export class ModuleScheduler {
   private timer: NodeJS.Timeout | null = null;
   private running: Promise<void> | null = null;
+  /** Core periodic work that is not a module job (e.g. scheduled reports); each returns the work done. */
+  readonly extraJobs: (() => Promise<number>)[] = [];
 
   constructor(
     private readonly db: Database,
@@ -22,10 +24,17 @@ export class ModuleScheduler {
 
   /** One pass over all due jobs. Returns the number of jobs run (for tests). */
   async tick(now = Date.now()): Promise<number> {
-    const jobs = [...this.registry.loaded.values()].flatMap((m) => Object.entries(m.definition.schedules ?? {}).map(([key, job]) => ({ m, key, job })));
-    if (!jobs.length) return 0;
-    const tenants = (await this.db.app.execute(sql`SELECT id FROM core_tenants WHERE status IN ('active', 'trial', 'suspended')`)).rows as { id: string }[];
     let ran = 0;
+    for (const extra of this.extraJobs) {
+      try {
+        ran += await extra();
+      } catch (err) {
+        this.onError(err, { phase: 'core job' });
+      }
+    }
+    const jobs = [...this.registry.loaded.values()].flatMap((m) => Object.entries(m.definition.schedules ?? {}).map(([key, job]) => ({ m, key, job })));
+    if (!jobs.length) return ran;
+    const tenants = (await this.db.app.execute(sql`SELECT id FROM core_tenants WHERE status IN ('active', 'trial', 'suspended')`)).rows as { id: string }[];
     for (const t of tenants) {
       const active = new Set((await this.registry.effectiveFor(t.id)).filter((e) => e.mode === 'full' || e.mode === 'read-only').map((e) => e.id));
       for (const { m, key, job } of jobs) {

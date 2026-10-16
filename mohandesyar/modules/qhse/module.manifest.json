@@ -42,6 +42,9 @@
     { "key": "qhse.inspection_score", "title": { "fa": "میانگین امتیاز بازرسی‌ها در دوره" }, "unit": "percent" }
   ],
   "searchProviders": [{ "key": "qhse.incidents", "title": { "fa": "حوادث" }, "permission": "qhse.view" }],
+  "reportProviders": [
+    { "key": "qhse.incidents_report", "title": {"fa": "فهرست حوادث"}, "permission": "qhse.view", "filters": [{"key": "kind", "label": "نوع", "options": {"injury": "حادثه با آسیب", "near_miss": "شبه‌حادثه", "unsafe_condition": "شرایط ناایمن", "property_damage": "خسارت به اموال", "environmental": "رویداد زیست‌محیطی"}}, {"key": "severity", "label": "شدت", "options": {"low": "کم", "medium": "متوسط", "high": "زیاد", "critical": "بحرانی"}}] }
+  ],
   "backend": { "entry": "backend/index.mjs" },
   "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
   "tablePrefix": "qhse_",

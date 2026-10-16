@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays, FileSpreadsheet } from 'lucide-react';
+import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays, FileSpreadsheet, FileBarChart } from 'lucide-react';
 import { Badge, cn, Toaster } from '@mohandesyar/ui';
 import { appApi, getToken, setToken } from '../../lib/api.js';
 import { useAppSession } from '../../lib/session.js';
@@ -92,6 +92,9 @@ export function AppShell() {
       </NavLink>
       <NavLink to="/app/approvals" className={link}>
         <ClipboardCheck className="size-5" /> کارتابل تأیید
+      </NavLink>
+      <NavLink to="/app/reports" className={link}>
+        <FileBarChart className="size-5" /> گزارش‌ها
       </NavLink>
       {moduleItems.length > 0 && <p className="mt-4 px-3 text-xs font-medium text-muted">ماژول‌ها</p>}
       {moduleItems.map((i) => (

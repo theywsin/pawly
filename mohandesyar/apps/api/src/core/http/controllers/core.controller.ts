@@ -13,6 +13,7 @@ import type { RequestMeta } from '../../auth/auth.service.js';
 import { directoryOf, workCalendarOf } from '../../modules/context.js';
 import { uuidv7 } from '../../../infra/ids.js';
 import { runImport } from '../../imports/import.service.js';
+import { paramsInput, savedInput } from '../../reports/report.service.js';
 
 /** Permissions defined by the core itself (modules register theirs from their manifests). */
 export const CORE_PERMISSIONS = [
@@ -365,6 +366,61 @@ export class CoreController {
       await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'core.import.completed', moduleId, after: { template: key, file: part.filename, rows: r.total, created: r.created } });
     }
     return r;
+  }
+
+  // ---------------------------------------------------------------- reports (module providers, saved, scheduled)
+
+  /** Reports of active modules the user may run (each report's own permission). */
+  @Get('reports')
+  reports(@CurrentIdentity() id: Identity) {
+    return this.s.reports.available(id);
+  }
+
+  @Post('reports/run/:moduleId/:key')
+  @HttpCode(200)
+  runReport(@CurrentIdentity() id: Identity, @Param('moduleId') moduleId: string, @Param('key') key: string, @Body() body: unknown) {
+    return this.s.reports.run(id, moduleId, key, parse(paramsInput, body));
+  }
+
+  @Get('reports/saved')
+  savedReports(@CurrentIdentity() id: Identity) {
+    return this.s.reports.listSaved(id);
+  }
+
+  @Post('reports/saved')
+  saveReport(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    return this.s.reports.save(id, null, parse(savedInput, body));
+  }
+
+  @Put('reports/saved/:id')
+  updateReport(@CurrentIdentity() id: Identity, @Param('id') savedId: string, @Body() body: unknown) {
+    return this.s.reports.save(id, parse(z.uuid(), savedId), parse(savedInput, body));
+  }
+
+  @Delete('reports/saved/:id')
+  async removeReport(@CurrentIdentity() id: Identity, @Param('id') savedId: string) {
+    await this.s.reports.remove(id, parse(z.uuid(), savedId));
+    return { ok: true };
+  }
+
+  /** "Send now" for a saved report the user owns: one delivery per recipient, each with their own access. */
+  @Post('reports/saved/:id/send')
+  @HttpCode(200)
+  async sendReport(@CurrentIdentity() id: Identity, @Param('id') savedId: string) {
+    const sid = parse(z.uuid(), savedId);
+    const mine = (await this.s.reports.listSaved(id)) as { id: string; mine: boolean }[];
+    if (!mine.some((r) => r.id === sid && r.mine)) throw notFound('گزارش ذخیره‌شده');
+    return { delivered: await this.s.reports.deliver(id.tenantId, id.companyId, sid) };
+  }
+
+  @Get('reports/inbox')
+  reportInbox(@CurrentIdentity() id: Identity) {
+    return this.s.reports.myRuns(id);
+  }
+
+  @Get('reports/inbox/:id/download')
+  reportDownload(@CurrentIdentity() id: Identity, @Param('id') runId: string) {
+    return this.s.reports.download(id, parse(z.uuid(), runId));
   }
 
   // ---------------------------------------------------------------- notifications (+ real-time stream)

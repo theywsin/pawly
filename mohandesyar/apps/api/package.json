@@ -17,6 +17,7 @@
     "@fastify/cookie": "11.1.3",
     "@fastify/multipart": "10.1.3",
     "@fastify/static": "10.1.6",
+    "@mohandesyar/export": "workspace:*",
     "@mohandesyar/module-package": "workspace:*",
     "@mohandesyar/module-sdk": "workspace:*",
     "@mohandesyar/persian": "workspace:*",

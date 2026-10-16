@@ -7,6 +7,8 @@ import { onWorkflowCompleted } from './money.js';
 
 import { importCounterparties } from './import.js';
 
+import { transactionsReport } from './reports.js';
+
 export default defineModule({
   manifest,
   controllers: [FinanceController],
@@ -41,4 +43,5 @@ export default defineModule({
   },
   searchProviders: { 'finance.counterparties': (ctx, q, limit) => search(ctx, q, limit) },
   importers: { 'finance.counterparties': (ctx, rows, opts) => importCounterparties(ctx, rows, opts) },
+  reports: { 'finance.transactions': (ctx, p) => transactionsReport(ctx, p) },
 });

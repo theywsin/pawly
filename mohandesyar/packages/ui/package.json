@@ -19,7 +19,8 @@
     "@radix-ui/react-dropdown-menu": "2.2.1",
     "lucide-react": "1.57.0",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "@mohandesyar/export": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

@@ -1,9 +1,8 @@
 import { Inject, Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { sql } from 'drizzle-orm';
 import { META_ALLOW_READ_ONLY, META_PERMISSION, META_PUBLIC, REQUEST_CONTEXT_KEY, type PermissionRequirement } from '@mohandesyar/module-sdk/server';
 import { Services } from '../../app/services.js';
-import { forCompany, type Grant } from '../rbac/permissions.js';
+import { buildIdentity } from './identity.js';
 import { ADMIN_KEY, IDENTITY_KEY, META_CONSOLE, META_MODULE, type AdminIdentity, type Identity, type PlatformRole } from './context.js';
 import { forbidden, unauthorized, ApiError } from './errors.js';
 import { HttpStatus } from '@nestjs/common';
@@ -94,39 +93,7 @@ export class CoreGuard implements CanActivate {
     req[ADMIN_KEY] = identity;
     return true;
   }
-
-  /** Membership, allowed companies and grants for one request, computed under RLS for the tenant. */
-  private async identity(userId: string, tenantId: string, sessionId: string, amr: string[], companyHeader: string | string[] | undefined): Promise<Identity> {
-    return this.s.db.tx({ tenantId }, async (tx) => {
-      const m = await tx.execute(sql`SELECT id, status FROM core_memberships WHERE user_id = ${userId}`);
-      const membership = m.rows[0] as { id: string; status: string } | undefined;
-      if (!membership || membership.status !== 'active') throw forbidden('NOT_A_MEMBER', 'عضویت شما در این سازمان فعال نیست');
-      const grants: Grant[] = await this.s.rbac.grantsOf(tx, membership.id);
-      const companies = (await this.s.tenancy.listCompanies(tx)).map((c) => c.id);
-      const allowed = grants.some((g) => g.companyId === null) ? companies : companies.filter((c) => grants.some((g) => g.companyId === c));
-      if (allowed.length === 0) throw forbidden('NO_COMPANY_ACCESS', 'به هیچ شرکتی در این سازمان دسترسی ندارید');
-      const header = Array.isArray(companyHeader) ? companyHeader[0] : companyHeader;
-      let companyId = allowed[0]!;
-      let companyIds = [companyId];
-      if (header === 'all') {
-        companyIds = allowed;
-      } else if (header) {
-        if (!allowed.includes(header)) throw forbidden('COMPANY_FORBIDDEN', 'به این شرکت دسترسی ندارید');
-        companyId = header;
-        companyIds = [header];
-      }
-      return {
-        userId,
-        tenantId,
-        sessionId,
-        membershipId: membership.id,
-        companyId,
-        companyIds,
-        allowedCompanyIds: allowed,
-        permissions: forCompany(grants, companyId),
-        grants,
-        amr,
-      };
-    });
+  private identity(userId: string, tenantId: string, sessionId: string, amr: string[], companyHeader: string | string[] | undefined): Promise<Identity> {
+    return buildIdentity(this.s, { userId, tenantId, sessionId, amr, companyHeader });
   }
 }

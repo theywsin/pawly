@@ -4,6 +4,8 @@ import manifest from '../../module.manifest.json' with { type: 'json' };
 import { QhseController } from './controller.js';
 import { kpi, remindOverdue, search, statusWidget } from './logic.js';
 
+import { incidentsReport } from './reports.js';
+
 export default defineModule({
   manifest,
   controllers: [QhseController],
@@ -17,4 +19,5 @@ export default defineModule({
     'qhse.inspection_score': (ctx, p) => kpi.inspectionScore(ctx, p),
   },
   searchProviders: { 'qhse.incidents': (ctx, q, limit) => search(ctx, q, limit) },
+  reports: { 'qhse.incidents_report': (ctx, p) => incidentsReport(ctx, p) },
 });

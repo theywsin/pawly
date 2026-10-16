@@ -6,6 +6,8 @@ import { activeCount, delayedCount, onWorkflowCompleted, openIssues, overview, p
 
 import { importProjects } from './import.js';
 
+import { statusReport } from './reports.js';
+
 export default defineModule({
   manifest,
   controllers: [ProjectsController],
@@ -36,4 +38,5 @@ export default defineModule({
     'projects.projects': (ctx, q, limit) => search(ctx, q, limit),
   },
   importers: { 'projects.projects': (ctx, rows, opts) => importProjects(ctx, rows, opts) },
+  reports: { 'projects.status': (ctx, p) => statusReport(ctx, p) },
 });

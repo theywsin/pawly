@@ -206,6 +206,25 @@ export interface SearchProvider {
   (ctx: ModuleRequestContext, query: string, limit: number): Promise<SearchHit[]>;
 }
 
+/** A tabular report for Reports (run on screen, export, saved filters and scheduled delivery). */
+export interface ReportColumn {
+  key: string;
+  header: string;
+  kind?: 'text' | 'number' | 'date';
+}
+export interface ReportResult {
+  columns: ReportColumn[];
+  rows: Record<string, string | number | null>[];
+}
+/**
+ * Runs with the context of the person who will read it — on screen the requester, for a scheduled report
+ * each recipient in turn — so the rows never exceed what that person may see in the module itself.
+ * `filters` holds the values of the filters the manifest declares for this report (validated by the core).
+ */
+export interface ReportProvider {
+  (ctx: ModuleRequestContext, params: { from: string; to: string; filters: Record<string, string> }): Promise<ReportResult>;
+}
+
 /**
  * One spreadsheet row after the core converted it by the template: text trimmed, numbers and money as Latin
  * digit strings, dates as ISO (Jalali or Gregorian input), booleans 'true'/'false', enums as stored values;
@@ -251,6 +270,8 @@ export interface ModuleDefinition {
   widgetData?: Record<string, WidgetDataProvider>;
   kpiProviders?: Record<string, KpiProvider>;
   searchProviders?: Record<string, SearchProvider>;
+  /** Report providers keyed by `manifest.reportProviders[].key`. */
+  reports?: Record<string, ReportProvider>;
   /** Spreadsheet importers keyed by `manifest.importTemplates[].key`. */
   importers?: Record<string, Importer>;
   /** Idempotent per-tenant seed, run when the module is enabled for a tenant. */
