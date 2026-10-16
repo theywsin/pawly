@@ -5,7 +5,7 @@ import lighthouse from 'lighthouse';
 import desktopConfig from 'lighthouse/core/config/desktop-config.js';
 
 const base = (process.argv[2] ?? 'http://127.0.0.1:3200').replace(/\/$/, '');
-const pages = ['/', '/pricing', '/modules', '/modules/projects', '/demo', '/contact'];
+const pages = ['/', '/pricing', '/modules', '/modules/projects', '/blog', '/download', '/contact'];
 const categories = ['performance', 'accessibility', 'best-practices', 'seo'];
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined, args: ['--remote-debugging-port=9333'] });
 let failed = false;
