@@ -3,19 +3,10 @@ FROM node:22-bookworm-slim AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=1
 RUN corepack enable
 WORKDIR /src
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
-COPY apps/api/package.json apps/api/
-COPY apps/web/package.json apps/web/
-COPY packages/module-sdk/package.json packages/module-sdk/
-COPY packages/module-package/package.json packages/module-package/
-COPY packages/persian/package.json packages/persian/
-COPY packages/export/package.json packages/export/
-COPY packages/ui/package.json packages/ui/
-COPY packages/config/package.json packages/config/
-COPY tools/module-cli/package.json tools/module-cli/
-COPY modules/hello-module/package.json modules/hello-module/
-RUN pnpm install --frozen-lockfile
+# Every workspace package (apps, packages, tools and all business modules) takes part in the frozen
+# install, so the whole tree is copied first; .dockerignore keeps node_modules and build output out.
 COPY . .
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @mohandesyar/module-sdk build \
  && pnpm --filter @mohandesyar/persian build \
  && pnpm --filter @mohandesyar/export build \
