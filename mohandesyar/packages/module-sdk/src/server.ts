@@ -145,6 +145,13 @@ export interface ModuleRequestContext extends BaseModuleContext {
   /** Whether the user holds `permission` for the active company (optionally at least `scope`). */
   can(permission: string, scope?: PermissionScope): boolean;
   /**
+   * Holding view: whether the user holds `permission` in another company of the tenant they belong to.
+   * Modules must check it before showing data of a company other than `companyId`.
+   */
+  canIn(companyId: string, permission: string, scope?: PermissionScope): boolean;
+  /** Active companies of the tenant the user belongs to (any grant), with names. */
+  companies(): Promise<{ id: string; name: string }[]>;
+  /**
    * Starts an approval workflow for one of the module's entities. The outcome arrives as the
    * `core.workflow.completed` event (declare it in manifest.events.consumes) with payload
    * `{ instanceId, state, moduleId, entityType, entityId, deciders }` (deciders: user ids who decided).

@@ -1,0 +1,29 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "holding",
+  "name": { "fa": "مدیریت هلدینگ", "en": "Holding" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "گزارش‌های تجمیعی و مقایسه‌ای شاخص‌ها بین شرکت‌های زیرمجموعه، فقط برای شرکت‌هایی که کاربر در آن‌ها مجوز دارد، با روند ماهانه و نماهای ذخیره‌شده؛ داده از Providerهای ماژول‌های فعال.",
+    "en": "Cross-company comparative reports from the active modules' KPI providers."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "permissions": [
+    { "key": "holding.view", "fa": "مشاهده گزارش‌های تجمیعی (در هر شرکت که داده‌اش نمایش داده شود)", "scopes": ["company"] },
+    { "key": "holding.manage", "fa": "ذخیره نماهای مقایسه", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "holding_manager", "name": { "fa": "مدیر هلدینگ" }, "grants": ["holding.view", "holding.manage"] }
+  ],
+  "menu": [
+    { "key": "holding", "label": { "fa": "هلدینگ" }, "icon": "gauge", "path": "/app/holding", "permission": "holding.view", "order": 5 }
+  ],
+  "routes": [{ "path": "/app/holding/*", "entry": "frontend/index.js", "export": "routes" }],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "holding_",
+  "entitlement": { "key": "mod.holding", "plans": [] }
+}

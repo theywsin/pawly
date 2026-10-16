@@ -1,11 +1,12 @@
 import type { PermissionScope } from '@mohandesyar/module-sdk';
 import { satisfiesRange } from '@mohandesyar/module-sdk';
 import type { AuditEntry, BaseModuleContext, KpiProviderInfo, KpiRegistry, Db, DirectoryUser, ModuleEventContext, ModuleRequestContext, NotificationInput, WorkflowDefinitionInput } from '@mohandesyar/module-sdk/server';
+import { sql } from 'drizzle-orm';
 import type { Database } from '../../infra/db.js';
 import type { AuditService } from '../audit/audit.service.js';
 import type { EventBus } from '../events/event-bus.js';
 import type { NotificationService } from '../notifications/notification.service.js';
-import type { PermissionSet } from '../rbac/permissions.js';
+import { forCompany, type Grant, type PermissionSet } from '../rbac/permissions.js';
 import type { SettingsService } from '../settings/settings.service.js';
 import type { FileService } from '../files/file.service.js';
 import type { WorkflowService } from '../workflow/workflow.service.js';
@@ -47,6 +48,9 @@ export interface RequestIdentity {
   companyId: string;
   companyIds: readonly string[];
   permissions: PermissionSet;
+  /** Companies the member has any grant in, and the grants themselves (for `companies()` / `canIn()`). */
+  allowedCompanyIds?: readonly string[];
+  grants?: readonly Grant[];
 }
 
 /** Builds the only surface modules get from the core (docs/03 §9). */
@@ -165,8 +169,23 @@ export class ModuleContextFactory {
 
   async forRequest(module: LoadedModule, id: RequestIdentity): Promise<ModuleRequestContext> {
     const base = await this.base(module, id.tenantId, id.companyIds, id.userId, id.companyId);
+    const allowed = id.allowedCompanyIds ?? id.companyIds;
+    const canIn = (companyId: string, permission: string, scope?: PermissionScope) =>
+      allowed.includes(companyId) && (companyId === id.companyId ? id.permissions : forCompany(id.grants ?? [], companyId)).can(permission, scope);
+    // Provider values for other companies are reachable only where the caller holds the permission the
+    // module checks with canIn(); the registry itself spans the companies the member belongs to.
+    const effective = await this.registry.effectiveFor(id.tenantId);
+    const active = new Set(effective.map((m) => m.id));
     return {
       ...base,
+      kpi: this.kpiRegistry(effective, id.tenantId, allowed, active, {
+        transaction: <T>(fn: (tx: Db) => Promise<T>) => this.db.tx({ tenantId: id.tenantId, companyIds: allowed, userId: id.userId }, fn as never) as Promise<T>,
+      } as BaseModuleContext['db']),
+      canIn,
+      companies: async () => {
+        const r = await this.db.tx({ tenantId: id.tenantId }, (tx) => tx.execute(sql`SELECT id, name FROM core_companies WHERE status = 'active' ORDER BY created_at`));
+        return (r.rows as { id: string; name: string }[]).filter((c) => allowed.includes(c.id));
+      },
       userId: id.userId,
       companyId: id.companyId,
       companyIds: id.companyIds,

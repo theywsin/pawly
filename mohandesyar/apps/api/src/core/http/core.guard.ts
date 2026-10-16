@@ -124,6 +124,7 @@ export class CoreGuard implements CanActivate {
         companyIds,
         allowedCompanyIds: allowed,
         permissions: forCompany(grants, companyId),
+        grants,
         amr,
       };
     });

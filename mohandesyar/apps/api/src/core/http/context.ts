@@ -1,5 +1,5 @@
 import { createParamDecorator, SetMetadata, type ExecutionContext } from '@nestjs/common';
-import type { PermissionSet } from '../rbac/permissions.js';
+import type { Grant, PermissionSet } from '../rbac/permissions.js';
 
 export const META_CONSOLE = 'mohandesyar:console';
 export const META_MODULE = 'mohandesyar:module';
@@ -18,6 +18,8 @@ export interface Identity {
   companyIds: string[];
   allowedCompanyIds: string[];
   permissions: PermissionSet;
+  /** All grants of the membership (per company or tenant-wide), e.g. for holding-level checks. */
+  grants: readonly Grant[];
   amr: string[];
 }
 
