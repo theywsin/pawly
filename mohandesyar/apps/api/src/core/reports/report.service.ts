@@ -179,7 +179,7 @@ export class ReportService {
         const id = await buildIdentity(this.s, { userId, tenantId, sessionId: 'scheduled-report', amr: [], companyHeader: saved.company_id });
         const r = await this.run(id, saved.module_id, saved.report_key, saved.params);
         const data = Buffer.from(toXlsx(saved.name.slice(0, 31), r.columns.map((c) => ({ header: c.header, value: (x: Record<string, string | number | null>) => x[c.key], kind: c.kind === 'number' ? ('number' as const) : ('text' as const) })), r.rows));
-        const file = await this.s.files.upload({ tenantId, companyId: saved.company_id, companyIds: [saved.company_id], userId }, { name: `${saved.name} ${r.period.from}..${r.period.to}.xlsx`, mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', data },
+        const file = await this.s.files.upload({ tenantId, companyId: saved.company_id, companyIds: [saved.company_id], userId }, { name: `${saved.name} ${r.period.from} - ${r.period.to}.xlsx`, mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', data },
           { confidentiality: 'confidential', owner: { module: REPORT_FILE_OWNER, entityType: 'report_run', entityId: runId } });
         row = { status: 'ok', rows: r.rows.length, fileId: file.id, error: null, period: r.period };
       } catch (e) {

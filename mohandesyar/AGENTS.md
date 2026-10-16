@@ -4,8 +4,8 @@
 
 ## وضعیت پروژه
 
-- فاز ۰ تا ۴ تأیید شدند. **فاز ۵ (گردش‌های تأیید، ماژول‌های مالی، تدارکات و اسناد، ورود داده از Excel) تکمیل‌شده، منتظر تأیید برای شروع فاز ۶.**
-- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- فاز ۰ تا ۵ تأیید شدند. **فاز ۶ (QHSE، هلدینگ، گزارش‌های زمان‌بندی‌شده، کلید API و Webhook) تکمیل‌شده، منتظر بازبینی و تأیید.**
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md)، [`docs/phase-6-report.md`](docs/phase-6-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
@@ -107,4 +107,8 @@ pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <pub
 - ارتباط تدارکات ← مالی فقط با رویداد (`procurement.order.approved`، `procurement.invoice.approved`) و idempotent با `source_ref`.
 - اسناد: قاعده دیدن سند (`visibleSql` در `modules/documents/backend/src/logic.ts`) در فهرست، جزئیات، جست‌وجو و ویجت یکسان است؛ مشاهده/دانلود اسناد محرمانه و سری در جدول append-only و Audit ثبت می‌شود.
 - ورود داده از Excel: `manifest.importTemplates` + `importers` در `defineModule`؛ کلید ستون = نام فیلد Zod؛ در `dryRun` هیچ نوشتنی نیست و اجرای واقعی همه یا هیچ در یک تراکنش.
+- دید هلدینگ: داده شرکتی غیر از `ctx.companyId` فقط پس از `ctx.canIn(companyId, permission)`؛ فهرست شرکت‌ها با `ctx.companies()`.
+- گزارش ماژول: `manifest.reportProviders` (با `filters`) + `reports` در `defineModule`؛ Provider همیشه با هویت خواننده اجرا می‌شود (در ارسال زمان‌بندی‌شده: هر گیرنده جداگانه)، پس محدوده دسترسی را مثل صفحه خود ماژول اعمال کند.
+- اتصال‌ها: کلید API (`mk_…`) فقط روی `/api/m/*` و با اشتراک مجوزهای کلید و سازنده؛ Webhook با مصرف‌کننده `'*'` در Event Bus، امضای HMAC و بررسی SSRF (`docs/integrations.md`).
+- خروجی Excel/CSV سمت سرور با `@mohandesyar/export` (همان نویسنده‌ای که `ui` استفاده می‌کند).
 - داده شخصی (رزومه، پرونده، حقوق): مشاهده و دانلود در Audit ثبت شود؛ فیلد سن/جنسیت/قومیت/مذهب/سلامت در مدل داده نباشد؛ هیچ انتقال یا پرداخت خودکار.

@@ -21,3 +21,12 @@ describe('integrations', () => {
     expect(signature('whsec_x', body, 1700000000)).toBe(`t=1700000000,v1=${createHmac('sha256', 'whsec_x').update(`1700000000.${body}`).digest('hex')}`);
   });
 });
+
+describe('download names', async () => {
+  const { contentDisposition } = await import('../../src/core/files/file.service.js');
+  it('adds an ASCII fallback and keeps the UTF-8 name', () => {
+    expect(contentDisposition('mom-014.pdf')).toBe(`attachment; filename="mom-014.pdf"; filename*=UTF-8''mom-014.pdf`);
+    expect(contentDisposition('حوادث هفتگی.xlsx')).toBe(`attachment; filename="download.xlsx"; filename*=UTF-8''${encodeURIComponent('حوادث هفتگی.xlsx')}`);
+    expect(contentDisposition('گزارش 2026-10-10 - 2026-10-16.xlsx')).toMatch(/^attachment; filename="2026-10-10 - 2026-10-16.xlsx";/);
+  });
+});

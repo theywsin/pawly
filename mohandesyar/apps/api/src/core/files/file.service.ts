@@ -107,7 +107,7 @@ export class FileService {
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: row.object_key,
-        ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(row.name)}`,
+        ResponseContentDisposition: contentDisposition(row.name),
         ResponseContentType: row.mime,
       }),
       { expiresIn: 300 },
@@ -136,4 +136,15 @@ export class FileService {
       return r.rows;
     });
   }
+}
+
+/**
+ * RFC 6266 attachment header: an ASCII fallback (`filename=`) for old clients plus the exact UTF-8 name
+ * (`filename*=`), which browsers prefer. The fallback keeps the extension so the file still opens.
+ */
+export function contentDisposition(name: string): string {
+  const ext = /\.[A-Za-z0-9]{1,8}$/.exec(name)?.[0] ?? '';
+  const ascii = name.replace(/[^\x20-\x7e]/g, '').replace(/["\\]/g, '').replace(/\s+/g, ' ').trim();
+  const fallback = ascii.replace(/\.[A-Za-z0-9]{1,8}$/, '').replace(/^[ .-]+|[ .-]+$/g, '') ? ascii : `download${ext}`;
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(name)}`;
 }
