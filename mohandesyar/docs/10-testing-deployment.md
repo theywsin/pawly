@@ -46,22 +46,21 @@
 
 ## ۴. استقرار
 
-### Docker Compose (مرجع)
-سرویس‌ها: `proxy` (Caddy — TLS با گواهی محلی/دستی؛ ACME خاموش پیش‌فرض چون خارجی است)، `web` (فایل ایستا از همان Caddy)، `api` (×n)، `worker`، `migrate` (job یک‌باره در هر استقرار: مهاجرت هسته + bootstrap ماژول‌های پیش‌نصب)، `postgres` (16+)، `redis` (با AOF)، `minio`، `clamav` (پروفایل اختیاری)، `backup` (cron داخلی).
-- volumeها: `pgdata`، `redisdata`، `miniodata`، `modules-store` (مشترک api/worker، فقط worker نوشتنی)، `backups`.
-- همه imageها با digest پین می‌شوند؛ اسکریپت `infra/scripts/export-images.sh` برای انتقال آفلاین (`docker save`) به سرور بدون اینترنت.
-- اسرار از فایل `.env` با مجوز ۶۰۰ یا Docker secrets؛ کلید رمزنگاری فیلدهای حساس (`APP_ENCRYPTION_KEY`) و کلید عمومی امضای ماژول.
-- شبکه `internal: true` برای سرویس‌های داخلی؛ فقط proxy پورت بیرونی دارد.
+### Docker Compose (پیاده‌سازی‌شده — `infra/compose/`)
+سرویس‌ها: `proxy` (Caddy 2.10 — دامنه = HTTPS خودکار، `:80` = HTTP ساده؛ مسیر `/<bucket>/*` به ذخیره‌ساز و بقیه به api)، `api` (primary + workerها، SPA را هم سرو می‌کند)، `migrate` (job یک‌باره: مهاجرت هسته + کلید مورد اعتماد + نصب بسته‌های `modules/`)، `db-init` (نقش‌ها/مجوزهای PostgreSQL)، `postgres` 16، `redis` 7، `s3` (SeaweedFS 3.97، داخلی).
+- volumeها: `pgdata`، `redisdata`، `s3data`، `appdata`، `caddydata`؛ شبکه `internal: true` برای سرویس‌های داخلی؛ فقط proxy پورت بیرونی دارد.
+- پیوند دانلود با `S3_PUBLIC_ENDPOINT=PUBLIC_ORIGIN` امضا و از proxy عبور می‌کند؛ نام و نوع فایل روی خود شیء هم ذخیره می‌شود (A59).
+- بسته تحویل: `tools/release/build-bundle.sh <out> [--key <private.pem>]` ← `mohandix.tar.gz` شامل فایل‌های compose، ماژول‌های امضاشده، کلید عمومی، ایمیج‌ها (`docker save`) و `راهنمای-نصب.md`؛ کلید خصوصی جدا در `<out>/signing-key/`.
+- نصب/ارتقا: `install.sh` (ایمیج‌ها را load، `.env` را با رمزهای تصادفی می‌سازد، مهاجرت و مدیر سامانه).
 
 ### Kubernetes (آینده)
 Helm chart یا manifest ساده؛ api به‌صورت Deployment با readiness probe (`/health/ready` که در حالت draining false می‌شود)؛ worker Deployment جدا؛ `modules-store` به‌صورت PVC `ReadWriteMany` یا (بهتر) دریافت بسته‌ها از MinIO در init container — تصمیم در فاز ۶.
 
-### پشتیبان‌گیری و بازیابی
-- `pg_dump -Fc` روزانه (RPO ۲۴h) + اختیاری WAL archiving با `pgBackRest`/`wal-g` به MinIO دوم یا دیسک جدا.
-- MinIO: mirror روزانه (`mc mirror`) به مقصد دوم.
-- Module Store: از MinIO قابل بازسازی (بسته‌ها آنجا هم ذخیره می‌شوند).
-- **آزمون بازیابی خودکار هفتگی:** کانتینر `restore-test` آخرین پشتیبان را در PostgreSQL موقت بازیابی، مهاجرت‌ها را بررسی، شمارش ردیف جداول کلیدی را با متادیتای پشتیبان مقایسه و نتیجه را در `/console/system` ثبت می‌کند.
-- Runbook بازیابی کامل در `docs/runbooks/restore.md` (هدف RTO ۴h) — فاز ۱.
+### پشتیبان‌گیری و بازیابی (پیاده‌سازی‌شده)
+- `backup.sh` ← `backups/<زمان>/`: `pg_dump -Fc`، tar از volumeهای `s3data` و `appdata`، `.env`، `s3.json` و کلید عمومی.
+- `restore.sh <dir>` پایگاه داده را حذف و از نو می‌سازد، `pg_restore`، volumeها را برمی‌گرداند و سرویس‌ها را بالا می‌آورد.
+- آزموده (۱۴۰۵/۰۷): نصب ← داده نمونه ← پشتیبان ← `down -v` ← بازیابی ← ورود، وجود کار و دانلود همان فایل.
+- آینده: WAL archiving، آزمون بازیابی خودکار.
 
 ### مشاهده‌پذیری
 - لاگ JSON با pino (ماسک خودکار فیلدهای حساس: رمز، توکن، کدملی، شماره حساب، حقوق).

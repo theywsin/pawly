@@ -57,6 +57,10 @@ node apps/api/dist/main.js migrate            # مهاجرت هسته + کلید
 ADMIN_PASSWORD=... node apps/api/dist/main.js create-admin --email a@b --name 'نام'
 node apps/api/dist/main.js serve              # primary + workers؛ SPA از WEB_DIST_DIR
 
+# تحویل سرور (infra/compose: Caddy + SeaweedFS؛ S3_PUBLIC_ENDPOINT برای پیوند دانلود)
+tools/release/build-bundle.sh <out> [--key <private.pem>]   # نیاز به ایمیج mohandix:latest از infra/docker/Dockerfile
+# روی سرور: install.sh | backup.sh | restore.sh backups/<ts> — راهنما: tools/release/راهنمای-نصب.md
+
 # ماژول‌ها
 pnpm module:keygen --out <dir> | pnpm module:pack <moduleDir> --out <dir>
 pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <public.pem>
