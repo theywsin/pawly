@@ -1,10 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { multipart, TestApp } from '../helpers/app.js';
+import { multipart, PNG, TestApp } from '../helpers/app.js';
 
 let t: TestApp;
 let admin: { token: string };
-
-export const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
 
 beforeAll(async () => {
   t = await TestApp.start();

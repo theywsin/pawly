@@ -66,5 +66,7 @@ for (const page of PRERENDER) {
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, html);
 }
+// Blog posts are dynamic: the API fills <!--POST_HEAD--> with each post's meta tags; the SPA renders the body.
+await writeFile(join(dist, 'blog-post.html'), template.replace(/<title>[^<]*<\/title>/, '<!--POST_HEAD-->'));
 await writeFile(join(dist, 'prerender-manifest.json'), JSON.stringify(PRERENDER.map((p) => ({ path: p.path, priority: p.priority }))));
 console.log(`prerendered ${PRERENDER.length} pages`);

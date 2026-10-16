@@ -189,6 +189,44 @@ async function sendFile(reply: FastifyReply, file: string, cache: string) {
   return reply.send(await readFile(file));
 }
 
+const escHtml = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Head tags of a blog post page (title, description, canonical, Open Graph and BlogPosting data). */
+export function postHead(p: { title: string; description: string; image: string | null; publishedAt: string; updatedAt: string; author: string; text: string }, url: string, origin: string): string {
+  const title = `${p.title} | مهندیکس`;
+  const image = p.image ? `${origin}${p.image}` : `${origin}/brand/og.png`;
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: p.title,
+    description: p.description,
+    image,
+    datePublished: new Date(p.publishedAt).toISOString(),
+    dateModified: new Date(p.updatedAt).toISOString(),
+    inLanguage: 'fa-IR',
+    mainEntityOfPage: url,
+    ...(p.author ? { author: { '@type': 'Person', name: p.author } } : {}),
+    publisher: { '@type': 'Organization', name: 'مهندیکس', logo: { '@type': 'ImageObject', url: `${origin}/brand/logo-512.png` } },
+    articleBody: p.text,
+  };
+  return [
+    `<title>${escHtml(title)}</title>`,
+    `<meta name="description" content="${escHtml(p.description)}" />`,
+    `<link rel="canonical" href="${escHtml(url)}" />`,
+    `<meta property="og:type" content="article" />`,
+    `<meta property="og:site_name" content="مهندیکس" />`,
+    `<meta property="og:locale" content="fa_IR" />`,
+    `<meta property="og:title" content="${escHtml(title)}" />`,
+    `<meta property="og:description" content="${escHtml(p.description)}" />`,
+    `<meta property="og:url" content="${escHtml(url)}" />`,
+    `<meta property="og:image" content="${escHtml(image)}" />`,
+    `<meta property="article:published_time" content="${new Date(p.publishedAt).toISOString()}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    // JSON in a script element: '<' is escaped so no text can close the element.
+    `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`,
+  ].join('\n    ');
+}
+
 function trustProxy(v: string): boolean | string {
   return v === 'true' ? true : v === 'false' ? false : v;
 }
@@ -245,17 +283,19 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
   if (webDist && existsSync(webDist)) {
     const origin = s.config.PUBLIC_ORIGIN.replace(/\/$/, '');
     const shell = existsSync(join(webDist, 'app-shell.html')) ? join(webDist, 'app-shell.html') : join(webDist, 'index.html');
-    const sendHtml = async (reply: FastifyReply, file: string) => {
+    const sendRendered = async (reply: FastifyReply, html: string) => {
       reply.type(MIME['.html']!);
       reply.header('cache-control', 'no-cache');
       reply.header('vary', 'accept-encoding');
-      const body = (await readFile(file, 'utf8')).replaceAll('%%ORIGIN%%', origin);
+      const body = html.replaceAll('%%ORIGIN%%', origin);
       if (String(reply.request.headers['accept-encoding'] ?? '').includes('gzip')) {
         reply.header('content-encoding', 'gzip');
         return reply.send(gzipSync(body));
       }
       return reply.send(body);
     };
+    const sendHtml = async (reply: FastifyReply, file: string) => sendRendered(reply, await readFile(file, 'utf8'));
+    const blogTemplate = join(webDist, 'blog-post.html');
     const manifestFile = join(webDist, 'prerender-manifest.json');
     const pages: { path: string; priority: number }[] = existsSync(manifestFile) ? JSON.parse(await readFile(manifestFile, 'utf8')) : [];
 
@@ -265,7 +305,8 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
     });
     fastify.get('/sitemap.xml', async (_req: FastifyRequest, reply: FastifyReply) => {
       reply.type(MIME['.xml']!);
-      const urls = pages.map((p) => `  <url><loc>${origin}${p.path}</loc><priority>${p.priority.toFixed(1)}</priority></url>`).join('\n');
+      const posts = (await s.blog.sitemap()).map((p) => `  <url><loc>${origin}/blog/${encodeURIComponent(p.slug)}</loc><lastmod>${new Date(p.updatedAt).toISOString()}</lastmod><priority>0.6</priority></url>`);
+      const urls = [...pages.map((p) => `  <url><loc>${origin}${p.path}</loc><priority>${p.priority.toFixed(1)}</priority></url>`), ...posts].join('\n');
       return reply.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
     });
 
@@ -279,6 +320,15 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
         if (candidate.endsWith('.html')) return sendHtml(reply, candidate);
         const immutable = path.startsWith('/assets/') || path.startsWith('/shared/');
         return sendFile(reply, candidate, immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
+      }
+      // Blog posts are dynamic: the post template gets the post's own title, description, image and
+      // structured data so links and search results show the article; the SPA renders the body.
+      const post = /^\/blog\/([^/]+)$/.exec(path);
+      if (post && existsSync(blogTemplate)) {
+        const seo = await s.blog.seo(post[1]!.slice(0, 120));
+        if (!seo) return sendHtml(reply.code(404), shell);
+        const url = `${origin}/blog/${encodeURIComponent(post[1]!.toLowerCase())}`;
+        return sendRendered(reply, (await readFile(blogTemplate, 'utf8')).replace('<!--POST_HEAD-->', postHead(seo, url, origin)));
       }
       // Prerendered public pages (e.g. /pricing → pricing/index.html), else the SPA shell.
       const pre = join(candidate, 'index.html');

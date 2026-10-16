@@ -50,7 +50,7 @@ function ClientEditor({ item, onDone }: { item: Client | null; onDone(): void })
         </Field>
         <Checkbox label="نمایش در سایت" checked={published} onChange={(e) => setPublished(e.target.checked)} />
         <Button size="sm" loading={save.isPending} disabled={!logo} onClick={() => save.mutate()}>
-          ذخیره
+          ذخیره مشتری
         </Button>
         <Button size="sm" variant="ghost" onClick={onDone}>
           انصراف

@@ -38,7 +38,7 @@ function Clients() {
     <Section id="clients" title="مشتریان ما" tone="muted">
       <ul className="grid grid-cols-2 items-center gap-6 sm:grid-cols-3 lg:grid-cols-6">
         {clients.map((c) => {
-          const img = <img src={c.logo} alt={c.name} loading="lazy" className="mx-auto max-h-16 w-auto object-contain grayscale transition hover:grayscale-0" />;
+          const img = <img src={c.logo} alt={c.name} loading="lazy" className="h-14 w-full object-contain grayscale transition hover:grayscale-0" />;
           return (
             <li key={c.id} className="flex h-24 items-center justify-center rounded-lg border border-border bg-surface p-3">
               {c.url ? (

@@ -164,6 +164,9 @@ export class TestApp {
   }
 }
 
+/** A 1×1 PNG for image uploads. */
+export const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+
 /** Minimal multipart/form-data body with one file field. */
 export function multipart(file: Buffer, filename: string, field = 'file', fields: Record<string, string> = {}): { payload: Buffer; headers: Record<string, string> } {
   const boundary = `----mohandesyar${Date.now()}`;

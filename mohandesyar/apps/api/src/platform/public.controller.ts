@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Res } from '@nestjs/common';
 import { z } from 'zod';
 import { Public } from '@mohandesyar/module-sdk/server';
 import { Services } from '../app/services.js';
@@ -52,5 +52,17 @@ export class PublicController {
     reply.header('cache-control', 'public, max-age=31536000, immutable');
     reply.header('content-security-policy', "default-src 'none'");
     return m.data;
+  }
+
+  @Public()
+  @Get('blog')
+  blog(@Query('page') page?: string, @Query('category') category?: string, @Query('tag') tag?: string) {
+    return this.s.blog.list({ page: Number(page) || 1, category: category?.slice(0, 80) || undefined, tag: tag?.slice(0, 40) || undefined });
+  }
+
+  @Public()
+  @Get('blog/:slug')
+  post(@Param('slug') slug: string) {
+    return this.s.blog.post(slug.slice(0, 120));
   }
 }

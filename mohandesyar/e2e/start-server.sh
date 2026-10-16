@@ -42,4 +42,5 @@ ADMIN_PASSWORD='Sales-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-ad
 ADMIN_PASSWORD='Hr-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email hr@platform.test --name 'مدیر فاز ۴' >/dev/null
 ADMIN_PASSWORD='Fin-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email fin@platform.test --name 'مدیر فاز ۵' >/dev/null
 ADMIN_PASSWORD='Ops6-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email p6@platform.test --name 'مدیر فاز ۶' >/dev/null
+ADMIN_PASSWORD='Ops7-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email p7@platform.test --name 'مدیر فاز ۷' >/dev/null
 exec node "$ROOT/apps/api/dist/main.js" serve

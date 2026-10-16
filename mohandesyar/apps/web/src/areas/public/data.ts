@@ -40,3 +40,39 @@ export function useAvailability(): (id: string) => 'available' | 'coming' | 'unk
   const site = useSite();
   return (id) => (!site.data ? 'unknown' : site.data.availableModules.some((m) => m.id === id) ? 'available' : 'coming');
 }
+
+export type BlogBlock =
+  | { type: 'p' | 'h2' | 'h3' | 'quote'; text: string }
+  | { type: 'ul' | 'ol'; items: string[] }
+  | { type: 'img'; mediaId: string; src: string; caption: string; alt: string };
+
+export interface BlogPostSummary {
+  slug: string;
+  title: string;
+  excerpt: string;
+  cover: string | null;
+  category: { slug: string; name: string } | null;
+  tags: string[];
+  publishedAt: string;
+  updatedAt: string;
+  authorName: string;
+}
+export interface BlogPost extends BlogPostSummary {
+  seoTitle: string;
+  seoDescription: string;
+  body: BlogBlock[];
+  related: BlogPostSummary[];
+}
+export interface BlogList {
+  posts: BlogPostSummary[];
+  page: number;
+  pages: number;
+  total: number;
+  categories: { slug: string; name: string; posts: number }[];
+}
+
+export const useBlogList = (p: { page: number; category?: string; tag?: string }) => {
+  const qs = new URLSearchParams({ page: String(p.page), ...(p.category ? { category: p.category } : {}), ...(p.tag ? { tag: p.tag } : {}) });
+  return useQuery({ queryKey: ['public', 'blog', p], queryFn: () => get<BlogList>(`/api/public/blog?${qs}`), staleTime: 60_000 });
+};
+export const useBlogPost = (slug: string) => useQuery({ queryKey: ['public', 'blog-post', slug], queryFn: () => get<BlogPost>(`/api/public/blog/${encodeURIComponent(slug)}`), retry: false });

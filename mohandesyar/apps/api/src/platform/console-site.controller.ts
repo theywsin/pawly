@@ -5,6 +5,7 @@ import { Console, CurrentAdmin, type AdminIdentity } from '../core/http/context.
 import { badRequest, parse } from '../core/http/errors.js';
 import { MAX_IMAGE_BYTES } from './media.service.js';
 import { clientSchema } from './site.service.js';
+import { categorySchema, postSchema } from './blog.service.js';
 
 export interface ImageUploadReq {
   file(opts?: { limits?: { fileSize?: number } }): Promise<{ filename: string; toBuffer(): Promise<Buffer>; file: { truncated?: boolean }; fields: Record<string, { value?: string } | undefined> } | undefined>;
@@ -72,5 +73,53 @@ export class ConsoleSiteController {
   @Put('apps')
   async setApps(@Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
     return zodToApi(() => this.s.site.setApps(body, a.adminId));
+  }
+
+  // ---------------------------------------------------------------- blog
+
+  @Console('super_admin', 'sales_admin')
+  @Get('blog/posts')
+  posts() {
+    return this.s.blog.adminList();
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Get('blog/posts/:id')
+  post(@Param('id') id: string) {
+    return this.s.blog.adminGet(parse(z.uuid(), id));
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Put('blog/posts/:id')
+  async savePost(@Param('id') id: string, @Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    return { id: await this.s.blog.save(id === 'new' ? null : parse(z.uuid(), id), parse(postSchema, body), a.adminId) };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Post('blog/posts/:id/delete')
+  @HttpCode(200)
+  async deletePost(@Param('id') id: string, @CurrentAdmin() a: AdminIdentity) {
+    await this.s.blog.remove(parse(z.uuid(), id), a.adminId);
+    return { ok: true };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Get('blog/categories')
+  categories() {
+    return this.s.blog.categories();
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Put('blog/categories/:id')
+  async saveCategory(@Param('id') id: string, @Body() body: unknown, @CurrentAdmin() a: AdminIdentity) {
+    return { id: await this.s.blog.saveCategory(id === 'new' ? null : parse(z.uuid(), id), parse(categorySchema, body), a.adminId) };
+  }
+
+  @Console('super_admin', 'sales_admin')
+  @Post('blog/categories/:id/delete')
+  @HttpCode(200)
+  async deleteCategory(@Param('id') id: string, @CurrentAdmin() a: AdminIdentity) {
+    await this.s.blog.removeCategory(parse(z.uuid(), id), a.adminId);
+    return { ok: true };
   }
 }

@@ -10,6 +10,7 @@ import { BRAND_NAME, BrandMark } from '../../brand.js';
 const NAV = [
   { to: '/modules', label: 'ماژول‌ها' },
   { to: '/pricing', label: 'قیمت‌ها' },
+  { to: '/blog', label: 'وبلاگ' },
   { to: '/download', label: 'دانلود اپلیکیشن' },
   { to: '/about', label: 'درباره ما' },
   { to: '/contact', label: 'تماس' },
@@ -112,6 +113,7 @@ export function PublicLayout() {
             <p className="font-semibold">شرکت</p>
             <ul className="mt-2 space-y-1 text-sm">
               <li><Link className="hover:text-primary" to="/about">درباره ما</Link></li>
+              <li><Link className="hover:text-primary" to="/blog">وبلاگ</Link></li>
               <li><Link className="hover:text-primary" to="/contact">تماس با ما</Link></li>
               <li><Link className="hover:text-primary" to="/terms">شرایط استفاده</Link></li>
               <li><Link className="hover:text-primary" to="/privacy">حریم خصوصی</Link></li>

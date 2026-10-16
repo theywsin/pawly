@@ -24,6 +24,7 @@ import { Mailer } from '../core/notifications/mailer.js';
 import { logger } from '../infra/logger.js';
 import { SiteService } from '../platform/site.service.js';
 import { MediaService } from '../platform/media.service.js';
+import { BlogService } from '../platform/blog.service.js';
 
 export const RELOAD_CHANNEL = 'mohandesyar:reload';
 export const MODULE_STATE_CHANNEL = 'mohandesyar:module-state';
@@ -57,6 +58,7 @@ export class Services {
   readonly files: FileService;
   readonly site: SiteService;
   readonly media: MediaService;
+  readonly blog: BlogService;
   readonly scheduler: ModuleScheduler;
   readonly mailer: Mailer;
   readonly reports: ReportService;
@@ -98,6 +100,7 @@ export class Services {
     });
     this.site = new SiteService(this.db, this.redis, this.audit, config.JWT_SECRET);
     this.media = new MediaService(this.db, this.files, this.audit);
+    this.blog = new BlogService(this.db, this.audit);
     this.lifecycle = new ModuleLifecycleService(this.db, this.registry, this.rbac, this.audit, this.contexts, {
       storeDir: config.MODULE_STORE_DIR,
       uploadDir: config.MODULE_UPLOAD_DIR,
