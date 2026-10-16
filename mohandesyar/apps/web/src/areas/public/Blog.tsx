@@ -138,7 +138,7 @@ export function BlogListPage() {
         </p>
       )}
       {q.isPending ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="در حال بارگذاری مطالب">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-busy="true" aria-label="در حال بارگذاری مطالب">
           <Skeleton className="h-72" />
           <Skeleton className="hidden h-72 sm:block" />
           <Skeleton className="hidden h-72 lg:block" />
@@ -180,7 +180,7 @@ export function BlogPostPage() {
   if (q.isError) return <NotFound />;
   if (q.isPending) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-16" aria-busy="true" aria-label="در حال بارگذاری مطلب">
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-16" role="status" aria-busy="true" aria-label="در حال بارگذاری مطلب">
         <Skeleton className="h-10 w-3/4" />
         <Skeleton className="aspect-[16/9] w-full" />
         <Skeleton className="h-5 w-full" />

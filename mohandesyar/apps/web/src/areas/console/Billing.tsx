@@ -122,7 +122,8 @@ function PriceRow({ m }: { m: ModulePrice }) {
   const qc = useQueryClient();
   const [monthly, setMonthly] = useState(m.price_monthly ?? '');
   const [yearly, setYearly] = useState(m.price_yearly ?? '');
-  const [on, setOn] = useState(m.purchasable);
+  // A module without a price yet is offered for sale once one is entered.
+  const [on, setOn] = useState(m.price_monthly === null ? true : m.purchasable);
   const save = useMutation({
     mutationFn: () => consoleApi(`/api/console/billing/module-prices/${m.module_id}`, { method: 'PUT', body: { priceMonthly: Number(monthly || 0), priceYearly: yearly ? Number(yearly) : null, purchasable: on } }),
     onSuccess: () => {

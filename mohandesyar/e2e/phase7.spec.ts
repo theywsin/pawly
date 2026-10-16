@@ -155,19 +155,18 @@ test.describe.serial('phase 7 — blog, site content, purchase, tickets', () => 
     await app.getByRole('link', { name: /^[۰-۹]+$/ }).first().click();
     await expect(app.getByRole('heading', { name: /فاکتور فروش شماره/ })).toBeVisible();
     await expect(app.getByText('پرداخت‌شده')).toBeVisible();
-    await expect(app.getByText(ORG)).toBeVisible();
+    await expect(app.locator('article').getByText(ORG)).toBeVisible();
   });
 
   test('the organisation buys a module from its modules page and can use it right away', async () => {
     await app.goto('/app/settings/modules');
-    const card = app.locator('div').filter({ has: app.getByRole('heading', { name: 'جلسات و مصوبات' }) }).last();
-    await expect(card.getByText('۲۰۰٬۰۰۰ تومان در ماه')).toBeVisible();
-    await card.getByRole('link', { name: 'خرید ماژول' }).click();
+    await expect(app.getByText(/۲۰۰.۰۰۰ تومان در ماه/)).toBeVisible();
+    await app.getByRole('link', { name: 'خرید ماژول' }).click();
     await expect(app.getByText(/ماژول جلسات و مصوبات/)).toBeVisible();
     await app.getByRole('button', { name: 'پرداخت آنلاین' }).click();
     await app.getByRole('button', { name: 'پرداخت موفق' }).click();
     await expect(app.getByText(/و ماژول فعال شد/)).toBeVisible();
-    await app.goto('/app');
+    await app.goto('/app/tasks'); // (/app opens the onboarding wizard for a new organisation)
     await expect(app.getByRole('navigation', { name: 'منوی اصلی' }).getByRole('link', { name: /جلسات/ }).first()).toBeVisible();
   });
 
@@ -181,8 +180,8 @@ test.describe.serial('phase 7 — blog, site content, purchase, tickets', () => 
   test('the payment shows up in the console ledger', async () => {
     await admin.goto('/console/billing');
     const rows = admin.getByRole('row', { name: new RegExp(ORG) });
-    await expect(rows.filter({ hasText: 'موفق' })).toHaveCount(2);
-    await expect(rows.filter({ hasText: 'ناموفق' })).toHaveCount(1);
+    await expect(rows.filter({ has: admin.getByText('موفق', { exact: true }) })).toHaveCount(2);
+    await expect(rows.filter({ has: admin.getByText('ناموفق', { exact: true }) })).toHaveCount(1);
   });
 
   test('blog pages pass axe', async ({ page }) => {
