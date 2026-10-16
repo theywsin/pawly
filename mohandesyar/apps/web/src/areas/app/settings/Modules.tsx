@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Puzzle } from 'lucide-react';
 import { Alert, Badge, Button, Card, CardHeader, Checkbox, ConfirmDialog, DateText, Dialog, EmptyState, Field, Input, PageHeader, PageState, Select, toast } from '@mohandesyar/ui';
 import { appApi } from '../../../lib/api.js';
 import { errorMessage } from '../../../lib/errors.js';
+import { formatMoney } from '@mohandesyar/persian';
 import { useAppSession } from '../../../lib/session.js';
 
 interface TenantModule {
@@ -96,6 +98,9 @@ export function Modules() {
     onError: (e) => toast(errorMessage(e), 'danger'),
   });
   const canManage = me.permissions.includes('core.module.manage_tenant');
+  const canBuy = me.permissions.includes('core.billing.manage');
+  const billing = useQuery({ queryKey: ['billing'], enabled: canBuy, queryFn: () => appApi<{ buyableModules: { module_id: string; price_monthly: string; owned: boolean }[] }>('/api/billing') });
+  const priceOf = (id: string) => billing.data?.buyableModules.find((b) => b.module_id === id && !b.owned)?.price_monthly;
   return (
     <>
       <PageHeader title="ماژول‌ها" description="فقط ماژول‌هایی که فعال می‌کنید در منو و داشبورد دیده می‌شوند. غیرفعال‌کردن هیچ داده‌ای را حذف نمی‌کند." />
@@ -123,6 +128,14 @@ export function Modules() {
                     <Button variant="ghost" size="sm" onClick={() => setDisable(m)}>
                       غیرفعال‌سازی
                     </Button>
+                  </>
+                )}
+                {canBuy && !m.entitled && m.globally_enabled && priceOf(m.id) && (
+                  <>
+                    <span className="me-auto text-sm">{formatMoney(priceOf(m.id)!, { unit: 'toman' })} در ماه</span>
+                    <Link to={`/app/billing/checkout?module=${encodeURIComponent(m.id)}`} className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-fg">
+                      خرید ماژول
+                    </Link>
                   </>
                 )}
                 {canManage && !m.enabled && m.entitled && m.globally_enabled && (

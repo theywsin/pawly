@@ -40,12 +40,13 @@ export class CoreController {
 
   @Get('me')
   async me(@CurrentIdentity() id: Identity) {
-    const [profile, tenant, effective, catalogue, companies] = await Promise.all([
+    const [profile, tenant, effective, catalogue, companies, ent] = await Promise.all([
       this.s.auth.userProfile(id.userId),
       this.s.tenancy.getTenant(id.tenantId),
       this.s.registry.effectiveFor(id.tenantId),
       this.s.db.app.execute(sql`SELECT key FROM core_permissions`),
       this.s.db.tx({ tenantId: id.tenantId }, (tx) => this.s.tenancy.listCompanies(tx)),
+      this.s.entitlement.get(id.tenantId),
     ]);
     const keys = [...CORE_PERMISSIONS, ...(catalogue.rows as { key: string }[]).map((r) => r.key)];
     const can = (p?: string) => !p || id.permissions.can(p);
@@ -53,6 +54,7 @@ export class CoreController {
       user: profile,
       tenant,
       company: { id: id.companyId, ids: id.companyIds },
+      subscription: { status: ent.subscriptionStatus, planKey: ent.planKey },
       companies: companies.filter((c) => id.allowedCompanyIds.includes(c.id)),
       permissions: id.permissions.resolve(keys),
       modules: effective.map((m) => ({

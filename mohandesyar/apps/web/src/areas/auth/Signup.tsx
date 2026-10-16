@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { Alert, Button, Field, Input } from '@mohandesyar/ui';
 import { appApi, setToken } from '../../lib/api.js';
 import { applyServerErrors } from '../../lib/errors.js';
 import { AuthLayout } from './AuthLayout.js';
+import { usePlans } from '../public/data.js';
 
 // Mirrors the server policy (apps/api/src/core/auth/crypto.ts); the server remains authoritative.
 const schema = z
@@ -22,6 +23,12 @@ type Form = z.infer<typeof schema>;
 
 export function Signup() {
   const nav = useNavigate();
+  // Arriving from "buy this plan": the plan is kept and checkout follows the signup.
+  const [sp] = useSearchParams();
+  const planKey = sp.get('plan') ?? undefined;
+  const cycle = sp.get('cycle') === 'yearly' ? 'yearly' : 'monthly';
+  const plans = usePlans();
+  const plan = planKey ? plans.data?.find((p) => p.key === planKey) : undefined;
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const form = useForm<Form>({ resolver: zodResolver(schema) });
@@ -29,10 +36,10 @@ export function Signup() {
   const submit = form.handleSubmit(async ({ confirm: _c, ...values }) => {
     setError(null);
     try {
-      const r = await appApi<{ accessToken?: string; pendingApproval?: boolean }>('/api/auth/signup', { method: 'POST', body: values });
+      const r = await appApi<{ accessToken?: string; pendingApproval?: boolean }>('/api/auth/signup', { method: 'POST', body: { ...values, planKey } });
       if (r.pendingApproval) return setPending(true);
       setToken('app', r.accessToken!);
-      nav('/app', { replace: true });
+      nav(planKey ? `/app/billing/checkout?plan=${encodeURIComponent(planKey)}&cycle=${cycle}` : '/app', { replace: true });
     } catch (err) {
       setError(applyServerErrors(err, form.setError));
     }
@@ -60,6 +67,11 @@ export function Signup() {
         </>
       }
     >
+      {plan && (
+        <Alert tone="info" className="mb-4">
+          پلن انتخاب‌شده: <strong>{plan.name}</strong>. پس از ساخت حساب، صفحه پرداخت باز می‌شود.
+        </Alert>
+      )}
       {error && <Alert tone="danger" className="mb-4">{error}</Alert>}
       <form onSubmit={submit} className="space-y-4" noValidate>
         <Field label="نام و نام خانوادگی" error={e.fullName?.message} required>

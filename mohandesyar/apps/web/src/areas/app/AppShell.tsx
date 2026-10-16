@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays, FileSpreadsheet, FileBarChart, Plug } from 'lucide-react';
+import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays, FileSpreadsheet, FileBarChart, Plug, CreditCard } from 'lucide-react';
 import { Badge, cn, Toaster } from '@mohandesyar/ui';
 import { appApi, getToken, setToken } from '../../lib/api.js';
 import { useAppSession } from '../../lib/session.js';
@@ -65,7 +65,7 @@ export function AppShell() {
   const unread = useQuery({ queryKey: ['notifications', 'count'], queryFn: () => appApi<{ unread: number }>('/api/core/notifications?unread=1'), refetchInterval: 60_000 });
   const can = (p: string) => me.permissions.includes(p);
   const moduleItems = me.modules.flatMap((m) => m.menu).sort((a, b) => a.order - b.order);
-  const readOnly = me.modules.some((m) => m.mode !== 'full') || me.tenant.status === 'suspended';
+  const readOnly = me.modules.some((m) => m.mode !== 'full') || me.tenant.status === 'suspended' || me.subscription?.status === 'expired';
 
   const logout = async () => {
     await appApi('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
@@ -127,6 +127,11 @@ export function AppShell() {
       {can('core.integration.manage') && (
         <NavLink to="/app/settings/integrations" className={link}>
           <Plug className="size-5" /> اتصال‌ها (API)
+        </NavLink>
+      )}
+      {can('core.billing.manage') && (
+        <NavLink to="/app/billing" className={link}>
+          <CreditCard className="size-5" /> اشتراک و پرداخت
         </NavLink>
       )}
       {can('core.audit.view') && (
@@ -209,6 +214,11 @@ export function AppShell() {
         {readOnly && (
           <div role="status" className="bg-warning/15 px-5 py-2 text-sm">
             <Badge tone="warning">فقط مشاهده</Badge> اشتراک سازمان منقضی یا حساب تعلیق شده است؛ مشاهده و خروجی ممکن است ولی ثبت اطلاعات جدید نه.
+            {can('core.billing.manage') && (
+              <Link to="/app/billing" className="ms-2 font-semibold text-primary underline">
+                تمدید اشتراک
+              </Link>
+            )}
           </div>
         )}
         <main id="main" className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:px-6">

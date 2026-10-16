@@ -33,6 +33,7 @@ WEB_DIST_DIR=$ROOT/apps/web/dist
 COOKIE_SECURE=false
 API_WORKERS=2
 LOG_LEVEL=warn
+PAYMENT_SANDBOX=true
 ENV
 set -a; . "$E2E/env"; set +a
 node "$ROOT/apps/api/dist/main.js" migrate >/dev/null

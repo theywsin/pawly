@@ -16,6 +16,7 @@ import { ReportsPage } from './Reports.js';
 import { IntegrationsPage } from './settings/Integrations.js';
 import { Calendar } from './settings/Calendar.js';
 import { Onboarding } from './Onboarding.js';
+import { BillingPage, CheckoutPage, InvoicePage } from './Billing.js';
 import { ModuleOutlet } from '../../module-host/ModuleOutlet.js';
 
 /** Company app area (lazy chunk). */
@@ -38,6 +39,9 @@ export const element = (
         <Route path="settings/approvals" element={<ApprovalSettings />} />
         <Route path="settings/imports" element={<ImportsPage />} />
         <Route path="settings/integrations" element={<IntegrationsPage />} />
+        <Route path="billing" element={<BillingPage />} />
+        <Route path="billing/checkout" element={<CheckoutPage />} />
+        <Route path="billing/invoices/:id" element={<InvoicePage />} />
         <Route path="*" element={<ModuleOutlet />} />
       </Route>
     </Routes>

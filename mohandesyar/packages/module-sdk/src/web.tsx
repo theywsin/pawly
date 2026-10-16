@@ -29,6 +29,8 @@ export interface MeData {
   tenant: { id: string; slug: string; name: string; status: string; timezone: string; number_style: 'fa' | 'latn'; onboarding_completed_at?: string | null };
   company: { id: string; ids: string[] };
   companies: { id: string; name: string }[];
+  /** Effective subscription state ('expired' once the paid or trial period has ended). */
+  subscription?: { status: string | null; planKey: string | null };
   permissions: string[];
   modules: MeModule[];
 }

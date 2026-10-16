@@ -190,6 +190,38 @@ describe('buying a module', () => {
   });
 });
 
+describe('signup with a chosen plan', () => {
+  const signupWith = async (name: string, planKey: string) => {
+    const r = await t.req('POST', '/api/auth/signup', { body: { fullName: `کاربر ${name}`, email: `${name}-${Date.now()}@example.ir`, password: 'Passw0rd-strong', tenantName: `سازمان ${name}`, planKey } });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    return r.body as { accessToken: string; tenantId: string };
+  };
+
+  it('runs the console trial on the chosen plan', async () => {
+    const r = await signupWith('trial-pro', 'pro');
+    const s = await sub(r.tenantId);
+    expect(s).toMatchObject({ plan_key: 'pro', status: 'trialing' });
+    const days = (new Date(s!.period_end).getTime() - Date.now()) / 86_400_000;
+    expect(Math.round(days)).toBe(7);
+    expect((await call(r.accessToken, 'GET', '/api/core/me')).body.subscription).toEqual({ status: 'trialing', planKey: 'pro' });
+  });
+
+  it('with no trial the organisation is read-only until the first payment, then active', async () => {
+    await t.req('PUT', '/api/console/billing/settings', { token: admin.token, body: { vatPercent: 10, trialDays: 0, gateway: { enabled: true, terminalId: '13000001', sandbox: true } } });
+    const r = await signupWith('no-trial', 'pro');
+    expect((await call(r.accessToken, 'GET', '/api/core/me')).body.subscription.status).toBe('expired');
+    const { payUrl } = await buy(r.accessToken, { kind: 'subscription', planKey: 'pro', cycle: 'monthly' });
+    await postBack(await bankForm(payUrl, 'paid'));
+    expect((await call(r.accessToken, 'GET', '/api/core/me')).body.subscription.status).toBe('active');
+    await t.req('PUT', '/api/console/billing/settings', { token: admin.token, body: { vatPercent: 10, trialDays: 7, gateway: { enabled: true, terminalId: '13000001', sandbox: true } } });
+  });
+
+  it('ignores an unknown or private plan', async () => {
+    const r = await signupWith('bad-plan', 'nope');
+    expect(await sub(r.tenantId)).toBeUndefined();
+  });
+});
+
 describe('expiry and the console', () => {
   it('an ended period counts as expired (read-only) without any job running', async () => {
     await t.services.db.app.execute(sql`UPDATE core_subscriptions SET period_end = now() - interval '1 hour' WHERE tenant_id = ${b.tenantId}`);

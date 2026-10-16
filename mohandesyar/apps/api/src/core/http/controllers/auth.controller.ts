@@ -26,6 +26,8 @@ const signupSchema = z.object({
   password: z.string().max(128),
   tenantName: z.string().trim().min(2, 'نام سازمان الزامی است').max(120),
   companyName: z.string().trim().min(2).max(120).optional(),
+  /** Plan chosen on the pricing page: the trial (if any) runs on it and checkout follows. */
+  planKey: z.string().max(40).optional(),
 });
 const passwordSchema = z.object({ current: z.string().min(1), next: z.string().min(1).max(128) });
 
@@ -84,13 +86,16 @@ export class AuthController extends BaseAuth {
     const mode = await this.s.site.signupMode();
     if (mode === 'closed') throw forbidden('SIGNUP_CLOSED', 'ثبت‌نام عمومی در حال حاضر بسته است؛ از صفحه تماس با ما در ارتباط باشید');
     if (!(await rateLimit(this.s.redis, `signup:${meta.ip ?? '-'}`, 10, 3600))) throw tooMany();
-    const plans = await this.s.db.app.execute(
-      (await import('drizzle-orm')).sql`SELECT key, (features->>'trialDays')::int AS trial FROM core_plans WHERE status = 'active' AND (features->>'signupDefault')::boolean IS TRUE LIMIT 1`,
-    );
+    const { sql } = await import('drizzle-orm');
+    // The chosen public plan, else the plan marked as the signup default.
+    const plans = await this.s.db.app.execute(sql`SELECT key, (features->>'trialDays')::int AS trial FROM core_plans
+      WHERE status = 'active' AND (${input.planKey ? sql`key = ${input.planKey} AND is_public` : sql`(features->>'signupDefault')::boolean IS TRUE`}) LIMIT 1`);
     const plan = plans.rows[0] as { key: string; trial: number | null } | undefined;
+    // The console's trial length wins over the plan's; 0 means no trial (read-only until the first payment).
+    const trialSetting = (await this.s.billing.settings()).trialDays;
     const r = await this.s.tenancy.signup(
-      { ...input, companyName: input.companyName ?? input.tenantName },
-      { defaultPlan: plan?.key, trialDays: plan?.trial ?? undefined, pendingApproval: mode === 'approval' },
+      { fullName: input.fullName, email: input.email, password: input.password, tenantName: input.tenantName, companyName: input.companyName ?? input.tenantName },
+      { defaultPlan: plan?.key, trialDays: trialSetting ?? plan?.trial ?? undefined, pendingApproval: mode === 'approval' },
     );
     if (mode === 'approval') return { pendingApproval: true, tenantId: r.tenantId };
     const login = await this.s.auth.login('user', input.email, input.password, r.tenantId, meta);

@@ -9,7 +9,11 @@ import { totp } from './totp.js';
  */
 const stamp = Date.now();
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+const PLAN_KEY = `p7${stamp}`;
+const PLAN_NAME = `پلن فاز۷ ${stamp}`;
+const ORG = `شرکت خریدار ${stamp}`;
 let admin: Page;
+let app: Page;
 let secret = '';
 let last = '';
 async function code() {
@@ -98,8 +102,91 @@ test.describe.serial('phase 7 — blog, site content, purchase, tickets', () => 
     await expect(page.getByRole('listitem').filter({ hasText: 'iOS' }).getByText('به‌زودی')).toBeVisible();
   });
 
+  test('the platform sets the test gateway, VAT and prices in the console', async () => {
+    await admin.goto('/console/plans');
+    await admin.getByRole('button', { name: 'پلن جدید' }).click();
+    await admin.getByLabel('شناسه (لاتین)').fill(PLAN_KEY);
+    await admin.getByLabel('نام', { exact: true }).fill(PLAN_NAME);
+    await admin.getByLabel('قیمت ماهانه (ریال)').fill('10000000');
+    await admin.getByRole('button', { name: 'ذخیره' }).click();
+    await expect(admin.getByText('پلن ذخیره شد')).toBeVisible();
+
+    await admin.goto('/console/billing');
+    await admin.getByRole('tab', { name: 'درگاه و تنظیمات' }).click();
+    await admin.getByLabel('پرداخت آنلاین فعال باشد').check();
+    await admin.getByLabel('درگاه آزمایشی (بدون پول واقعی؛ فقط برای آزمایش)').check();
+    await admin.getByLabel('مالیات بر ارزش افزوده (درصد)').fill('10');
+    await admin.getByLabel('دوره آزمایشی رایگان (روز)').fill('14');
+    await admin.getByRole('button', { name: 'ذخیره تنظیمات' }).click();
+    await expect(admin.getByText('تنظیمات پرداخت ذخیره شد')).toBeVisible();
+    await expect(admin.getByLabel('نشانی بازگشت (برای ثبت در پنل پذیرندگی بانک)')).toHaveValue('http://127.0.0.1:3200/api/public/payments/sep/callback');
+
+    await admin.getByRole('tab', { name: 'قیمت ماژول‌ها' }).click();
+    await admin.getByLabel('قیمت ماهانه جلسات و مصوبات (ریال)').fill('2000000');
+    await admin.getByRole('row', { name: /جلسات و مصوبات/ }).getByRole('button', { name: 'ذخیره' }).click();
+    await expect(admin.getByText('قیمت جلسات و مصوبات ذخیره شد')).toBeVisible();
+  });
+
+  test('a visitor picks a plan, signs up, pays at the bank and the organisation is active', async ({ browser }) => {
+    app = await (await browser.newContext()).newPage();
+    await app.goto('/pricing');
+    await app.getByRole('listitem').filter({ has: app.getByRole('heading', { name: PLAN_NAME }) }).getByRole('link', { name: 'خرید این پلن' }).click();
+    await expect(app.getByText(`پلن انتخاب‌شده: ${PLAN_NAME}`)).toBeVisible();
+    await app.getByLabel('نام و نام خانوادگی').fill('خریدار فاز ۷');
+    await app.getByLabel('نام سازمان یا شرکت').fill(ORG);
+    await app.getByLabel('ایمیل').fill(`p7-${stamp}@example.test`);
+    await app.getByLabel(/^رمز عبور/).fill('Passw0rd-strong');
+    await app.getByLabel('تکرار رمز عبور').fill('Passw0rd-strong');
+    await app.getByRole('button', { name: 'ساخت فضای کاری' }).click();
+
+    await expect(app).toHaveURL(/\/app\/billing\/checkout\?plan=/);
+    await expect(app.getByText(`اشتراک ماهانه پلن ${PLAN_NAME}`)).toBeVisible();
+    await expect(app.getByText('مالیات بر ارزش افزوده (۱۰٪)')).toBeVisible();
+    await expect(app.getByText('۱٬۱۰۰٬۰۰۰ تومان')).toBeVisible();
+    await app.getByRole('button', { name: 'پرداخت آنلاین' }).click();
+
+    await expect(app.getByRole('heading', { name: 'درگاه پرداخت آزمایشی' })).toBeVisible();
+    await expect(app.getByText('۱۱٬۰۰۰٬۰۰۰ ریال')).toBeVisible();
+    await app.getByRole('button', { name: 'پرداخت موفق' }).click();
+
+    await expect(app).toHaveURL(/\/app\/billing\?payment=/);
+    await expect(app.getByText(/با موفقیت انجام شد و اشتراک سازمان فعال شد/)).toBeVisible();
+    await expect(app.getByText('فعال', { exact: true })).toBeVisible();
+    await app.getByRole('link', { name: /^[۰-۹]+$/ }).first().click();
+    await expect(app.getByRole('heading', { name: /فاکتور فروش شماره/ })).toBeVisible();
+    await expect(app.getByText('پرداخت‌شده')).toBeVisible();
+    await expect(app.getByText(ORG)).toBeVisible();
+  });
+
+  test('the organisation buys a module from its modules page and can use it right away', async () => {
+    await app.goto('/app/settings/modules');
+    const card = app.locator('div').filter({ has: app.getByRole('heading', { name: 'جلسات و مصوبات' }) }).last();
+    await expect(card.getByText('۲۰۰٬۰۰۰ تومان در ماه')).toBeVisible();
+    await card.getByRole('link', { name: 'خرید ماژول' }).click();
+    await expect(app.getByText(/ماژول جلسات و مصوبات/)).toBeVisible();
+    await app.getByRole('button', { name: 'پرداخت آنلاین' }).click();
+    await app.getByRole('button', { name: 'پرداخت موفق' }).click();
+    await expect(app.getByText(/و ماژول فعال شد/)).toBeVisible();
+    await app.goto('/app');
+    await expect(app.getByRole('navigation', { name: 'منوی اصلی' }).getByRole('link', { name: /جلسات/ }).first()).toBeVisible();
+  });
+
+  test('a cancelled payment is reported and nothing changes', async () => {
+    await app.goto(`/app/billing/checkout?plan=${PLAN_KEY}&cycle=monthly`);
+    await app.getByRole('button', { name: 'پرداخت آنلاین' }).click();
+    await app.getByRole('button', { name: 'انصراف از پرداخت' }).click();
+    await expect(app.getByText(/پرداخت انجام نشد: پرداخت توسط کاربر لغو شد/)).toBeVisible();
+  });
+
+  test('the payment shows up in the console ledger', async () => {
+    await admin.goto('/console/billing');
+    const rows = admin.getByRole('row', { name: new RegExp(ORG) });
+    await expect(rows.filter({ hasText: 'موفق' })).toHaveCount(2);
+    await expect(rows.filter({ hasText: 'ناموفق' })).toHaveCount(1);
+  });
+
   test('blog pages pass axe', async ({ page }) => {
-    for (const path of ['/blog', `/blog/${encodeURIComponent(`کنترل-پروژه-${stamp}`)}`, '/download']) {
+    for (const path of ['/blog', `/blog/${encodeURIComponent(`کنترل-پروژه-${stamp}`)}`, '/download', '/pricing']) {
       await page.goto(path);
       await expect(page.locator('h1')).toBeVisible();
       const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
