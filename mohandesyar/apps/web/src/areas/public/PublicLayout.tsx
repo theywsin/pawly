@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
-import { Menu, Moon, Sun, X } from 'lucide-react';
+import { BookOpen, CreditCard, Home, LayoutGrid, LogIn, Menu, Moon, Sun, X } from 'lucide-react';
+import { BottomNav, BOTTOM_NAV_SPACE } from '../../lib/BottomNav.js';
 import { cn, Ltr } from '@mohandesyar/ui';
 import { jalaliParts, toPersianDigits } from '@mohandesyar/persian';
 import { useUi } from '../../lib/ui-store.js';
@@ -42,7 +43,7 @@ export function PublicLayout() {
   const year = toPersianDigits(jalaliParts(Date.now()).year);
   const link = ({ isActive }: { isActive: boolean }) => cn('rounded-md px-3 py-2 text-[0.9375rem] hover:bg-surface-2', isActive && 'font-semibold text-primary');
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className={cn('flex min-h-dvh flex-col', BOTTOM_NAV_SPACE)}>
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:start-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-2">
         رفتن به محتوای اصلی
       </a>
@@ -137,6 +138,16 @@ export function PublicLayout() {
           </a>
         </p>
       </footer>
+      <BottomNav
+        label="منوی پایین"
+        items={[
+          { to: '/', end: true, label: 'خانه', icon: Home },
+          { to: '/modules', label: 'ماژول‌ها', icon: LayoutGrid },
+          { to: '/pricing', label: 'قیمت‌ها', icon: CreditCard },
+          { to: '/blog', label: 'وبلاگ', icon: BookOpen },
+          { to: '/auth/login', label: 'ورود', icon: LogIn },
+        ]}
+      />
     </div>
   );
 }

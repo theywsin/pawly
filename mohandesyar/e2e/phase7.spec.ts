@@ -221,6 +221,34 @@ test.describe.serial('phase 7 — blog, site content, purchase, tickets', () => 
     await expect(admin.getByRole('link', { name: `خطا در گزارش ${stamp}` })).toBeVisible();
   });
 
+  test('phones get a bottom navigation bar on the site and in the app; desktops do not', async ({ browser }) => {
+    const phone = await (await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: await app.context().storageState() })).newPage();
+    await phone.goto('/');
+    const bar = phone.getByRole('navigation', { name: 'منوی پایین' });
+    await expect(bar).toBeVisible();
+    await bar.getByRole('link', { name: 'وبلاگ' }).click();
+    await expect(phone).toHaveURL(/\/blog$/);
+    await expect(bar.getByRole('link', { name: 'وبلاگ' })).toHaveAttribute('aria-current', 'page');
+    // The bar never covers the end of the page.
+    await phone.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const footerBottom = await phone.getByRole('contentinfo').evaluate((el) => el.getBoundingClientRect().bottom);
+    const barTop = await bar.evaluate((el) => el.getBoundingClientRect().top);
+    expect(footerBottom).toBeLessThanOrEqual(barTop + 1);
+    expect(await phone.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    await phone.goto('/app/tasks');
+    const appBar = phone.getByRole('navigation', { name: 'منوی پایین' });
+    await appBar.getByRole('link', { name: 'اعلان‌ها' }).click();
+    await expect(phone).toHaveURL(/\/app\/notifications$/);
+    await appBar.getByRole('button', { name: 'منو' }).click();
+    await expect(phone.getByRole('dialog', { name: 'منو' })).toBeVisible();
+    const r = await new AxeBuilder({ page: phone }).withTags(['wcag2a', 'wcag2aa']).analyze();
+    expect(r.violations.map((v) => v.id)).toEqual([]);
+
+    await app.goto('/app/tasks');
+    await expect(app.getByRole('navigation', { name: 'منوی پایین' })).toBeHidden();
+  });
+
   test('blog pages pass axe', async ({ page }) => {
     for (const path of ['/blog', `/blog/${encodeURIComponent(`کنترل-پروژه-${stamp}`)}`, '/download', '/pricing']) {
       await page.goto(path);

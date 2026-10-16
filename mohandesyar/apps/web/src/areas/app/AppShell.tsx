@@ -6,6 +6,7 @@ import { Badge, cn, Toaster } from '@mohandesyar/ui';
 import { appApi, getToken, setToken } from '../../lib/api.js';
 import { useAppSession } from '../../lib/session.js';
 import { MenuIcon } from '../../lib/icons.js';
+import { BottomNav, BOTTOM_NAV_SPACE } from '../../lib/BottomNav.js';
 import { useUi } from '../../lib/ui-store.js';
 import { BrandMark } from '../../brand.js';
 
@@ -224,10 +225,20 @@ export function AppShell() {
             )}
           </div>
         )}
-        <main id="main" className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:px-6">
+        <main id="main" className={cn('mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:px-6', BOTTOM_NAV_SPACE)}>
           <Outlet />
         </main>
       </div>
+      <BottomNav
+        label="منوی پایین"
+        items={[
+          { to: '/app', end: true, label: 'داشبورد', icon: LayoutDashboard },
+          { to: '/app/tasks', label: 'وظایف', icon: CheckSquare },
+          { to: '/app/approvals', label: 'کارتابل', icon: ClipboardCheck },
+          { to: '/app/notifications', label: 'اعلان‌ها', icon: Bell, dot: !!unread.data?.unread },
+          { label: 'منو', icon: Menu, onClick: () => setSidebar(true) },
+        ]}
+      />
       <Toaster />
     </div>
   );
