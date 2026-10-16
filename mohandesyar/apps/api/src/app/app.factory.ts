@@ -136,6 +136,7 @@ function wireEventConsumers(s: Services, loaded: LoadedModule[]): void {
       });
     }
   }
+  consumers.push({ id: 'core:webhooks', moduleId: null, type: '*', handle: (event) => s.integrations.onEvent(event) });
   s.events.setConsumers(consumers);
 }
 

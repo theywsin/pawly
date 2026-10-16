@@ -16,6 +16,7 @@ export interface EventConsumer {
   /** Stable consumer id, e.g. "hello-module:hello-module.note.created" or "core:notifications". */
   id: string;
   moduleId: string | null;
+  /** Event type, or '*' for every event (core consumers such as webhooks). */
   type: string;
   handle(event: DomainEvent): Promise<void>;
 }
@@ -63,7 +64,7 @@ export class EventBus {
         payload: row.payload,
       };
       let error: string | null = null;
-      for (const c of this.consumers.filter((x) => x.type === event.type)) {
+      for (const c of this.consumers.filter((x) => x.type === event.type || x.type === '*')) {
         try {
           const done = await this.db.tx({ tenantId: event.tenantId }, (tx) =>
             tx.execute(sql`SELECT status FROM core_event_consumptions WHERE event_id = ${event.id} AND consumer = ${c.id}`),

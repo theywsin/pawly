@@ -13,6 +13,7 @@ import { Audit } from './settings/Audit.js';
 import { ApprovalSettings } from './settings/Approvals.js';
 import { ImportsPage } from './settings/Imports.js';
 import { ReportsPage } from './Reports.js';
+import { IntegrationsPage } from './settings/Integrations.js';
 import { Calendar } from './settings/Calendar.js';
 import { Onboarding } from './Onboarding.js';
 import { ModuleOutlet } from '../../module-host/ModuleOutlet.js';
@@ -36,6 +37,7 @@ export const element = (
         <Route path="settings/calendar" element={<Calendar />} />
         <Route path="settings/approvals" element={<ApprovalSettings />} />
         <Route path="settings/imports" element={<ImportsPage />} />
+        <Route path="settings/integrations" element={<IntegrationsPage />} />
         <Route path="*" element={<ModuleOutlet />} />
       </Route>
     </Routes>

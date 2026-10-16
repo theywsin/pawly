@@ -14,6 +14,7 @@ import { directoryOf, workCalendarOf } from '../../modules/context.js';
 import { uuidv7 } from '../../../infra/ids.js';
 import { runImport } from '../../imports/import.service.js';
 import { paramsInput, savedInput } from '../../reports/report.service.js';
+import { apiKeyInput, webhookInput } from '../../integrations/integration.service.js';
 
 /** Permissions defined by the core itself (modules register theirs from their manifests). */
 export const CORE_PERMISSIONS = [
@@ -25,6 +26,7 @@ export const CORE_PERMISSIONS = [
   'core.task.view', 'core.task.create', 'core.task.update',
   'core.file.upload', 'core.file.download',
   'core.workflow.manage_definitions', 'core.workflow.start',
+  'core.integration.manage',
 ] as const;
 
 const scope = (id: Identity) => ({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId });
@@ -421,6 +423,84 @@ export class CoreController {
   @Get('reports/inbox/:id/download')
   reportDownload(@CurrentIdentity() id: Identity, @Param('id') runId: string) {
     return this.s.reports.download(id, parse(z.uuid(), runId));
+  }
+
+  // ---------------------------------------------------------------- integrations: API keys and webhooks
+
+  @Get('integrations/api-keys')
+  @RequirePermission('core.integration.manage')
+  apiKeys(@CurrentIdentity() id: Identity) {
+    return this.s.integrations.listKeys(id);
+  }
+
+  /** The full key is returned once; only its hash is stored. */
+  @Post('integrations/api-keys')
+  @RequirePermission('core.integration.manage')
+  createApiKey(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    return this.s.integrations.createKey(id, parse(apiKeyInput, body));
+  }
+
+  @Delete('integrations/api-keys/:id')
+  @RequirePermission('core.integration.manage')
+  async revokeApiKey(@CurrentIdentity() id: Identity, @Param('id') keyId: string) {
+    await this.s.integrations.revokeKey(id, parse(z.uuid(), keyId));
+    return { ok: true };
+  }
+
+  /** Permission keys the current user holds (what a new API key may be scoped to). */
+  @Get('integrations/scopes')
+  @RequirePermission('core.integration.manage')
+  async apiScopes(@CurrentIdentity() id: Identity) {
+    const active = new Set((await this.s.registry.effectiveFor(id.tenantId)).map((m) => m.id));
+    const catalogue = await this.s.db.app.execute(sql`SELECT key, module_id, label_fa FROM core_permissions ORDER BY module_id, key`);
+    return (catalogue.rows as { key: string; module_id: string; label_fa: string }[]).filter((p) => active.has(p.module_id) && id.permissions.can(p.key));
+  }
+
+  @Get('integrations/events')
+  @RequirePermission('core.integration.manage')
+  webhookEvents(@CurrentIdentity() id: Identity) {
+    return this.s.integrations.eventTypes(id.tenantId);
+  }
+
+  @Get('integrations/webhooks')
+  @RequirePermission('core.integration.manage')
+  webhooks(@CurrentIdentity() id: Identity) {
+    return this.s.integrations.listWebhooks(id);
+  }
+
+  /** The signing secret is returned once. */
+  @Post('integrations/webhooks')
+  @RequirePermission('core.integration.manage')
+  createWebhook(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    return this.s.integrations.createWebhook(id, parse(webhookInput, body));
+  }
+
+  @Put('integrations/webhooks/:id/active')
+  @RequirePermission('core.integration.manage')
+  async webhookActive(@CurrentIdentity() id: Identity, @Param('id') hookId: string, @Body() body: unknown) {
+    await this.s.integrations.setWebhookActive(id, parse(z.uuid(), hookId), parse(z.object({ active: z.boolean() }), body).active);
+    return { ok: true };
+  }
+
+  @Delete('integrations/webhooks/:id')
+  @RequirePermission('core.integration.manage')
+  async removeWebhook(@CurrentIdentity() id: Identity, @Param('id') hookId: string) {
+    await this.s.integrations.removeWebhook(id, parse(z.uuid(), hookId));
+    return { ok: true };
+  }
+
+  @Get('integrations/webhooks/:id/deliveries')
+  @RequirePermission('core.integration.manage')
+  webhookDeliveries(@CurrentIdentity() id: Identity, @Param('id') hookId: string) {
+    return this.s.integrations.deliveries(id, parse(z.uuid(), hookId));
+  }
+
+  @Post('integrations/webhooks/:id/ping')
+  @HttpCode(200)
+  @RequirePermission('core.integration.manage')
+  async pingWebhook(@CurrentIdentity() id: Identity, @Param('id') hookId: string) {
+    await this.s.integrations.ping(id, parse(z.uuid(), hookId));
+    return { ok: true };
   }
 
   // ---------------------------------------------------------------- notifications (+ real-time stream)

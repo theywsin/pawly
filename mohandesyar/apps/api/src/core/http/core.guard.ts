@@ -46,16 +46,25 @@ export class CoreGuard implements CanActivate {
     const consoleRoles = this.reflector.getAllAndOverride<PlatformRole[] | undefined>(META_CONSOLE, targets);
     if (consoleRoles) return this.console(req, token, consoleRoles);
 
-    const claims = await this.s.jwt.verify(token, 'app').catch(() => null);
-    if (!claims?.tid || !(await this.s.auth.isSessionActive(claims.sid))) throw unauthorized();
-    const tenant = await this.s.tenancy.getTenant(claims.tid);
-    if (!tenant || tenant.status === 'closed') throw forbidden('TENANT_CLOSED', 'حساب این سازمان بسته شده است');
-    if (tenant.status === 'pending') throw forbidden('TENANT_PENDING', 'درخواست ثبت‌نام سازمان شما در انتظار تأیید مدیر سامانه است');
-
-    const identity = await this.identity(claims.sub, claims.tid, claims.sid, claims.amr, req.headers['x-company-id']);
+    const moduleId = this.reflector.getAllAndOverride<string | undefined>(META_MODULE, targets);
+    let identity: Identity;
+    let tenant: Awaited<ReturnType<Services['tenancy']['getTenant']>>;
+    if (token.startsWith('mk_')) {
+      // API keys reach module REST APIs only — never core administration (members, roles, keys, webhooks).
+      if (!moduleId) throw forbidden('API_KEY_SCOPE', 'کلید API فقط برای APIهای ماژول‌ها معتبر است');
+      identity = await this.s.integrations.authenticate(token);
+      tenant = await this.s.tenancy.getTenant(identity.tenantId);
+      if (!tenant || tenant.status === 'closed' || tenant.status === 'pending') throw forbidden('TENANT_CLOSED', 'حساب این سازمان فعال نیست');
+    } else {
+      const claims = await this.s.jwt.verify(token, 'app').catch(() => null);
+      if (!claims?.tid || !(await this.s.auth.isSessionActive(claims.sid))) throw unauthorized();
+      tenant = await this.s.tenancy.getTenant(claims.tid);
+      if (!tenant || tenant.status === 'closed') throw forbidden('TENANT_CLOSED', 'حساب این سازمان بسته شده است');
+      if (tenant.status === 'pending') throw forbidden('TENANT_PENDING', 'درخواست ثبت‌نام سازمان شما در انتظار تأیید مدیر سامانه است');
+      identity = await this.identity(claims.sub, claims.tid, claims.sid, claims.amr, req.headers['x-company-id']);
+    }
     req[IDENTITY_KEY] = identity;
 
-    const moduleId = this.reflector.getAllAndOverride<string | undefined>(META_MODULE, targets);
     const perm = this.reflector.getAllAndOverride<PermissionRequirement | undefined>(META_PERMISSION, targets);
     const allowReadOnly = this.reflector.getAllAndOverride<boolean>(META_ALLOW_READ_ONLY, targets);
 
@@ -74,7 +83,7 @@ export class CoreGuard implements CanActivate {
       return true;
     }
 
-    if (tenant.status === 'suspended' && MUTATING.has(req.method) && !allowReadOnly) {
+    if (tenant!.status === 'suspended' && MUTATING.has(req.method) && !allowReadOnly) {
       throw forbidden('TENANT_SUSPENDED', 'حساب سازمان تعلیق شده است؛ فقط مشاهده ممکن است');
     }
     if (perm && !identity.permissions.can(perm.key, perm.scope)) throw forbidden();

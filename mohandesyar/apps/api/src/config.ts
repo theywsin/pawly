@@ -37,6 +37,8 @@ const schema = z.object({
    * such as `loopback,uniquelocal` or `10.0.0.5`; `true` trusts everyone (only behind a proxy that overwrites it), `false` nobody.
    */
   TRUST_PROXY: z.string().default('loopback,uniquelocal'),
+  /** Allow webhook URLs that resolve to private/loopback addresses (development and tests only). */
+  WEBHOOK_ALLOW_PRIVATE: envBool(false),
 });
 
 export type Config = z.infer<typeof schema>;

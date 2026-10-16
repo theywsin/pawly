@@ -19,6 +19,7 @@ import { WorkflowService } from '../core/workflow/workflow.service.js';
 import { FileService } from '../core/files/file.service.js';
 import { ModuleScheduler } from '../core/modules/scheduler.js';
 import { ReportService } from '../core/reports/report.service.js';
+import { IntegrationService } from '../core/integrations/integration.service.js';
 import { Mailer } from '../core/notifications/mailer.js';
 import { logger } from '../infra/logger.js';
 import { SiteService } from '../platform/site.service.js';
@@ -57,6 +58,7 @@ export class Services {
   readonly scheduler: ModuleScheduler;
   readonly mailer: Mailer;
   readonly reports: ReportService;
+  readonly integrations: IntegrationService;
 
   constructor(
     readonly config: Config,
@@ -87,6 +89,11 @@ export class Services {
     this.scheduler = new ModuleScheduler(this.db, this.redis, this.registry, this.contexts, (err, ctx) => logger.error({ err, ...ctx }, 'scheduled job failed'));
     this.reports = new ReportService(this);
     this.scheduler.extraJobs.push(() => this.reports.tick());
+    this.integrations = new IntegrationService(this, {
+      encryptionKey: config.APP_ENCRYPTION_KEY,
+      allowPrivate: config.WEBHOOK_ALLOW_PRIVATE,
+      onError: (err, ctx) => logger.warn({ err, ...ctx }, 'webhook delivery failed'),
+    });
     this.site = new SiteService(this.db, this.redis, this.audit, config.JWT_SECRET);
     this.lifecycle = new ModuleLifecycleService(this.db, this.registry, this.rbac, this.audit, this.contexts, {
       storeDir: config.MODULE_STORE_DIR,
@@ -110,6 +117,7 @@ export class Services {
 
   async close(): Promise<void> {
     await this.events.stop();
+    await this.integrations.stop();
     this.sub.disconnect();
     this.redis.disconnect();
     await this.db.close();

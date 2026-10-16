@@ -26,6 +26,7 @@ async function serveWorker(): Promise<void> {
   services.events.start();
   services.scheduler.start();
   services.mailer.start();
+  services.integrations.start();
   await app.listen(config.PORT, config.HOST);
   logger.info({ pid: process.pid, modules: [...services.registry.loaded.keys()], loadErrors: Object.fromEntries(services.registry.loadErrors) }, 'worker ready');
   process.send?.({ type: 'ready' });
