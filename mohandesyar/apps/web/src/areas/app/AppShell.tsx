@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays, FileSpreadsheet, FileBarChart, Plug, CreditCard } from 'lucide-react';
+import { Bell, CheckSquare, ClipboardCheck, LayoutDashboard, LogOut, Menu, Moon, Puzzle, ScrollText, Search, Sun, User, Users, WifiOff, X, CalendarDays, FileSpreadsheet, FileBarChart, Plug, CreditCard, LifeBuoy } from 'lucide-react';
 import { Badge, cn, Toaster } from '@mohandesyar/ui';
 import { appApi, getToken, setToken } from '../../lib/api.js';
 import { useAppSession } from '../../lib/session.js';
@@ -95,6 +95,9 @@ export function AppShell() {
       </NavLink>
       <NavLink to="/app/reports" className={link}>
         <FileBarChart className="size-5" /> گزارش‌ها
+      </NavLink>
+      <NavLink to="/app/support" className={link}>
+        <LifeBuoy className="size-5" /> پشتیبانی
       </NavLink>
       {moduleItems.length > 0 && <p className="mt-4 px-3 text-xs font-medium text-muted">ماژول‌ها</p>}
       {moduleItems.map((i) => (

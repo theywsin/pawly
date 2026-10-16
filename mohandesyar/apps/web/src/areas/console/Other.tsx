@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, DateText, Field, Input, Ltr, Num, PageHeader, PageState, Select, Table, Td, Textarea, Th, toast } from '@mohandesyar/ui';
 import { consoleApi } from '../../lib/api.js';
@@ -158,7 +159,9 @@ export function Tenants() {
             {q.data?.map((t) => (
               <tr key={t.id}>
                 <Td>
-                  {t.name}
+                  <Link to={`/console/tenants/${t.id}`} className="font-medium text-primary hover:underline">
+                    {t.name}
+                  </Link>
                   <span className="block text-xs text-muted">
                     <DateText value={t.created_at} />
                   </span>

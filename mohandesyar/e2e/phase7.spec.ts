@@ -184,6 +184,43 @@ test.describe.serial('phase 7 — blog, site content, purchase, tickets', () => 
     await expect(rows.filter({ has: admin.getByText('ناموفق', { exact: true }) })).toHaveCount(1);
   });
 
+  test('a member opens a ticket with an attachment; support answers from the console; the member sees it', async () => {
+    await app.goto('/app/support');
+    await app.getByRole('link', { name: 'تیکت جدید' }).click();
+    await app.getByLabel('موضوع').fill(`خطا در گزارش ${stamp}`);
+    await app.getByLabel('اولویت').selectOption({ label: 'فوری' });
+    await app.getByLabel('شرح درخواست').fill('گزارش ماهانه باز نمی‌شود.');
+    await app.getByLabel('افزودن پیوست').setInputFiles({ name: 'screenshot.png', mimeType: 'image/png', buffer: PNG });
+    await expect(app.getByRole('list', { name: 'پیوست‌ها' }).getByText('screenshot.png')).toBeVisible();
+    await app.getByRole('button', { name: 'ثبت تیکت' }).click();
+    await expect(app.getByRole('heading', { name: `خطا در گزارش ${stamp}` })).toBeVisible();
+    await expect(app.getByText('در انتظار پاسخ')).toBeVisible();
+
+    await admin.goto('/console/support');
+    await admin.getByRole('link', { name: `خطا در گزارش ${stamp}` }).click();
+    await expect(admin.getByRole('button', { name: /screenshot\.png/ })).toBeVisible();
+    await admin.getByLabel('پاسخ', { exact: true }).fill('برطرف شد؛ صفحه را تازه کنید.');
+    await admin.getByRole('button', { name: 'ارسال پاسخ' }).click();
+    await expect(admin.getByText('پاسخ ارسال شد')).toBeVisible();
+
+    await app.reload();
+    await expect(app.getByText('برطرف شد؛ صفحه را تازه کنید.')).toBeVisible();
+    await expect(app.getByText('پاسخ داده شد')).toBeVisible();
+  });
+
+  test('the console customer page shows the organisation, its people, payments and tickets', async () => {
+    await admin.goto('/console/tenants');
+    await admin.getByRole('link', { name: ORG }).click();
+    await expect(admin.getByRole('heading', { level: 1, name: ORG })).toBeVisible();
+    await expect(admin.getByText(`${PLAN_NAME} — فعال`)).toBeVisible();
+    await admin.getByRole('tab', { name: /کاربران/ }).click();
+    await expect(admin.getByRole('cell', { name: `p7-${stamp}@example.test` })).toBeVisible();
+    await admin.getByRole('tab', { name: /فاکتور و پرداخت/ }).click();
+    await expect(admin.getByText('پرداخت‌شده').first()).toBeVisible();
+    await admin.getByRole('tab', { name: 'تیکت‌ها' }).click();
+    await expect(admin.getByRole('link', { name: `خطا در گزارش ${stamp}` })).toBeVisible();
+  });
+
   test('blog pages pass axe', async ({ page }) => {
     for (const path of ['/blog', `/blog/${encodeURIComponent(`کنترل-پروژه-${stamp}`)}`, '/download', '/pricing']) {
       await page.goto(path);

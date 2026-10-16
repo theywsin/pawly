@@ -10,7 +10,7 @@ import type { AuditService } from '../audit/audit.service.js';
 import { badRequest, notFound } from '../http/errors.js';
 
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
-const BLOCKED_EXT = /\.(exe|bat|cmd|com|scr|msi|ps1|vbs|js|jar|sh|html?|svg)$/i;
+export const BLOCKED_EXT = /\.(exe|bat|cmd|com|scr|msi|ps1|vbs|js|jar|sh|html?|svg)$/i;
 
 interface Scope {
   tenantId: string;

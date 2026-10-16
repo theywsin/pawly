@@ -12,6 +12,8 @@ import { Plans } from './Plans.js';
 import { Content } from './Content.js';
 import { BlogCategories, BlogEditor, BlogPosts } from './Blog.js';
 import { ConsoleBilling } from './Billing.js';
+import { ConsoleSupport, ConsoleTicket } from './Support.js';
+import { CustomerPage } from './Customer.js';
 
 /** Platform console area (lazy chunk). */
 export const element = (
@@ -30,6 +32,9 @@ export const element = (
       <Route path="modules/:id" element={<ModuleDetail />} />
       <Route path="keys" element={<Keys />} />
       <Route path="tenants" element={<Tenants />} />
+      <Route path="tenants/:id" element={<CustomerPage />} />
+      <Route path="support" element={<ConsoleSupport />} />
+      <Route path="support/:id" element={<ConsoleTicket />} />
       <Route path="leads" element={<Leads />} />
       <Route path="plans" element={<Plans />} />
       <Route path="content" element={<Content />} />

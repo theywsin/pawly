@@ -28,6 +28,7 @@ export const CORE_PERMISSIONS = [
   'core.workflow.manage_definitions', 'core.workflow.start',
   'core.integration.manage',
   'core.billing.manage',
+  'core.support.view_all',
 ] as const;
 
 const scope = (id: Identity) => ({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId });

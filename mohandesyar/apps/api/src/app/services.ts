@@ -26,6 +26,7 @@ import { SiteService } from '../platform/site.service.js';
 import { MediaService } from '../platform/media.service.js';
 import { BlogService } from '../platform/blog.service.js';
 import { BillingService } from '../platform/billing.service.js';
+import { SupportService } from '../platform/support.service.js';
 
 export const RELOAD_CHANNEL = 'mohandesyar:reload';
 export const MODULE_STATE_CHANNEL = 'mohandesyar:module-state';
@@ -61,6 +62,7 @@ export class Services {
   readonly media: MediaService;
   readonly blog: BlogService;
   readonly billing: BillingService;
+  readonly support: SupportService;
   readonly scheduler: ModuleScheduler;
   readonly mailer: Mailer;
   readonly reports: ReportService;
@@ -116,6 +118,7 @@ export class Services {
       dryLoad: opts.dryLoad,
     });
     this.billing = new BillingService(this);
+    this.support = new SupportService(this);
     this.scheduler.extraJobs.push(async () => (await this.billing.reconcile(), 0));
     void this.sub.subscribe(MODULE_STATE_CHANNEL);
     this.sub.on('message', (channel, msg) => {

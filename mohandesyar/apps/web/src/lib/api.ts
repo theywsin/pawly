@@ -91,3 +91,20 @@ export async function request<T = unknown>(realm: Realm, path: string, init: Req
 
 export const appApi = <T = unknown>(path: string, init?: RequestInit & { raw?: BodyInit }) => request<T>('app', path, init);
 export const consoleApi = <T = unknown>(path: string, init?: RequestInit & { raw?: BodyInit }) => request<T>('console', path, init);
+
+/** Downloads a file from an authenticated endpoint (Bearer token) and saves it under `name`. */
+export async function downloadFile(realm: Realm, path: string, name: string): Promise<void> {
+  const get = () => fetch(path, { headers: { authorization: `Bearer ${tokens[realm] ?? ''}`, 'x-requested-with': 'mohandesyar' }, credentials: 'same-origin' });
+  let res = await get();
+  if (res.status === 401 && (await refresh(realm))) res = await get();
+  if (!res.ok) throw toError(res.status, await parse(res));
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

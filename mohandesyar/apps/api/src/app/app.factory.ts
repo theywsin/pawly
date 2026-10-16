@@ -18,6 +18,7 @@ import { ConsoleController } from '../core/http/controllers/console.controller.j
 import { PublicController } from '../platform/public.controller.js';
 import { ConsoleSiteController } from '../platform/console-site.controller.js';
 import { BillingController, ConsoleBillingController, PaymentCallbackController } from '../platform/billing.controller.js';
+import { ConsoleCustomerController, ConsoleSupportController, SupportController } from '../platform/support.controller.js';
 import { META_MODULE } from '../core/http/context.js';
 import type { LoadedModule } from '../core/modules/loader.js';
 import { loadModuleFromStore } from '../core/modules/loader.js';
@@ -244,7 +245,7 @@ export async function createApp(s: Services, opts: CreateAppOptions = {}): Promi
 
   @Module({
     imports: [...moduleClasses.map((x) => x.cls), RouterModule.register(routes)],
-    controllers: [HealthController, AuthController, ConsoleAuthController, CoreController, ConsoleController, PublicController, ConsoleSiteController, BillingController, ConsoleBillingController, PaymentCallbackController],
+    controllers: [HealthController, AuthController, ConsoleAuthController, CoreController, ConsoleController, PublicController, ConsoleSiteController, BillingController, ConsoleBillingController, PaymentCallbackController, SupportController, ConsoleSupportController, ConsoleCustomerController],
     providers: [
       { provide: Services, useValue: s },
       { provide: APP_GUARD, useClass: CoreGuard },
