@@ -6,9 +6,14 @@ import { Alert, Badge, Button, Card, CardHeader, Checkbox, ConfirmDialog, Dialog
 import { appApi } from '../../../lib/api.js';
 import { errorMessage } from '../../../lib/errors.js';
 import { useAppSession } from '../../../lib/session.js';
-import type { Member } from './Members.js';
 
 type Scope = 'company' | 'unit' | 'project' | 'own';
+export interface MemberRow {
+  id: string;
+  full_name: string;
+  status: string;
+  roles: { role: string; name: string; companyId: string | null }[];
+}
 interface Grant {
   permission: string;
   scope: Scope;
@@ -209,7 +214,7 @@ export function RolesPage() {
 }
 
 /** A member's roles (each for all companies or one) and whether the account is active. */
-export function MemberRolesDialog({ member, onClose }: { member: Member; onClose(): void }) {
+export function MemberRolesDialog({ member, onClose }: { member: MemberRow; onClose(): void }) {
   const { me } = useAppSession();
   const qc = useQueryClient();
   const roles = useRoles();
