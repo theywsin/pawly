@@ -9,7 +9,7 @@ rm -rf "$E2E" && mkdir -p "$E2E"
 psql "$ADMIN_URL" -q -c "DROP DATABASE IF EXISTS mohandesyar_e2e WITH (FORCE)" >/dev/null
 psql "$ADMIN_URL" -q -v owner_pw=ownerpw -v app_pw=apppw -v db_name=mohandesyar_e2e -f "$ROOT/infra/db/init-roles.sql" >/dev/null
 redis-cli -p 63799 -n 3 flushdb >/dev/null
-PREINSTALL=contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding node "$ROOT/e2e/prepare-packages.mjs" "$E2E"
+PREINSTALL=contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding,taskboard,accounting node "$ROOT/e2e/prepare-packages.mjs" "$E2E"
 cat > "$E2E/env" <<ENV
 NODE_ENV=production
 PORT=3200
@@ -44,4 +44,5 @@ ADMIN_PASSWORD='Hr-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin
 ADMIN_PASSWORD='Fin-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email fin@platform.test --name 'مدیر فاز ۵' >/dev/null
 ADMIN_PASSWORD='Ops6-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email p6@platform.test --name 'مدیر فاز ۶' >/dev/null
 ADMIN_PASSWORD='Ops7-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email p7@platform.test --name 'مدیر فاز ۷' >/dev/null
+ADMIN_PASSWORD='Ops9-Passw0rd-e2e' node "$ROOT/apps/api/dist/main.js" create-admin --email p9@platform.test --name 'مدیر فاز ۹' >/dev/null
 exec node "$ROOT/apps/api/dist/main.js" serve

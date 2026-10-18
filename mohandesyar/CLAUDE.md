@@ -5,7 +5,7 @@
 ## وضعیت پروژه
 
 - فاز ۰ تا ۶ تأیید شدند. **فاز ۷ (وبلاگ، خرید آنلاین با درگاه سپ، قیمت ماژول، تیکت، پرونده مشتری، دانلود اپلیکیشن، مشتریان ما، منوی پایین موبایل، اعتبار دات‌وب) تکمیل‌شده، منتظر بازبینی و تأیید.**
-- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md)، [`docs/phase-6-report.md`](docs/phase-6-report.md)، [`docs/phase-7-report.md`](docs/phase-7-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding,taskboard}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md)، [`docs/phase-6-report.md`](docs/phase-6-report.md)، [`docs/phase-7-report.md`](docs/phase-7-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding,taskboard,accounting}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری
@@ -120,4 +120,5 @@ pnpm module:sign <pkg> --key <private.pem> | pnpm module:verify <pkg> --pub <pub
 - تصاویر سایت فقط با `MediaService` (PNG/JPEG/WebP/GIF، نوع از محتوا؛ SVG ممنوع) و نشانی `/api/public/media/<id>`؛ متن وبلاگ بلاک JSON است و هرگز HTML رندر نمی‌شود.
 - پرداخت: فقط verify سمت سرور (با مقایسه مبلغ) چیزی را فعال می‌کند؛ claim اتمی `pending→verifying` جلوی تکرار callback را می‌گیرد. درگاه آزمایشی فقط با `PAYMENT_SANDBOX=true` (هرگز روی سرور واقعی).
 - سرویس‌های پلتفرم به‌جای `Services` یک interface باریک `*Deps` می‌گیرند (بدون import چرخه‌ای).
+- حسابداری: سند قطعی با trigger پایگاه داده تغییرناپذیر است (اصلاح فقط با سند برگشت)؛ اسناد خودکار با `bookVoucher` در `modules/accounting/backend/src/books.ts` و idempotent با (`source`, `source_ref`)؛ گزارش‌ها اسناد اختتامیه داخل بازه را کنار می‌گذارند (`counted`).
 - داده شخصی (رزومه، پرونده، حقوق): مشاهده و دانلود در Audit ثبت شود؛ فیلد سن/جنسیت/قومیت/مذهب/سلامت در مدل داده نباشد؛ هیچ انتقال یا پرداخت خودکار.
