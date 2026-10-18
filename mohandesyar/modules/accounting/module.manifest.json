@@ -1,0 +1,65 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "accounting",
+  "name": { "fa": "حسابداری", "en": "Accounting" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "حسابداری دوطرفه کامل: سرفصل حساب‌های استاندارد (گروه، کل، معین) و تفصیلی، سال مالی، سند حسابداری با پیش‌نویس، قطعی و برگشت، دفاتر روزنامه و کل و معین و تفصیلی، تراز آزمایشی، ترازنامه و سود و زیان، خزانه‌داری (صندوق، بانک، دریافت و پرداخت، انتقال) و چک دریافتی و پرداختی با گردش کامل، فاکتور خرید و فروش و برگشتی با مالیات بر ارزش افزوده، انبار و بهای تمام‌شده به روش میانگین متحرک، دارایی ثابت و استهلاک ماهانه، بستن حساب‌ها و سند افتتاحیه، گزارش فصلی ارزش افزوده و سند پیش‌نویس خودکار از ماژول‌های مالی و تدارکات.",
+    "en": "Full double-entry accounting: chart of accounts, vouchers, ledgers and statements, treasury and cheques, invoices with VAT, inventory at moving average cost, fixed assets, year-end closing and seasonal VAT report."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "permissions": [
+    { "key": "accounting.view", "fa": "مشاهده اسناد، دفاتر، گزارش‌ها و صورت‌های مالی", "scopes": ["company"] },
+    { "key": "accounting.setup", "fa": "سرفصل حساب‌ها، سال مالی، صندوق و حساب‌های بانکی", "scopes": ["company"] },
+    { "key": "accounting.party", "fa": "تعریف طرف حساب (تفصیلی) و کالا و خدمات", "scopes": ["company"] },
+    { "key": "accounting.voucher", "fa": "ثبت و ویرایش سند پیش‌نویس", "scopes": ["company"] },
+    { "key": "accounting.post", "fa": "قطعی کردن و برگشت سند، بستن سال مالی", "scopes": ["company"] },
+    { "key": "accounting.treasury", "fa": "دریافت و پرداخت، انتقال وجه و گردش چک", "scopes": ["company"] },
+    { "key": "accounting.invoice", "fa": "صدور فاکتور خرید و فروش (پیش‌نویس)", "scopes": ["company"] },
+    { "key": "accounting.invoice.approve", "fa": "تأیید و ابطال فاکتور", "scopes": ["company"] },
+    { "key": "accounting.inventory", "fa": "انبار، موجودی اول دوره و کسری و اضافات", "scopes": ["company"] },
+    { "key": "accounting.assets", "fa": "دارایی ثابت، استهلاک و واگذاری", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "accountant", "name": { "fa": "حسابدار" }, "grants": ["accounting.view", "accounting.party", "accounting.voucher", "accounting.treasury", "accounting.invoice", "accounting.inventory", "accounting.assets"] },
+    { "key": "chief_accountant", "name": { "fa": "سرپرست حسابداری" }, "grants": ["accounting.view", "accounting.setup", "accounting.party", "accounting.voucher", "accounting.post", "accounting.treasury", "accounting.invoice", "accounting.invoice.approve", "accounting.inventory", "accounting.assets"] }
+  ],
+  "menu": [
+    { "key": "accounting", "label": { "fa": "حسابداری" }, "icon": "calculator", "path": "/app/accounting", "permission": "accounting.view", "order": 41 }
+  ],
+  "routes": [{ "path": "/app/accounting/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "accounting.overview", "title": { "fa": "خلاصه حسابداری" }, "entry": "frontend/index.js", "export": "OverviewWidget", "permission": "accounting.view", "sizes": ["md"] },
+    { "key": "accounting.cheques", "title": { "fa": "چک‌های سررسید هفت روز آینده" }, "entry": "frontend/index.js", "export": "ChequesWidget", "permission": "accounting.view", "sizes": ["md"] }
+  ],
+  "events": {
+    "consumes": [
+      { "type": "procurement.invoice.approved", "version": 1 },
+      { "type": "finance.payment.executed", "version": 1 }
+    ]
+  },
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "vatRate": { "type": "number", "title": "نرخ مالیات بر ارزش افزوده پیش‌فرض (درصد)", "default": 10, "minimum": 0, "maximum": 100 },
+        "separateDuties": { "type": "boolean", "title": "تفکیک وظایف: ثبت‌کننده سند یا فاکتور نتواند خودش آن را قطعی/تأیید کند", "default": true },
+        "allowNegativeStock": { "type": "boolean", "title": "اجازه موجودی منفی کالا", "default": false }
+      }
+    }
+  },
+  "kpiProviders": [
+    { "key": "accounting.revenue", "title": { "fa": "درآمد عملیاتی دوره (حسابداری)" }, "unit": "rial" },
+    { "key": "accounting.net_profit", "title": { "fa": "سود (زیان) خالص دوره" }, "unit": "rial" },
+    { "key": "accounting.cash", "title": { "fa": "موجودی نقد و بانک پایان دوره" }, "unit": "rial" },
+    { "key": "accounting.receivables", "title": { "fa": "حساب‌ها و اسناد دریافتنی پایان دوره" }, "unit": "rial" }
+  ],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "accounting_",
+  "entitlement": { "key": "mod.accounting", "plans": [] }
+}
