@@ -8,6 +8,7 @@ import { Notifications } from './Notifications.js';
 import { Search } from './Search.js';
 import { Profile } from './Profile.js';
 import { Members } from './settings/Members.js';
+import { RolesPage } from './settings/Roles.js';
 import { Modules } from './settings/Modules.js';
 import { Audit } from './settings/Audit.js';
 import { ApprovalSettings } from './settings/Approvals.js';
@@ -34,6 +35,7 @@ export const element = (
         <Route path="reports" element={<ReportsPage />} />
         <Route path="profile" element={<Profile />} />
         <Route path="settings/members" element={<Members />} />
+        <Route path="settings/roles" element={<RolesPage />} />
         <Route path="settings/modules" element={<Modules />} />
         <Route path="settings/audit" element={<Audit />} />
         <Route path="settings/calendar" element={<Calendar />} />

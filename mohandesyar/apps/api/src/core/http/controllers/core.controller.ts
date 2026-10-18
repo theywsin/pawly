@@ -15,6 +15,7 @@ import { uuidv7 } from '../../../infra/ids.js';
 import { runImport } from '../../imports/import.service.js';
 import { paramsInput, savedInput } from '../../reports/report.service.js';
 import { apiKeyInput, webhookInput } from '../../integrations/integration.service.js';
+import { CORE_PERMISSION_LABELS } from '../../rbac/rbac.service.js';
 
 /** Permissions defined by the core itself (modules register theirs from their manifests). */
 export const CORE_PERMISSIONS = [
@@ -30,6 +31,11 @@ export const CORE_PERMISSIONS = [
   'core.billing.manage',
   'core.support.view_all',
 ] as const;
+
+const roleInput = z.object({
+  name: z.string().trim().min(2, 'نام نقش را وارد کنید').max(80),
+  grants: z.array(z.object({ permission: z.string().regex(/^[a-z*][a-z0-9_.*-]{0,80}$/), scope: z.enum(['company', 'unit', 'project', 'own']).default('company') })).max(500),
+});
 
 const scope = (id: Identity) => ({ tenantId: id.tenantId, companyId: id.companyId, companyIds: id.companyIds, userId: id.userId });
 
@@ -241,6 +247,70 @@ export class CoreController {
   @RequirePermission('core.role.view')
   roles(@CurrentIdentity() id: Identity) {
     return this.s.rbac.listRoles(id.tenantId);
+  }
+
+  /** Every permission the organisation can grant: the core's own plus those of its active modules. */
+  @Get('permissions')
+  @RequirePermission('core.role.view')
+  async permissionCatalogue(@CurrentIdentity() id: Identity) {
+    const [rows, effective] = await Promise.all([
+      this.s.db.app.execute(sql`SELECT key, module_id, label_fa, scopes FROM core_permissions ORDER BY module_id, key`),
+      this.s.registry.effectiveFor(id.tenantId),
+    ]);
+    const active = new Map(effective.map((m) => [m.id, m.manifest.name.fa ?? m.id]));
+    const core = CORE_PERMISSIONS.map((key) => ({ key, moduleId: 'core', moduleName: 'هسته (عمومی)', label: CORE_PERMISSION_LABELS[key] ?? key, scopes: ['company', 'own'] }));
+    const mods = (rows.rows as { key: string; module_id: string; label_fa: string; scopes: string[] }[])
+      .filter((r) => active.has(r.module_id))
+      .map((r) => ({ key: r.key, moduleId: r.module_id, moduleName: active.get(r.module_id)!, label: r.label_fa, scopes: r.scopes }));
+    return [...core, ...mods];
+  }
+
+  @Post('roles')
+  @RequirePermission('core.role.manage')
+  async createRole(@CurrentIdentity() id: Identity, @Body() body: unknown) {
+    const b = parse(roleInput, body);
+    const key = await this.s.rbac.saveRole(id.tenantId, null, b);
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'role.created', entityType: 'role', entityId: key, after: b });
+    return { key };
+  }
+
+  @Put('roles/:key')
+  @RequirePermission('core.role.manage')
+  async updateRole(@CurrentIdentity() id: Identity, @Param('key') key: string, @Body() body: unknown) {
+    const b = parse(roleInput, body);
+    await this.s.rbac.saveRole(id.tenantId, key, b);
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'role.updated', entityType: 'role', entityId: key, after: b });
+    return { key };
+  }
+
+  @Post('roles/:key/delete')
+  @HttpCode(200)
+  @RequirePermission('core.role.manage')
+  async deleteRole(@CurrentIdentity() id: Identity, @Param('key') key: string) {
+    await this.s.rbac.deleteRole(id.tenantId, key);
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'role.deleted', entityType: 'role', entityId: key });
+    return { ok: true };
+  }
+
+  @Put('members/:membershipId/roles')
+  @RequirePermission('core.user.update')
+  async memberRoles(@CurrentIdentity() id: Identity, @Param('membershipId') membershipId: string, @Body() body: unknown) {
+    const b = parse(z.object({ roles: z.array(z.object({ roleKey: z.string().min(1).max(60), companyId: z.uuid().nullable().default(null) })).min(1, 'دست‌کم یک نقش انتخاب کنید').max(30) }), body);
+    for (const r of b.roles) if (r.companyId && !id.allowedCompanyIds.includes(r.companyId)) throw forbidden('COMPANY_FORBIDDEN', 'به این شرکت دسترسی ندارید');
+    await this.s.rbac.setMemberRoles(id.tenantId, parse(z.uuid(), membershipId), b.roles);
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: 'member.roles_changed', entityType: 'membership', entityId: membershipId, after: b });
+    return { ok: true };
+  }
+
+  @Post('members/:membershipId/status')
+  @HttpCode(200)
+  @RequirePermission('core.user.update')
+  async memberStatus(@CurrentIdentity() id: Identity, @Param('membershipId') membershipId: string, @Body() body: unknown) {
+    const b = parse(z.object({ status: z.enum(['active', 'disabled']) }), body);
+    if (membershipId === id.membershipId && b.status === 'disabled') throw forbidden('SELF_DISABLE', 'نمی‌توانید حساب خودتان را غیرفعال کنید');
+    await this.s.rbac.setMemberStatus(id.tenantId, parse(z.uuid(), membershipId), b.status);
+    await this.s.audit.append({ tenantId: id.tenantId, actorType: 'user', actorId: id.userId, action: `member.${b.status === 'active' ? 'enabled' : 'disabled'}`, entityType: 'membership', entityId: membershipId });
+    return { ok: true };
   }
 
   @Put('roles/:key/approval-limit')

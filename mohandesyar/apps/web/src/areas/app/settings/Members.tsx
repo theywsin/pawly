@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { MemberRolesDialog } from './Roles.js';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +10,7 @@ import { appApi } from '../../../lib/api.js';
 import { applyServerErrors } from '../../../lib/errors.js';
 import { useAppSession } from '../../../lib/session.js';
 
-interface Member {
+export interface Member {
   id: string;
   email: string;
   full_name: string;
@@ -34,6 +36,8 @@ export function Members() {
   const q = useQuery({ queryKey: ['members'], queryFn: () => appApi<Member[]>('/api/core/members') });
   const roles = useQuery({ queryKey: ['roles'], queryFn: () => appApi<Role[]>('/api/core/roles') });
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Member | null>(null);
+  const canEdit = me.permissions.includes('core.user.update');
   const [error, setError] = useState<string | null>(null);
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { companyId: '' } });
   const companyName = (id: string | null) => (id ? (me.companies.find((c) => c.id === id)?.name ?? '—') : 'همه شرکت‌ها');
@@ -51,7 +55,20 @@ export function Members() {
   });
   return (
     <>
-      <PageHeader title="کاربران و نقش‌ها" actions={me.permissions.includes('core.user.create') && <Button onClick={() => setOpen(true)}>افزودن کاربر</Button>} />
+      <PageHeader
+        title="کاربران و نقش‌ها"
+        description="به هر کارمند یک یا چند نقش بدهید؛ هر نقش تعیین می‌کند به کدام ماژول‌ها و کارها دسترسی دارد."
+        actions={
+          <>
+            {me.permissions.includes('core.role.view') && (
+              <Link to="/app/settings/roles" className="inline-flex h-10 items-center rounded-md border border-border px-4 text-sm hover:bg-surface-2">
+                تعریف نقش‌ها
+              </Link>
+            )}
+            {me.permissions.includes('core.user.create') && <Button onClick={() => setOpen(true)}>افزودن کاربر</Button>}
+          </>
+        }
+      />
       <PageState query={q} isEmpty={q.data?.length === 0}>
         <Table>
           <thead>
@@ -60,6 +77,7 @@ export function Members() {
               <Th>ایمیل</Th>
               <Th>نقش‌ها</Th>
               <Th>وضعیت</Th>
+              {canEdit && <Th />}
             </tr>
           </thead>
           <tbody>
@@ -79,6 +97,13 @@ export function Members() {
                   </div>
                 </Td>
                 <Td>{m.status === 'active' ? <Badge tone="success">فعال</Badge> : <Badge>غیرفعال</Badge>}</Td>
+                {canEdit && (
+                  <Td>
+                    <Button size="sm" variant="secondary" onClick={() => setEditing(m)} aria-label={`نقش‌ها و وضعیت ${m.full_name}`}>
+                      نقش‌ها و دسترسی
+                    </Button>
+                  </Td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -126,6 +151,7 @@ export function Members() {
           </div>
         </form>
       </Dialog>
+      {editing && <MemberRolesDialog member={editing} onClose={() => setEditing(null)} />}
     </>
   );
 }
