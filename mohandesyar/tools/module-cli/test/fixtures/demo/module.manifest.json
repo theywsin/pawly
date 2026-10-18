@@ -1,0 +1,12 @@
+{
+  "manifestVersion": 1,
+  "id": "demo",
+  "name": { "fa": "نمونه" },
+  "version": "1.2.3",
+  "description": { "fa": "ماژول آزمایشی CLI" },
+  "publisher": { "id": "test", "name": "Test" },
+  "coreVersionRange": "^1.0.0",
+  "backend": { "entry": "backend/index.mjs" },
+  "tablePrefix": "demo_",
+  "entitlement": { "key": "mod.demo" }
+}
