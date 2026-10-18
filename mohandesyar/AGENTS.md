@@ -5,7 +5,7 @@
 ## وضعیت پروژه
 
 - فاز ۰ تا ۶ تأیید شدند. **فاز ۷ (وبلاگ، خرید آنلاین با درگاه سپ، قیمت ماژول، تیکت، پرونده مشتری، دانلود اپلیکیشن، مشتریان ما، منوی پایین موبایل، اعتبار دات‌وب) تکمیل‌شده، منتظر بازبینی و تأیید.**
-- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md)، [`docs/phase-6-report.md`](docs/phase-6-report.md)، [`docs/phase-7-report.md`](docs/phase-7-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
+- گزارش‌ها: [`docs/phase-1-report.md`](docs/phase-1-report.md)، [`docs/phase-2-report.md`](docs/phase-2-report.md)، [`docs/phase-3-report.md`](docs/phase-3-report.md)، [`docs/phase-4-report.md`](docs/phase-4-report.md)، [`docs/phase-5-report.md`](docs/phase-5-report.md)، [`docs/phase-6-report.md`](docs/phase-6-report.md)، [`docs/phase-7-report.md`](docs/phase-7-report.md). ماژول‌های کسب‌وکار در `modules/{contracts,projects,crm,meetings,recruitment,hr,kpi,finance,procurement,documents,qhse,holding,taskboard}` با مستند در `docs/README.md` هرکدام. اسناد طراحی: [`docs/README.md`](docs/README.md). فرض‌ها: `docs/assumptions.md`.
 - راهنمای نوشتن ماژول: [`modules/hello-module/docs/README.md`](modules/hello-module/docs/README.md).
 
 ## خلاصه معماری

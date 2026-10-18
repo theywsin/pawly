@@ -1,0 +1,52 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "taskboard",
+  "name": { "fa": "تسک منیجر و حضور", "en": "Task manager & attendance" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "وظایف ثابت روزانه/هفتگی/ماهانه با ساعت مشخص، تخصیص کار با مهلت به کارکنان، تیک انجام در پنل کارمند، بازبینی و نمره مدیر، ثبت حضور و تأخیر، گزارش کار روزانه با نمره، کارنامه عملکرد و شاخص‌های KPI هر کارمند.",
+    "en": "Recurring duties, assigned tasks with due times, check-off, manager scores, attendance, daily reports and per-employee KPIs."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "permissions": [
+    { "key": "taskboard.use", "fa": "کارهای خود، ثبت حضور و گزارش کار روزانه", "scopes": ["own"] },
+    { "key": "taskboard.manage", "fa": "تعیین وظیفه و کار برای کارکنان، بازبینی و نمره‌دهی، کارنامه و حضور همه", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "employee", "name": { "fa": "کارمند" }, "grants": ["taskboard.use@own"] },
+    { "key": "taskboard_manager", "name": { "fa": "سرپرست کارکنان" }, "grants": ["taskboard.use@own", "taskboard.manage"] }
+  ],
+  "menu": [
+    { "key": "taskboard", "label": { "fa": "کارهای من و حضور" }, "icon": "list-checks", "path": "/app/taskboard", "permission": "taskboard.use", "order": 15 },
+    { "key": "taskboard.team", "label": { "fa": "مدیریت کار کارکنان" }, "icon": "clipboard-check", "path": "/app/taskboard/team", "permission": "taskboard.manage", "order": 16 }
+  ],
+  "routes": [{ "path": "/app/taskboard/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "taskboard.today", "title": { "fa": "کارهای امروز من" }, "entry": "frontend/index.js", "export": "TodayWidget", "permission": "taskboard.use", "sizes": ["md"] },
+    { "key": "taskboard.team", "title": { "fa": "وضعیت امروز کارکنان" }, "entry": "frontend/index.js", "export": "TeamWidget", "permission": "taskboard.manage", "sizes": ["md"] }
+  ],
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workStart": { "type": "string", "title": "ساعت شروع کار (برای محاسبه تأخیر)", "description": "مثلاً 08:00", "default": "08:00", "maxLength": 5 },
+        "workEnd": { "type": "string", "title": "ساعت پایان کار", "description": "مثلاً 16:00", "default": "16:00", "maxLength": 5 },
+        "graceMinutes": { "type": "integer", "title": "مهلت مجاز ورود بدون ثبت تأخیر (دقیقه)", "default": 10, "minimum": 0, "maximum": 120 }
+      }
+    }
+  },
+  "kpiProviders": [
+    { "key": "taskboard.on_time_rate", "title": { "fa": "درصد کارهای انجام‌شده در مهلت" }, "unit": "percent", "dimensions": ["person"] },
+    { "key": "taskboard.average_score", "title": { "fa": "میانگین نمره کار و گزارش (از ۱۰۰)" }, "unit": "percent", "dimensions": ["person"] },
+    { "key": "taskboard.attendance_rate", "title": { "fa": "درصد ورود به‌موقع در روزهای کاری" }, "unit": "percent", "dimensions": ["person"] },
+    { "key": "taskboard.performance", "title": { "fa": "امتیاز عملکرد کلی (از ۱۰۰)" }, "unit": "percent", "dimensions": ["person"] }
+  ],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "taskboard_",
+  "entitlement": { "key": "mod.taskboard", "plans": [] }
+}
