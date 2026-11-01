@@ -1,0 +1,55 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "recruitment",
+  "name": { "fa": "بانک رزومه و استخدام", "en": "Recruitment" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "ثبت ساختاریافته رزومه و فایل آن، تشخیص و ادغام رزومه تکراری، جست‌وجوی متنی، موقعیت‌های شغلی با امتیازدهی شفاف و کمکی، قیف استخدام با مراحل قابل تنظیم، فرم ارزیابی مصاحبه و گزارش‌های استخدام.",
+    "en": "Resume bank, duplicate detection, transparent scoring, hiring pipeline and interviews."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "provides": { "services": [{ "name": "recruitment.candidates", "version": "1.0.0" }] },
+  "permissions": [
+    { "key": "recruitment.candidate.view", "fa": "مشاهده رزومه‌ها، اطلاعات تماس و فایل‌ها (ثبت می‌شود)", "scopes": ["company"] },
+    { "key": "recruitment.candidate.manage", "fa": "ثبت، ویرایش، ادغام و حذف رزومه", "scopes": ["company"] },
+    { "key": "recruitment.job.manage", "fa": "موقعیت‌های شغلی، امتیازدهی، مراحل قیف و فرم‌های مصاحبه", "scopes": ["company"] },
+    { "key": "recruitment.application.manage", "fa": "افزودن متقاضی به موقعیت، جابه‌جایی در قیف و تعیین مصاحبه", "scopes": ["company"] },
+    { "key": "recruitment.interview.evaluate", "fa": "ثبت ارزیابی مصاحبه‌های واگذارشده", "scopes": ["company", "own"] },
+    { "key": "recruitment.report.view", "fa": "گزارش‌های استخدام", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "recruiter", "name": { "fa": "مسئول جذب و استخدام" }, "grants": ["recruitment.*"] },
+    { "key": "interviewer", "name": { "fa": "مصاحبه‌گر" }, "grants": ["recruitment.interview.evaluate@own"] }
+  ],
+  "menu": [
+    { "key": "recruitment", "label": { "fa": "استخدام" }, "icon": "users", "path": "/app/recruitment", "permission": "recruitment.interview.evaluate", "order": 60 }
+  ],
+  "routes": [{ "path": "/app/recruitment/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "recruitment.pipeline", "title": { "fa": "استخدام" }, "entry": "frontend/index.js", "export": "PipelineWidget", "permission": "recruitment.application.manage", "sizes": ["md"] },
+    { "key": "recruitment.my_interviews", "title": { "fa": "مصاحبه‌های من" }, "entry": "frontend/index.js", "export": "MyInterviewsWidget", "permission": "recruitment.interview.evaluate", "sizes": ["md"] }
+  ],
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "retentionMonths": { "type": "integer", "title": "مدت نگهداری رزومه پس از رضایت (ماه)", "default": 24, "minimum": 1, "maximum": 120 }
+      }
+    }
+  },
+  "events": { "publishes": [{ "type": "recruitment.candidate.hired", "version": 1 }] },
+  "kpiProviders": [
+    { "key": "recruitment.hires", "title": { "fa": "تعداد استخدام در دوره" }, "unit": "count" },
+    { "key": "recruitment.time_to_hire", "title": { "fa": "میانگین زمان استخدام" }, "unit": "day" },
+    { "key": "recruitment.open_jobs", "title": { "fa": "موقعیت‌های شغلی باز" }, "unit": "count" }
+  ],
+  "searchProviders": [{ "key": "recruitment.candidates", "title": { "fa": "رزومه‌ها" }, "permission": "recruitment.candidate.view" }],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "recruitment_",
+  "entitlement": { "key": "mod.recruitment", "plans": [] }
+}

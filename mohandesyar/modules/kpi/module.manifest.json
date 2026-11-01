@@ -1,0 +1,41 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "kpi",
+  "name": { "fa": "شاخص‌های عملکرد (KPI)", "en": "KPI" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "تعریف شاخص برای سازمان، واحد، پروژه، نقش و فرد با هدف، آستانه، وزن و فرمول امن؛ مقدار از ماژول‌های فعال یا ورود دستی با تأیید؛ روند تاریخی؛ کارت امتیاز نسخه‌دار با بازبینی و تأیید؛ شاخص‌های ایمنی و کیفیت به‌عنوان شرط لازم؛ ضرایب پاداش فقط پیشنهادی.",
+    "en": "KPIs with targets, approved values, versioned scorecards and suggested reward coefficients."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "hr": "^1.0.0", "projects": "^1.0.0" },
+  "permissions": [
+    { "key": "kpi.view", "fa": "مشاهده شاخص‌ها و کارت امتیاز (own: شاخص‌های مسئولیت خود و کارت امتیاز خود)", "scopes": ["company", "own"] },
+    { "key": "kpi.definition.manage", "fa": "تعریف شاخص، هدف و فرمول", "scopes": ["company"] },
+    { "key": "kpi.value.enter", "fa": "ثبت مقدار (own: شاخص‌هایی که مسئول آن هستید)", "scopes": ["company", "own"] },
+    { "key": "kpi.value.approve", "fa": "تأیید یا رد مقدار ثبت‌شده", "scopes": ["company"] },
+    { "key": "kpi.scorecard.review", "fa": "محاسبه و بازبینی کارت امتیاز", "scopes": ["company"] },
+    { "key": "kpi.scorecard.approve", "fa": "تأیید نهایی کارت امتیاز", "scopes": ["company"] },
+    { "key": "kpi.reward.manage", "fa": "قواعد ضریب پاداش (فقط پیشنهادی)", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "kpi_admin", "name": { "fa": "مدیر شاخص‌های عملکرد" }, "grants": ["kpi.view", "kpi.definition.manage", "kpi.value.enter", "kpi.scorecard.review", "kpi.reward.manage"] },
+    { "key": "kpi_approver", "name": { "fa": "تأییدکننده شاخص‌ها" }, "grants": ["kpi.view", "kpi.value.approve", "kpi.scorecard.approve"] },
+    { "key": "kpi_owner", "name": { "fa": "مسئول شاخص" }, "grants": ["kpi.view@own", "kpi.value.enter@own"] }
+  ],
+  "menu": [
+    { "key": "kpi", "label": { "fa": "شاخص‌های عملکرد" }, "icon": "gauge", "path": "/app/kpi", "permission": "kpi.view", "order": 70 }
+  ],
+  "routes": [{ "path": "/app/kpi/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "kpi.status", "title": { "fa": "وضعیت شاخص‌ها" }, "entry": "frontend/index.js", "export": "StatusWidget", "permission": "kpi.view", "sizes": ["md"] }
+  ],
+  "events": { "publishes": [{ "type": "kpi.scorecard.approved", "version": 1 }] },
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "kpi_",
+  "entitlement": { "key": "mod.kpi", "plans": [] }
+}

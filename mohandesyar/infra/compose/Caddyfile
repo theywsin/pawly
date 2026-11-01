@@ -1,0 +1,22 @@
+# SITE_ADDRESS: your domain (e.g. example.ir) for automatic HTTPS, or ":80" for plain HTTP behind
+# another proxy / for a first test. Signed download links point at /<bucket>/…; they are forwarded to
+# the storage with the original Host so their signature stays valid.
+{
+	servers {
+		# behind a web server on this host (nginx, aaPanel, …): keep the visitor's address from X-Forwarded-For
+		trusted_proxies static private_ranges
+	}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	request_body {
+		max_size 60MB
+	}
+	handle /{$S3_BUCKET}/* {
+		reverse_proxy s3:8333
+	}
+	handle {
+		reverse_proxy api:3000
+	}
+}

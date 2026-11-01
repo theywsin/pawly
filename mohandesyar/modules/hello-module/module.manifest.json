@@ -1,0 +1,167 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "hello-module",
+  "name": {
+    "fa": "ماژول نمونه (سلام)",
+    "en": "Hello module"
+  },
+  "version": "1.0.0",
+  "description": {
+    "fa": "ماژول آموزشی که همه نقاط اتصال ماژول به هسته را نشان می‌دهد: جدول با RLS، مجوز، منو، صفحه، ویجت، تنظیمات، رویداد، جست‌وجو، KPI و سرویس عمومی.",
+    "en": "Reference module demonstrating every extension point."
+  },
+  "publisher": {
+    "id": "mohandesyar",
+    "name": "Mohandesyar"
+  },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "provides": {
+    "services": [
+      {
+        "name": "hello-module.notes",
+        "version": "1.0.0"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "hello-module.note.view",
+      "fa": "مشاهده یادداشت‌ها",
+      "scopes": [
+        "company",
+        "own"
+      ]
+    },
+    {
+      "key": "hello-module.note.create",
+      "fa": "ایجاد یادداشت",
+      "scopes": [
+        "company",
+        "own"
+      ]
+    },
+    {
+      "key": "hello-module.note.delete",
+      "fa": "حذف یادداشت",
+      "scopes": [
+        "company",
+        "own"
+      ]
+    }
+  ],
+  "defaultRoles": [
+    {
+      "key": "hello_editor",
+      "name": {
+        "fa": "ویرایشگر یادداشت‌ها"
+      },
+      "grants": [
+        "hello-module.*"
+      ]
+    }
+  ],
+  "menu": [
+    {
+      "key": "hello",
+      "label": {
+        "fa": "یادداشت‌ها"
+      },
+      "icon": "notebook-pen",
+      "path": "/app/hello",
+      "permission": "hello-module.note.view",
+      "order": 900
+    }
+  ],
+  "routes": [
+    {
+      "path": "/app/hello/*",
+      "entry": "frontend/index.js",
+      "export": "routes"
+    }
+  ],
+  "widgets": [
+    {
+      "key": "hello-module.count",
+      "title": {
+        "fa": "تعداد یادداشت‌ها"
+      },
+      "entry": "frontend/index.js",
+      "export": "NotesCountWidget",
+      "permission": "hello-module.note.view",
+      "sizes": [
+        "sm"
+      ]
+    }
+  ],
+  "settings": {
+    "scope": [
+      "tenant"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "greeting": {
+          "type": "string",
+          "title": "متن خوشامد بالای صفحه",
+          "default": "سلام! این‌جا یادداشت‌های تیم را می‌نویسید.",
+          "maxLength": 200
+        },
+        "maxNoteLength": {
+          "type": "integer",
+          "title": "حداکثر طول یادداشت",
+          "default": 2000,
+          "minimum": 100,
+          "maximum": 10000
+        }
+      }
+    }
+  },
+  "events": {
+    "publishes": [
+      {
+        "type": "hello-module.note.created",
+        "version": 1
+      }
+    ],
+    "consumes": [
+      {
+        "type": "hello-module.note.created",
+        "version": 1
+      }
+    ]
+  },
+  "kpiProviders": [
+    {
+      "key": "hello-module.notes_created",
+      "title": {
+        "fa": "یادداشت‌های ثبت‌شده"
+      },
+      "unit": "count"
+    }
+  ],
+  "searchProviders": [
+    {
+      "key": "hello-module.notes",
+      "title": {
+        "fa": "یادداشت‌ها"
+      },
+      "permission": "hello-module.note.view"
+    }
+  ],
+  "backend": {
+    "entry": "backend/index.mjs"
+  },
+  "frontend": {
+    "entry": "frontend/index.js",
+    "styles": [
+      "frontend/module.css"
+    ]
+  },
+  "tablePrefix": "hello_module_",
+  "entitlement": {
+    "key": "mod.hello",
+    "plans": []
+  }
+}

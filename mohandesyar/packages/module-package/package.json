@@ -1,0 +1,22 @@
+{
+  "name": "@mohandesyar/module-package",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@mohandesyar/module-sdk": "workspace:*",
+    "libpg-query": "18.1.5",
+    "tar": "7.5.22"
+  }
+}

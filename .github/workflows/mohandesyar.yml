@@ -1,0 +1,58 @@
+name: mohandesyar
+
+on:
+  push:
+    paths: ['mohandesyar/**', '.github/workflows/mohandesyar.yml']
+  pull_request:
+    paths: ['mohandesyar/**', '.github/workflows/mohandesyar.yml']
+
+defaults:
+  run:
+    working-directory: mohandesyar
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ['54329:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['63799:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.28.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: mohandesyar/pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - name: Build libraries
+        run: |
+          pnpm --filter @mohandesyar/module-sdk build
+          pnpm --filter @mohandesyar/persian build
+          pnpm --filter @mohandesyar/module-package build
+          pnpm --filter @mohandesyar/module-cli build
+      - name: Lint and module boundaries
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm -r --if-present typecheck
+      - name: S3-compatible test store (moto)
+        run: |
+          python3 -m venv .local/venv && .local/venv/bin/pip install -q 'moto[server]==5.2.4'
+          nohup .local/venv/bin/moto_server -H 127.0.0.1 -p 39000 > .local/s3.log 2>&1 &
+      - name: Unit tests
+        run: pnpm -r --if-present test:unit
+      - name: Integration tests (real PostgreSQL, Redis, S3)
+        run: pnpm --filter @mohandesyar/api test:integration
+      - name: Build web and API
+        run: |
+          pnpm --filter @mohandesyar/web build
+          pnpm --filter @mohandesyar/api build
+      - name: End-to-end (Playwright)
+        run: |
+          sudo apt-get install -y postgresql-client redis-tools
+          pnpm exec playwright install --with-deps chromium
+          pnpm test:e2e

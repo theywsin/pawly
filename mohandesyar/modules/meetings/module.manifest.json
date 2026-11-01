@@ -1,0 +1,49 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "meetings",
+  "name": { "fa": "جلسات و مصوبات", "en": "Meetings" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "برنامه‌ریزی جلسات، دعوت شرکت‌کنندگان، دستور جلسه، صورت‌جلسه، مصوبات با مسئول و مهلت، پیگیری، گزارش مصوبات معوق و اعلان.",
+    "en": "Meetings, agenda, minutes and resolutions with owners and deadlines."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "projects": "^1.0.0" },
+  "provides": { "services": [{ "name": "meetings.meetings", "version": "1.0.0" }] },
+  "permissions": [
+    { "key": "meetings.meeting.view", "fa": "مشاهده جلسات و مصوبات", "scopes": ["company", "own"] },
+    { "key": "meetings.meeting.manage", "fa": "تشکیل جلسه، دعوت، دستور جلسه، صورت‌جلسه و ثبت مصوبه", "scopes": ["company", "own"] },
+    { "key": "meetings.resolution.update", "fa": "ثبت پیگیری و انجام مصوبه", "scopes": ["company", "own"] }
+  ],
+  "defaultRoles": [
+    { "key": "meetings_secretary", "name": { "fa": "دبیر جلسات" }, "grants": ["meetings.*"] },
+    { "key": "meeting_participant", "name": { "fa": "شرکت‌کننده جلسات" }, "grants": ["meetings.meeting.view@own", "meetings.meeting.manage@own", "meetings.resolution.update@own"] }
+  ],
+  "menu": [
+    { "key": "meetings", "label": { "fa": "جلسات و مصوبات" }, "icon": "calendar-days", "path": "/app/meetings", "permission": "meetings.meeting.view", "order": 50 }
+  ],
+  "routes": [{ "path": "/app/meetings/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "meetings.upcoming", "title": { "fa": "جلسات پیش‌رو" }, "entry": "frontend/index.js", "export": "UpcomingWidget", "permission": "meetings.meeting.view", "sizes": ["md"] },
+    { "key": "meetings.overdue", "title": { "fa": "مصوبات معوق" }, "entry": "frontend/index.js", "export": "OverdueWidget", "permission": "meetings.meeting.view", "sizes": ["md"] }
+  ],
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "reminderDays": { "type": "integer", "title": "یادآوری مصوبه (روز قبل از مهلت)", "default": 2, "minimum": 0, "maximum": 30 }
+      }
+    }
+  },
+  "events": { "publishes": [{ "type": "meetings.resolution.created", "version": 1 }] },
+  "kpiProviders": [{ "key": "meetings.overdue_resolutions", "title": { "fa": "مصوبات معوق" }, "unit": "count" }],
+  "searchProviders": [{ "key": "meetings.meetings", "title": { "fa": "جلسات" }, "permission": "meetings.meeting.view" }],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "meetings_",
+  "entitlement": { "key": "mod.meetings", "plans": [] }
+}

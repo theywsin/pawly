@@ -1,0 +1,45 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "documents",
+  "name": { "fa": "مدیریت اسناد", "en": "Documents" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "پوشه و دسته‌بندی، برچسب، جست‌وجوی متنی، نسخه‌بندی با گردش تأیید، سطح محرمانگی و فهرست دسترسی، تاریخ انقضا و یادآوری، اتصال سند به پروژه/قرارداد/پرداخت/کاربر، ثبت مشاهده و دانلود اسناد حساس و سیاست نگهداری.",
+    "en": "Folders, categories, tags, search, approved versions, confidentiality, expiry reminders, links, access log, retention."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "projects": "^1.2.0", "contracts": "^1.0.0", "finance": "^1.0.0" },
+  "permissions": [
+    { "key": "documents.view", "fa": "مشاهده اسناد عادی (project: اسناد پروژه‌های خود، own: اسناد خودتان)", "scopes": ["company", "project", "own"] },
+    { "key": "documents.manage", "fa": "ثبت سند، بارگذاری نسخه و اتصال (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "documents.admin", "fa": "پوشه‌ها، دسته‌ها، سیاست نگهداری، دسترسی و گزارش مشاهده اسناد محرمانه، امحا", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "document_controller", "name": { "fa": "کنترل‌کننده اسناد" }, "grants": ["documents.view", "documents.manage", "documents.admin", "core.file.upload@own"] },
+    { "key": "document_contributor", "name": { "fa": "ثبت‌کننده اسناد پروژه" }, "grants": ["documents.view@project", "documents.manage@project", "core.file.upload@own"] },
+    { "key": "document_reader", "name": { "fa": "خواننده اسناد" }, "grants": ["documents.view"] }
+  ],
+  "menu": [
+    { "key": "documents", "label": { "fa": "اسناد" }, "icon": "folder", "path": "/app/documents", "permission": "documents.view", "order": 50 }
+  ],
+  "routes": [{ "path": "/app/documents/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "documents.expiring", "title": { "fa": "اسناد رو به انقضا" }, "entry": "frontend/index.js", "export": "ExpiringWidget", "permission": "documents.view", "sizes": ["md"] }
+  ],
+  "events": {
+    "publishes": [{ "type": "documents.version.approved", "version": 1 }],
+    "consumes": [{ "type": "core.workflow.completed", "version": 1 }]
+  },
+  "kpiProviders": [
+    { "key": "documents.expired", "title": { "fa": "اسناد منقضی‌شده (پایان دوره)" }, "unit": "count" },
+    { "key": "documents.pending_approval", "title": { "fa": "نسخه‌های در انتظار تأیید" }, "unit": "count" }
+  ],
+  "searchProviders": [{ "key": "documents.documents", "title": { "fa": "اسناد" }, "permission": "documents.view" }],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "documents_",
+  "entitlement": { "key": "mod.documents", "plans": [] }
+}

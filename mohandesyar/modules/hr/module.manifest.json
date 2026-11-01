@@ -1,0 +1,80 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "hr",
+  "name": { "fa": "پرونده کارکنان", "en": "HR" },
+  "version": "1.1.0",
+  "description": {
+    "fa": "پرونده کارکنان، قرارداد کاری محرمانه، سوابق، مهارت‌ها و آموزش‌ها، مرخصی با گردش کار تأیید و مانده، ارزیابی عملکرد و انتقال انتخابی اطلاعات از بانک رزومه.",
+    "en": "Employee files, contracts, records, trainings, leave with approval, performance reviews."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "recruitment": "^1.0.0" },
+  "provides": { "services": [{ "name": "hr.employees", "version": "1.0.0" }] },
+  "permissions": [
+    { "key": "hr.employee.view", "fa": "مشاهده پرونده کارکنان (own: پرونده خود)", "scopes": ["company", "own"] },
+    { "key": "hr.employee.manage", "fa": "ثبت و ویرایش پرونده، سوابق، مهارت‌ها و آموزش‌ها", "scopes": ["company"] },
+    { "key": "hr.contract.view", "fa": "مشاهده قرارداد کاری و حقوق (محرمانه، ثبت می‌شود)", "scopes": ["company"] },
+    { "key": "hr.contract.manage", "fa": "ثبت قرارداد کاری و حقوق", "scopes": ["company"] },
+    { "key": "hr.leave.request", "fa": "درخواست مرخصی (own: برای خود)", "scopes": ["company", "own"] },
+    { "key": "hr.leave.manage", "fa": "انواع مرخصی، مشاهده و لغو همه درخواست‌ها", "scopes": ["company"] },
+    { "key": "hr.review.view", "fa": "مشاهده ارزیابی عملکرد (own: ارزیابی‌های نهایی خود)", "scopes": ["company", "own"] },
+    { "key": "hr.review.manage", "fa": "ثبت و نهایی‌کردن ارزیابی عملکرد", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "hr_manager", "name": { "fa": "مسئول منابع انسانی" }, "grants": ["hr.*"] },
+    { "key": "hr_self_service", "name": { "fa": "کارمند (پرونده و مرخصی خود)" }, "grants": ["hr.employee.view@own", "hr.leave.request@own", "hr.review.view@own"] }
+  ],
+  "menu": [
+    { "key": "hr", "label": { "fa": "کارکنان" }, "icon": "id-card", "path": "/app/hr", "permission": "hr.employee.view", "order": 65 }
+  ],
+  "routes": [{ "path": "/app/hr/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "hr.overview", "title": { "fa": "کارکنان" }, "entry": "frontend/index.js", "export": "OverviewWidget", "permission": "hr.leave.manage", "sizes": ["md"] },
+    { "key": "hr.my_leave", "title": { "fa": "مرخصی من" }, "entry": "frontend/index.js", "export": "MyLeaveWidget", "permission": "hr.leave.request", "sizes": ["md"] }
+  ],
+  "settings": {
+    "scope": ["tenant"],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "contractAlertDays": { "type": "integer", "title": "هشدار پایان قرارداد کاری (روز قبل)", "default": 30, "minimum": 1, "maximum": 180 }
+      }
+    }
+  },
+  "events": {
+    "publishes": [{ "type": "hr.leave.decided", "version": 1 }],
+    "consumes": [{ "type": "core.workflow.completed", "version": 1 }]
+  },
+  "kpiProviders": [
+    { "key": "hr.headcount", "title": { "fa": "تعداد کارکنان فعال" }, "unit": "count" },
+    { "key": "hr.training_hours", "title": { "fa": "ساعت آموزش در دوره" }, "unit": "hour" },
+    { "key": "hr.leave_days", "title": { "fa": "روز مرخصی تأییدشده در دوره" }, "unit": "day" }
+  ],
+  "searchProviders": [{ "key": "hr.employees", "title": { "fa": "کارکنان" }, "permission": "hr.employee.view" }],
+  "importTemplates": [
+    {
+      "key": "hr.employees",
+      "title": {"fa": "پرونده کارکنان"},
+      "permission": "hr.employee.manage",
+      "description": {"fa": "مشخصات پایه و تاریخ استخدام؛ قرارداد و حقوق برای هر نفر جداگانه ثبت می‌شود."},
+      "columns": [
+        { "key": "personnelNo", "header": "شماره پرسنلی", "required": true, "maxLength": 30 },
+        { "key": "fullName", "header": "نام و نام خانوادگی", "required": true, "maxLength": 120 },
+        { "key": "nationalId", "header": "کد ملی", "hint": "۱۰ رقم؛ ستون را «متن» کنید" },
+        { "key": "mobile", "header": "تلفن همراه" },
+        { "key": "email", "header": "ایمیل", "maxLength": 200 },
+        { "key": "department", "header": "واحد", "maxLength": 120 },
+        { "key": "position", "header": "سمت", "maxLength": 120 },
+        { "key": "hiredOn", "header": "تاریخ استخدام", "required": true, "type": "date" },
+        { "key": "notes", "header": "یادداشت", "maxLength": 4000 }
+      ]
+    }
+  ],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "hr_",
+  "entitlement": { "key": "mod.hr", "plans": [] }
+}

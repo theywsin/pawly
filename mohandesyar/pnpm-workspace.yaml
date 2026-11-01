@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+  - modules/*
+  - tools/*
+onlyBuiltDependencies:
+  - esbuild
+  - "@swc/core"
+  - "@node-rs/argon2"

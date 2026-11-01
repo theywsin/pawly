@@ -1,0 +1,76 @@
+{
+  "$schema": "../../packages/module-sdk/manifest.schema.json",
+  "manifestVersion": 1,
+  "id": "procurement",
+  "name": { "fa": "تدارکات و تأمین‌کنندگان", "en": "Procurement" },
+  "version": "1.0.0",
+  "description": {
+    "fa": "تأمین‌کنندگان و دسته‌بندی، درخواست خرید متصل به پروژه و مرکز هزینه با کنترل بودجه، استعلام و مقایسه قیمت، سفارش خرید با تأیید بر اساس مبلغ، ثبت تحویل و کسری/مرجوعی، کنترل سه‌طرفه فاکتور، امتیازدهی تأمین‌کننده و گزارش هزینه و تأخیر.",
+    "en": "Suppliers, purchase requests, RFQs, orders, receipts, three-way matched invoices, ratings."
+  },
+  "publisher": { "id": "mohandix", "name": "Mohandix" },
+  "coreVersionRange": "^1.0.0",
+  "apiVersion": 1,
+  "optionalDependencies": { "projects": "^1.2.0", "finance": "^1.0.0", "contracts": "^1.0.0" },
+  "permissions": [
+    { "key": "procurement.supplier.view", "fa": "مشاهده تأمین‌کنندگان", "scopes": ["company"] },
+    { "key": "procurement.supplier.manage", "fa": "ثبت و ویرایش تأمین‌کنندگان، دسته‌ها و امتیاز", "scopes": ["company"] },
+    { "key": "procurement.request.create", "fa": "ثبت درخواست خرید (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "procurement.request.view", "fa": "مشاهده درخواست‌های خرید (project: پروژه‌های خود، own: خودتان)", "scopes": ["company", "project", "own"] },
+    { "key": "procurement.order.manage", "fa": "استعلام، مقایسه و سفارش خرید", "scopes": ["company"] },
+    { "key": "procurement.receipt.record", "fa": "ثبت تحویل کالا (project: پروژه‌های خود)", "scopes": ["company", "project"] },
+    { "key": "procurement.invoice.manage", "fa": "ثبت فاکتور تأمین‌کننده", "scopes": ["company"] },
+    { "key": "procurement.invoice.approve", "fa": "تأیید فاکتور پس از کنترل سه‌طرفه", "scopes": ["company"] },
+    { "key": "procurement.report.view", "fa": "گزارش هزینه، تأخیر و عملکرد تأمین‌کنندگان", "scopes": ["company"] }
+  ],
+  "defaultRoles": [
+    { "key": "procurement_manager", "name": { "fa": "مسئول تدارکات" }, "grants": ["procurement.supplier.view", "procurement.supplier.manage", "procurement.request.create", "procurement.request.view", "procurement.order.manage", "procurement.receipt.record", "procurement.invoice.manage", "procurement.report.view"] },
+    { "key": "invoice_approver", "name": { "fa": "تأییدکننده فاکتور" }, "grants": ["procurement.invoice.approve", "procurement.supplier.view", "procurement.request.view", "procurement.report.view"] },
+    { "key": "site_storekeeper", "name": { "fa": "انباردار کارگاه" }, "grants": ["procurement.request.create@project", "procurement.request.view@project", "procurement.receipt.record@project"] },
+    { "key": "purchase_requester", "name": { "fa": "درخواست‌کننده خرید" }, "grants": ["procurement.request.create@project", "procurement.request.view@own"] }
+  ],
+  "menu": [
+    { "key": "procurement", "label": { "fa": "تدارکات" }, "icon": "package", "path": "/app/procurement", "permission": "procurement.request.view", "order": 45 }
+  ],
+  "routes": [{ "path": "/app/procurement/*", "entry": "frontend/index.js", "export": "routes" }],
+  "widgets": [
+    { "key": "procurement.status", "title": { "fa": "تدارکات" }, "entry": "frontend/index.js", "export": "StatusWidget", "permission": "procurement.order.manage", "sizes": ["md"] }
+  ],
+  "events": {
+    "publishes": [
+      { "type": "procurement.order.approved", "version": 1 },
+      { "type": "procurement.invoice.approved", "version": 1 }
+    ],
+    "consumes": [{ "type": "core.workflow.completed", "version": 1 }]
+  },
+  "kpiProviders": [
+    { "key": "procurement.spend", "title": { "fa": "مبلغ سفارش‌های تأییدشده در دوره" }, "unit": "rial" },
+    { "key": "procurement.late_orders", "title": { "fa": "سفارش‌های دارای تأخیر تحویل (پایان دوره)" }, "unit": "count" },
+    { "key": "procurement.on_time_rate", "title": { "fa": "درصد تحویل به‌موقع در دوره" }, "unit": "percent" }
+  ],
+  "searchProviders": [{ "key": "procurement.suppliers", "title": { "fa": "تأمین‌کنندگان" }, "permission": "procurement.supplier.view" }],
+  "importTemplates": [
+    {
+      "key": "procurement.suppliers",
+      "title": {"fa": "تأمین‌کنندگان"},
+      "permission": "procurement.supplier.manage",
+      "columns": [
+        { "key": "name", "header": "نام", "required": true, "maxLength": 160 },
+        { "key": "nationalId", "header": "شناسه ملی / کد ملی", "maxLength": 20 },
+        { "key": "economicCode", "header": "کد اقتصادی", "maxLength": 20 },
+        { "key": "phone", "header": "تلفن", "maxLength": 30 },
+        { "key": "email", "header": "ایمیل", "maxLength": 200 },
+        { "key": "address", "header": "نشانی", "maxLength": 500 },
+        { "key": "iban", "header": "شماره شبا" },
+        { "key": "notes", "header": "یادداشت", "maxLength": 2000 }
+      ]
+    }
+  ],
+  "reportProviders": [
+    { "key": "procurement.orders", "title": {"fa": "سفارش‌های خرید"}, "permission": "procurement.order.manage", "filters": [{"key": "status", "label": "وضعیت", "options": {"pending": "در انتظار تأیید", "approved": "تأییدشده", "closed": "بسته‌شده", "cancelled": "لغوشده"}}, {"key": "late", "label": "فقط دارای تأخیر", "options": {"1": "بله"}}] }
+  ],
+  "backend": { "entry": "backend/index.mjs" },
+  "frontend": { "entry": "frontend/index.js", "styles": ["frontend/module.css"] },
+  "tablePrefix": "procurement_",
+  "entitlement": { "key": "mod.procurement", "plans": [] }
+}
