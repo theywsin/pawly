@@ -75,7 +75,7 @@ interface DocRow {
 }
 
 /** Loads a visible document with the caller's edit right; invisible documents are "not found". */
-async function load(ctx: ModuleRequestContext, tx: Db, v: Viewer, id: string, lock = false) {
+async function load(tx: Db, v: Viewer, id: string, lock = false) {
   const d = await one<DocRow>(
     tx,
     sql`SELECT d.id, d.company_id, d.code, d.title, d.confidentiality, d.status, d.owner_id, d.created_by, d.current_version, d.category_id, d.retention_until::text, d.effective_on::text
@@ -207,7 +207,7 @@ export const Documents = {
   async get(ctx: ModuleRequestContext, id: string, today: string) {
     const v = await viewer(ctx);
     return ctx.db.transaction(async (tx) => {
-      const { doc, canEdit, canManageAccess } = await load(ctx, tx, v, id);
+      const { doc, canEdit, canManageAccess } = await load(tx, v, id);
       await logAccess(ctx, tx, doc, 'view', doc.current_version);
       const d = await one(tx, sql`SELECT d.*, d.expires_on::text, d.retention_until::text, d.effective_on::text, d.reminded_for::text, c.name AS category_name, fo.name AS folder_name,
           (d.expires_on IS NOT NULL AND d.expires_on < ${today}::date) AS expired
@@ -261,7 +261,7 @@ export const Documents = {
   async update(ctx: ModuleRequestContext, id: string, input: z.infer<typeof documentUpdate>) {
     const v = await viewer(ctx);
     return ctx.db.transaction(async (tx) => {
-      const { doc, canEdit, canManageAccess } = await load(ctx, tx, v, id, true);
+      const { doc, canEdit, canManageAccess } = await load(tx, v, id, true);
       if (!canEdit) throw forbidden('اجازه ویرایش این سند را ندارید');
       // Raising or lowering confidentiality changes who sees it: only the owner or an administrator.
       if (input.confidentiality !== doc.confidentiality && !canManageAccess) throw forbidden('تغییر سطح محرمانگی فقط با مالک سند یا مدیر اسناد است');
@@ -282,7 +282,7 @@ export const Documents = {
   async addVersion(ctx: ModuleRequestContext, id: string, input: z.infer<typeof versionInput>, today: string) {
     const v = await viewer(ctx);
     return ctx.db.transaction(async (tx) => {
-      const { doc, canEdit } = await load(ctx, tx, v, id, true);
+      const { doc, canEdit } = await load(tx, v, id, true);
       if (!canEdit) throw forbidden('اجازه افزودن نسخه به این سند را ندارید');
       if (doc.status === 'obsolete') throw conflict('OBSOLETE', 'سند منسوخ شده است');
       return addVersion(ctx, tx, doc, input.fileId, input.note, today);
@@ -293,7 +293,7 @@ export const Documents = {
   async withdrawVersion(ctx: ModuleRequestContext, id: string, versionId: string) {
     const v = await viewer(ctx);
     const fileId = await ctx.db.transaction(async (tx) => {
-      const { canEdit } = await load(ctx, tx, v, id, true);
+      const { canEdit } = await load(tx, v, id, true);
       const x = await one<{ status: string; created_by: string; file_id: string | null; workflow_instance_id: string | null; version: number }>(
         tx,
         sql`SELECT status, created_by, file_id, workflow_instance_id, version FROM documents_versions WHERE id = ${versionId} AND document_id = ${id} FOR UPDATE`,
@@ -313,7 +313,7 @@ export const Documents = {
   async versionUrl(ctx: ModuleRequestContext, id: string, versionId: string) {
     const v = await viewer(ctx);
     const fileId = await ctx.db.transaction(async (tx) => {
-      const { doc, canEdit } = await load(ctx, tx, v, id);
+      const { doc, canEdit } = await load(tx, v, id);
       const x = await one<{ status: string; file_id: string | null; version: number }>(tx, sql`SELECT status, file_id, version FROM documents_versions WHERE id = ${versionId} AND document_id = ${id}`);
       if (!x || (!canEdit && x.status !== 'approved' && x.status !== 'superseded')) throw notFound('نسخه');
       if (!x.file_id) throw conflict('DISPOSED', 'فایل این نسخه امحا شده است');
@@ -327,7 +327,7 @@ export const Documents = {
     const v = await viewer(ctx);
     const label = await checkLink(ctx, input.type, input.id);
     return ctx.db.transaction(async (tx) => {
-      const { doc, canEdit } = await load(ctx, tx, v, id);
+      const { doc, canEdit } = await load(tx, v, id);
       if (!canEdit) throw forbidden('اجازه ویرایش این سند را ندارید');
       const lid = randomUUID();
       const r = await rows(tx, sql`INSERT INTO documents_links (id, tenant_id, company_id, document_id, entity_type, entity_id, label, created_by)
@@ -341,7 +341,7 @@ export const Documents = {
   async removeLink(ctx: ModuleRequestContext, id: string, linkId: string) {
     const v = await viewer(ctx);
     await ctx.db.transaction(async (tx) => {
-      const { canEdit } = await load(ctx, tx, v, id);
+      const { canEdit } = await load(tx, v, id);
       if (!canEdit) throw forbidden('اجازه ویرایش این سند را ندارید');
       const l = await one<{ entity_type: string; entity_id: string }>(tx, sql`DELETE FROM documents_links WHERE id = ${linkId} AND document_id = ${id} RETURNING entity_type, entity_id`);
       if (!l) throw notFound('اتصال');
@@ -358,7 +358,7 @@ export const Documents = {
     const known = new Set((await ctx.directory(input.users.map((u) => u.userId))).map((u) => u.id));
     if (input.users.some((u) => !known.has(u.userId))) throw invalid('USER', 'کاربر معتبر نیست');
     await ctx.db.transaction(async (tx) => {
-      const { doc, canManageAccess } = await load(ctx, tx, v, id, true);
+      const { doc, canManageAccess } = await load(tx, v, id, true);
       if (!canManageAccess) throw forbidden('فقط مالک سند یا مدیر اسناد دسترسی را تعیین می‌کند');
       const before = await rows(tx, sql`SELECT principal, can_edit FROM documents_access WHERE document_id = ${id}`);
       await tx.execute(sql`DELETE FROM documents_access WHERE document_id = ${id}`);
@@ -372,7 +372,7 @@ export const Documents = {
   async obsolete(ctx: ModuleRequestContext, id: string) {
     const v = await viewer(ctx);
     await ctx.db.transaction(async (tx) => {
-      const { doc, canEdit } = await load(ctx, tx, v, id, true);
+      const { doc, canEdit } = await load(tx, v, id, true);
       if (!canEdit) throw forbidden('اجازه ویرایش این سند را ندارید');
       if (doc.status !== 'active') throw conflict('NOT_ACTIVE', 'فقط سند معتبر منسوخ می‌شود');
       await tx.execute(sql`UPDATE documents_documents SET status = 'obsolete' WHERE id = ${id}`);
@@ -384,7 +384,7 @@ export const Documents = {
   async remove(ctx: ModuleRequestContext, id: string) {
     const v = await viewer(ctx);
     const files = await ctx.db.transaction(async (tx) => {
-      const { doc, canEdit } = await load(ctx, tx, v, id, true);
+      const { doc, canEdit } = await load(tx, v, id, true);
       if (!canEdit || (doc.owner_id !== ctx.userId && !v.admin)) throw forbidden('فقط مالک سند یا مدیر اسناد');
       if (doc.status !== 'draft') throw conflict('HAS_APPROVED', 'سند دارای نسخه تأییدشده حذف نمی‌شود؛ آن را منسوخ کنید یا پس از پایان دوره نگهداری امحا کنید');
       const vs = await rows<{ file_id: string | null; workflow_instance_id: string | null; status: string }>(tx, sql`SELECT file_id, workflow_instance_id, status FROM documents_versions WHERE document_id = ${id}`);
@@ -404,7 +404,7 @@ export const Documents = {
     const v = await viewer(ctx);
     if (!v.admin) throw forbidden('امحا فقط با مدیر اسناد است');
     const files = await ctx.db.transaction(async (tx) => {
-      const { doc } = await load(ctx, tx, v, id, true);
+      const { doc } = await load(tx, v, id, true);
       if (doc.status === 'disposed') throw conflict('DISPOSED', 'این سند قبلاً امحا شده است');
       if (doc.confidentiality === 'secret') throw forbidden('سند سری را فقط مالک پس از کاهش سطح محرمانگی به مدیر اسناد می‌سپارد');
       if (!doc.retention_until) throw conflict('NO_RETENTION', 'برای این سند سیاست نگهداری تعیین نشده است');

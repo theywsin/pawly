@@ -1,6 +1,5 @@
 /** Product identity: the only place the product name and logo are defined in the web app. */
 export const BRAND_NAME = 'مهندیکس';
-export const BRAND_LATIN = 'Mohandix';
 
 /** Logo + name, used in every header (public site, auth, company app). */
 export function BrandMark({ size = 32, className }: { size?: number; className?: string }) {

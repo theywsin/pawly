@@ -27,7 +27,9 @@ if [ ! -f .env ]; then
     case "$SITE_ADDRESS" in :*) PUBLIC_ORIGIN="http://$host$([ "${HTTP_PORT:-80}" = 80 ] || echo ":${HTTP_PORT}")";; *) PUBLIC_ORIGIN="https://$SITE_ADDRESS";; esac
   fi
   case "$PUBLIC_ORIGIN" in https://*) SECURE=true;; *) SECURE=false;; esac
-  sed -e "s#^HTTP_PORT=.*#HTTP_PORT=${HTTP_PORT:-80}#" -e "s#^HTTPS_PORT=.*#HTTPS_PORT=${HTTPS_PORT:-443}#" -e "s#^SITE_ADDRESS=.*#SITE_ADDRESS=$SITE_ADDRESS#" -e "s#^PUBLIC_ORIGIN=.*#PUBLIC_ORIGIN=$PUBLIC_ORIGIN#" -e "s#^COOKIE_SECURE=.*#COOKIE_SECURE=$SECURE#" \
+  # A port with an https address means another web server terminates TLS here: listen on loopback only.
+  [ "$SITE_ADDRESS" = ':80' ] && [ "$SECURE" = true ] && BIND_ADDRESS=${BIND_ADDRESS:-127.0.0.1}
+  sed -e "s#^BIND_ADDRESS=.*#BIND_ADDRESS=${BIND_ADDRESS:-0.0.0.0}#" -e "s#^HTTP_PORT=.*#HTTP_PORT=${HTTP_PORT:-80}#" -e "s#^HTTPS_PORT=.*#HTTPS_PORT=${HTTPS_PORT:-443}#" -e "s#^SITE_ADDRESS=.*#SITE_ADDRESS=$SITE_ADDRESS#" -e "s#^PUBLIC_ORIGIN=.*#PUBLIC_ORIGIN=$PUBLIC_ORIGIN#" -e "s#^COOKIE_SECURE=.*#COOKIE_SECURE=$SECURE#" \
       -e "s#^POSTGRES_PASSWORD=.*#POSTGRES_PASSWORD=$(rand)#" -e "s#^OWNER_DB_PASSWORD=.*#OWNER_DB_PASSWORD=$(rand)#" -e "s#^APP_DB_PASSWORD=.*#APP_DB_PASSWORD=$(rand)#" \
       -e "s#^JWT_SECRET=.*#JWT_SECRET=$(rand)#" -e "s#^APP_ENCRYPTION_KEY=.*#APP_ENCRYPTION_KEY=$(rand)#" \
       -e "s#^S3_ACCESS_KEY=.*#S3_ACCESS_KEY=$(rand 12)#" -e "s#^S3_SECRET_KEY=.*#S3_SECRET_KEY=$(rand)#" .env.example > .env

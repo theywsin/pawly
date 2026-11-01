@@ -65,9 +65,9 @@ export async function systemAccount(tx: Db, b: Books, key: SystemKey): Promise<s
 }
 
 /** Open fiscal year containing `date`; posting into a closed year or outside every year is refused. */
-export async function fiscalYearFor(tx: Db, b: Books, date: string, lock = false): Promise<{ id: string; start_on: string; end_on: string }> {
+export async function fiscalYearFor(tx: Db, b: Books, date: string): Promise<{ id: string; start_on: string; end_on: string }> {
   const y = await one<{ id: string; status: string; start_on: string; end_on: string }>(tx, sql`SELECT id, status, start_on::text, end_on::text FROM accounting_fiscal_years
-    WHERE company_id = ${b.companyId} AND ${date}::date BETWEEN start_on AND end_on ${lock ? sql`FOR UPDATE` : sql``}`);
+    WHERE company_id = ${b.companyId} AND ${date}::date BETWEEN start_on AND end_on`);
   if (!y) throw invalid('NO_FISCAL_YEAR', 'برای این تاریخ سال مالی تعریف نشده است');
   if (y.status !== 'open') throw conflict('YEAR_CLOSED', 'سال مالی این تاریخ بسته شده است');
   return y;
@@ -137,7 +137,7 @@ export async function insertLines(tx: Db, b: Books, voucherId: string, lines: { 
 }
 
 /** Gives the next permanent number of the fiscal year and marks the voucher posted (the trigger re-checks balance). */
-export async function postNow(tx: Db, b: Books, voucherId: string, fiscalYearId: string, userId: string | null) {
+export async function postNow(tx: Db, voucherId: string, fiscalYearId: string, userId: string | null) {
   await tx.execute(sql`SELECT id FROM accounting_fiscal_years WHERE id = ${fiscalYearId} FOR UPDATE`);
   const n = await one<{ n: number }>(tx, sql`SELECT coalesce(max(number), 0)::int + 1 AS n FROM accounting_vouchers WHERE fiscal_year_id = ${fiscalYearId}`);
   await tx.execute(sql`UPDATE accounting_vouchers SET status = 'posted', number = ${n!.n}, posted_by = ${userId}, posted_at = now(), updated_at = now() WHERE id = ${voucherId}`);
@@ -164,7 +164,7 @@ export async function bookVoucher(tx: Db, b: Books, spec: VoucherSpec): Promise<
   await tx.execute(sql`INSERT INTO accounting_vouchers (id, tenant_id, company_id, fiscal_year_id, date, description, kind, source, source_ref, reverses_id, created_by)
     VALUES (${id}, ${b.tenantId}, ${b.companyId}, ${year.id}, ${spec.date}, ${spec.description}, ${spec.kind ?? 'normal'}, ${spec.source}, ${spec.sourceRef ?? null}, ${spec.reversesId ?? null}, ${spec.userId})`);
   await insertLines(tx, b, id, lines);
-  const number = spec.post ? await postNow(tx, b, id, year.id, spec.userId) : null;
+  const number = spec.post ? await postNow(tx, id, year.id, spec.userId) : null;
   return { id, number };
 }
 

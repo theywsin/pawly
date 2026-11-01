@@ -178,7 +178,7 @@ export const Vouchers = {
       const lines = (await rows<{ account_id: string; detail_id: string | null; debit: string; credit: string }>(tx, sql`SELECT account_id, detail_id, debit::text, credit::text FROM accounting_voucher_lines WHERE voucher_id = ${id}`))
         .map((l) => ({ accountId: l.account_id, detailId: l.detail_id, debit: BigInt(l.debit), credit: BigInt(l.credit) }));
       await checkLines(tx, b, lines, 'post');
-      const number = await postNow(tx, b, id, year.id, ctx.userId);
+      const number = await postNow(tx, id, year.id, ctx.userId);
       await ctx.audit({ action: 'accounting.voucher.posted', entityType: 'accounting_voucher', entityId: id, after: { number } }, tx);
       return { number };
     }));
