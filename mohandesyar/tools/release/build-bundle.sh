@@ -36,4 +36,4 @@ if [ "$images" = 1 ]; then
 fi
 (cd "$out" && tar czf mohandix.tar.gz mohandix)
 echo "» bundle: $out/mohandix.tar.gz"
-[ -d "$out/signing-key" ] && echo "» private signing key (keep offline, not on the server): $out/signing-key/"
+if [ -d "$out/signing-key" ]; then echo "» private signing key (keep offline, not on the server): $out/signing-key/"; fi
